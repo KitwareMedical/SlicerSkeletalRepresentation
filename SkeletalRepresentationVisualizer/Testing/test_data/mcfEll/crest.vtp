@@ -1,0 +1,66 @@
+<?xml version="1.0"?>
+<VTKFile type="PolyData" version="0.1" byte_order="LittleEndian" header_type="UInt32" compressor="vtkZLibDataCompressor">
+  <PolyData>
+    <Piece NumberOfPoints="16" NumberOfVerts="0" NumberOfLines="1" NumberOfStrips="0" NumberOfPolys="0">
+      <PointData Scalars="spokeLength" Vectors="spokeDirection">
+        <DataArray type="Float64" Name="spokeDirection" NumberOfComponents="3" format="ascii" RangeMin="0.99999967086" RangeMax="1.0000003496">
+          0.754533 0.511948 -0.410597 0.942526 0.26693 -0.20098
+          0.999711 -0.000218 0.024041 0.931659 -0.267339 0.246051
+          0.7337 -0.512273 0.446386 0.404879 -0.696323 0.592627
+          -0.015598 -0.76685 0.641637 -0.433201 -0.69614 0.572473
+          -0.754533 -0.511948 0.410597 -0.942526 -0.26693 0.20098
+          -0.999711 0.000218 -0.024041 -0.931659 0.267339 -0.246051
+          -0.7337 0.512273 -0.446386 -0.404879 0.696323 -0.592627
+          0.015598 0.76685 -0.641637 0.433201 0.69614 -0.572473
+        </DataArray>
+        <DataArray type="Float64" Name="spokeLength" format="ascii" RangeMin="3.701061" RangeMax="4.125149">
+          3.918846 4.065808 4.125149 4.065808 3.918846 3.766153
+          3.701061 3.766153 3.918846 4.065808 4.125149 4.065808
+          3.918846 3.766153 3.701061 3.766153
+        </DataArray>
+      </PointData>
+      <CellData>
+      </CellData>
+      <Points>
+        <DataArray type="Float32" Name="Points" NumberOfComponents="3" format="ascii" RangeMin="159.15830646" RangeMax="192.89254491">
+          -112.74046326 -103.37322235 51.453559875 -111.71923828 -109.00760651 56.195049286
+          -111.45792389 -115.64267731 61.756195068 -111.989151 -122.27758026 67.298278809
+          -113.23957062 -127.91146088 71.985145569 -115.03435516 -131.68591309 75.102287292
+          -117.10570526 -133.01399231 76.164726257 -119.1230011 -131.68501282 75.003967285
+          -120.76423645 -127.90982056 71.804191589 -121.7854538 -122.27544403 67.062698364
+          -122.04677582 -115.6403656 61.501552582 -121.51554871 -109.00546265 55.959465027
+          -120.26512909 -103.37158203 51.272605896 -118.47033691 -99.597137451 48.155460358
+          -116.39899445 -98.269058228 47.093021393 -114.38169098 -99.59803009 48.25378418
+        </DataArray>
+      </Points>
+      <Verts>
+        <DataArray type="Int64" Name="connectivity" format="ascii" RangeMin="1e+299" RangeMax="-1e+299">
+        </DataArray>
+        <DataArray type="Int64" Name="offsets" format="ascii" RangeMin="1e+299" RangeMax="-1e+299">
+        </DataArray>
+      </Verts>
+      <Lines>
+        <DataArray type="Int64" Name="connectivity" format="ascii" RangeMin="0" RangeMax="15">
+          0 1 2 3 4 5
+          6 7 8 9 10 11
+          12 13 14 15 0
+        </DataArray>
+        <DataArray type="Int64" Name="offsets" format="ascii" RangeMin="17" RangeMax="17">
+          17
+        </DataArray>
+      </Lines>
+      <Strips>
+        <DataArray type="Int64" Name="connectivity" format="ascii" RangeMin="0" RangeMax="15">
+        </DataArray>
+        <DataArray type="Int64" Name="offsets" format="ascii" RangeMin="17" RangeMax="17">
+        </DataArray>
+      </Strips>
+      <Polys>
+        <DataArray type="Int64" Name="connectivity" format="ascii" RangeMin="0" RangeMax="15">
+        </DataArray>
+        <DataArray type="Int64" Name="offsets" format="ascii" RangeMin="17" RangeMax="17">
+        </DataArray>
+      </Polys>
+    </Piece>
+  </PolyData>
+</VTKFile>

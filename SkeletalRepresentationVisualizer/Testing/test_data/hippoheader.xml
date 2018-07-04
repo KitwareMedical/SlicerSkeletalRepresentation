@@ -1,0 +1,16 @@
+<?xml version="1.0" ?>
+<s-rep>
+  <nRows>3</nRows>
+  <nCols>8</nCols>
+  <meshType>Quad</meshType>
+  <color>
+    <red>0</red>
+    <green>0.5</green>
+    <blue>0</blue>
+  </color>
+  <isMean>False</isMean>
+  <meanStatPath/>
+  <upSpoke>/playpen/workspace/ra_job/legacyTransformer/up.vtp</upSpoke>
+  <downSpoke>/playpen/workspace/ra_job/legacyTransformer/down.vtp</downSpoke>
+  <crestSpoke>/playpen/workspace/ra_job/legacyTransformer/crest.vtp</crestSpoke>
+</s-rep>
