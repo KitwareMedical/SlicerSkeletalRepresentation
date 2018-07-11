@@ -1,10 +1,10 @@
 import vtk, qt, ctk, slicer
 import os
 import logging
-import unittest
 import math
 import xml.etree.ElementTree as ET
-from slicer.ScriptedLoadableModule import *
+from slicer.ScriptedLoadableModule import (ScriptedLoadableModule, ScriptedLoadableModuleWidget,
+                                           ScriptedLoadableModuleLogic, ScriptedLoadableModuleTest)
 from LegacyTransformer.legacyTransformer import legacyTransformer as transformer
 
 #
@@ -21,9 +21,9 @@ class SkeletalRepresentationVisualizer(ScriptedLoadableModule):
         self.parent.title = "Skeletal Representation Visualizer"
         self.parent.categories = ["Skeleton, topology"]
         self.parent.dependencies = []
-        self.parent.contributors = ["Junpyo Hong, Zhiy Liu, Pablo Hernandez-Cerdan"]  # replace with "Firstname Lastname (Organization)"
+        self.parent.contributors = ["Junpyo Hong, Zhiy Liu, Pablo Hernandez-Cerdan"]
         self.parent.helpText = """
-    Given an header.xml or a .m3d (legacy) file with a Skeletal Representation, visualize it. 
+    Given an header.xml or a .m3d (legacy) file with a Skeletal Representation, visualize it.
     """
         self.parent.acknowledgementText = """
     This file was originally developed by Junpyo Hong, Zhiy Liu, and currently maintained by the SlicerSALT team.
@@ -147,16 +147,14 @@ class SkeletalRepresentationVisualizerWidget(ScriptedLoadableModuleWidget):
         # Show the filename in the label.
         self.outputFolderLabelFile.text = foldername
 
-
     def onApplyButton(self):
         logic = SkeletalRepresentationVisualizerLogic()
         # Unused
         # flag = self.boundarySurfaceRendering.checked
         filename = self.inputFileLabelFile.text
         dist = self.distSlider.value
-        outputFolder =  self.outputFolderLabelFile.text
+        outputFolder = self.outputFolderLabelFile.text
         logic.run(filename, dist, outputFolder)
-
 
 
 #
@@ -173,18 +171,16 @@ class SkeletalRepresentationVisualizerLogic(ScriptedLoadableModuleLogic):
     https://github.com/Slicer/Slicer/blob/master/Base/Python/slicer/ScriptedLoadableModule.py
     """
 
-    def computeIndex(self, i, j, numRows, numCols):
-        atomIndex = numCols * i  + j
-        numEndAtoms = 0
-        numStdAtoms = 0
+    # def computeIndex(self, i, j, numRows, numCols):
+    #     atomIndex = numCols * i  + j
+    #     numEndAtoms = 0
+    #     numStdAtoms = 0
 
     def distance(self, p0, p1):
-        return math.sqrt((p0[0] - p1[0]) ** 2 + (p0[1] - p1[1]) ** 2 + (p0[2] - p1[2]) ** 2 )
+        return math.sqrt((p0[0] - p1[0]) ** 2 + (p0[1] - p1[1]) ** 2 + (p0[2] - p1[2]) ** 2)
 
     def visualizeNewSrep(self, filename):
-        """
-        Parse header.xml file, create models from the data, and visualize it.
-        """
+        """ Parse header.xml file, create models from the data, and visualize it. """
         # 1. parse header file
         tree = ET.parse(filename)
         upFileName = ''
@@ -222,7 +218,7 @@ class SkeletalRepresentationVisualizerLogic(ScriptedLoadableModuleLogic):
         if numberOfArrays is 0:
             logging.warning("File: " + upFileName + " does not contain data")
 
-        medial_polyData = upSpokes # this is poly data for skeleton
+        # medial_polyData = upSpokes #  this is poly data for skeleton
 
         scene = slicer.mrmlScene
 
@@ -244,7 +240,7 @@ class SkeletalRepresentationVisualizerLogic(ScriptedLoadableModuleLogic):
         arr_length = upPointData.GetArray('spokeLength')
         arr_dirs = upPointData.GetArray('spokeDirection')
         for i in range(upSpokes.GetNumberOfPoints()):
-            pt = [0]* 3
+            pt = [0] * 3
             upSpokes.GetPoint(i, pt)
             # base point of up arrows
             id0 = upSpoke_points.InsertNextPoint(pt)
@@ -268,7 +264,7 @@ class SkeletalRepresentationVisualizerLogic(ScriptedLoadableModuleLogic):
 
             fidNode.AddFiducial(pt[0], pt[1], pt[2])
 
-        boundary_point_ids = []
+        # boundary_point_ids = []
 
         # model node for medial mesh
         medial_model = slicer.vtkMRMLModelNode()
@@ -439,9 +435,9 @@ class SkeletalRepresentationVisualizerLogic(ScriptedLoadableModuleLogic):
             id0 = connection_points.InsertNextPoint(pt_fold)
 
             for j in range(upSpokes.GetNumberOfPoints()):
-                pt_interior = [0]* 3
+                pt_interior = [0] * 3
                 upSpokes.GetPoint(j, pt_interior)
-                dist = math.sqrt((pt_fold[0] - pt_interior[0]) ** 2 + (pt_fold[1] - pt_interior[1]) ** 2 + (pt_fold[2] - pt_interior[2]) ** 2 )
+                dist = self.distance(pt_fold, pt_interior)
                 if dist < min_dist:
                     min_dist = dist
                     nearest_index = j
