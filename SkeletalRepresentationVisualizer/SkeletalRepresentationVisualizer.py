@@ -111,7 +111,6 @@ class SkeletalRepresentationVisualizerWidget(ScriptedLoadableModuleWidget):
         # Add vertical spacer
         self.layout.addStretch(1)
 
-
     def cleanup(self):
         pass
 
@@ -226,6 +225,10 @@ class SkeletalRepresentationVisualizerLogic(ScriptedLoadableModuleLogic):
         fidDisplayNode = slicer.vtkMRMLMarkupsDisplayNode()
         scene.AddNode(fidDisplayNode)
         fidNode = slicer.vtkMRMLMarkupsFiducialNode()
+        # If we would have more than 100 fiducial points (meant for editing points) better to use a regular MRMLModelNode
+        # In the future, we would like the user to be able to move the nodes, and the connected structures to update accordingly.
+        # Meanwhile, we lock the moving.
+        fidNode.SetLocked(True)
         fidDisplayNode.SetGlyphScale(0.01)
         fidDisplayNode.SetSelectedColor(1.0, 1.0, 0.0)
         fidDisplayNode.SetTextScale(0.0)
