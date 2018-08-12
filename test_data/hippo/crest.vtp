@@ -1,0 +1,69 @@
+<?xml version="1.0"?>
+<VTKFile type="PolyData" version="0.1" byte_order="LittleEndian" header_type="UInt32" compressor="vtkZLibDataCompressor">
+  <PolyData>
+    <Piece NumberOfPoints="18" NumberOfVerts="0" NumberOfLines="1" NumberOfStrips="0" NumberOfPolys="0">
+      <PointData Scalars="spokeLength" Vectors="spokeDirection">
+        <DataArray type="Float64" Name="spokeDirection" NumberOfComponents="3" format="ascii" RangeMin="1" RangeMax="1">
+          -0.91125476679 0.12299382738 -0.39304868456 -0.85770399862 -0.24701067275 -0.45092081157
+          -0.98923801777 0.13957423277 0.043899632513 -0.98669592808 -0.04027675266 -0.15750850361
+          -0.98804146843 0.038267826347 -0.14936408582 -0.8571690929 0.43071724831 0.28238944417
+          -0.95299927609 0.008694038396 0.30284780579 -0.95694944906 -0.21400483446 -0.19608590662
+          -0.18048649454 -0.37250392238 -0.9103106355 0.73896879215 -0.19972229424 -0.64345639278
+          0.88745249007 -0.21946059573 -0.40529634194 0.96236390067 0.06136776372 -0.26474463217
+          0.99218988075 -0.053342874037 -0.11275539154 0.9737908373 0.22431793669 0.037588142635
+          0.9491803046 0.30709825219 0.068901472172 0.82512297474 0.41560516608 0.382680575
+          0.33570353298 0.64054996423 0.69065105608 -0.10485520929 0.45318873852 0.88522615888
+        </DataArray>
+        <DataArray type="Float64" Name="spokeLength" format="ascii" RangeMin="0.053574039398" RangeMax="0.10651825342">
+          0.06008122078 0.05904486388 0.058383726589 0.063418260109 0.053574039398 0.072941525043
+          0.091167690525 0.077869192881 0.096234407906 0.087643437864 0.10651825342 0.099341220386
+          0.07814315961 0.069583671589 0.074161878655 0.093473193632 0.074264123876 0.070025458993
+        </DataArray>
+      </PointData>
+      <CellData>
+      </CellData>
+      <Points>
+        <DataArray type="Float32" Name="Points" NumberOfComponents="3" format="ascii" RangeMin="0.33341232621" RangeMax="1.3231231798">
+          0.14309099317 0.9013376832 0.88432127237 0.23561196029 0.83842378855 0.80187749863
+          0.2591239512 0.75158089399 0.68728506565 0.26129326224 0.64818680286 0.59023189545
+          0.26195308566 0.53546637297 0.50855404139 0.25886195898 0.38716825843 0.43930822611
+          0.16553294659 0.26691174507 0.38597080112 0.17382274568 0.20028315485 0.2733822763
+          0.26792138815 0.14124777913 0.13939502835 0.40633428097 0.18753091991 0.22991532087
+          0.5239970088 0.23025324941 0.34249058366 0.58567714691 0.39304113388 0.43092602491
+          0.58062165976 0.57300651073 0.51323318481 0.5675984025 0.71835827827 0.59769338369
+          0.52541577816 0.8231767416 0.68914461136 0.45712733269 0.8863902092 0.794033885
+          0.34921070933 0.91711366177 0.88747358322 0.2224945575 0.89584612846 0.9301122427
+        </DataArray>
+      </Points>
+      <Verts>
+        <DataArray type="Int64" Name="connectivity" format="ascii" RangeMin="1e+299" RangeMax="-1e+299">
+        </DataArray>
+        <DataArray type="Int64" Name="offsets" format="ascii" RangeMin="1e+299" RangeMax="-1e+299">
+        </DataArray>
+      </Verts>
+      <Lines>
+        <DataArray type="Int64" Name="connectivity" format="ascii" RangeMin="0" RangeMax="17">
+          0 1 2 3 4 5
+          6 7 8 9 10 11
+          12 13 14 15 16 17
+          0
+        </DataArray>
+        <DataArray type="Int64" Name="offsets" format="ascii" RangeMin="19" RangeMax="19">
+          19
+        </DataArray>
+      </Lines>
+      <Strips>
+        <DataArray type="Int64" Name="connectivity" format="ascii" RangeMin="0" RangeMax="17">
+        </DataArray>
+        <DataArray type="Int64" Name="offsets" format="ascii" RangeMin="19" RangeMax="19">
+        </DataArray>
+      </Strips>
+      <Polys>
+        <DataArray type="Int64" Name="connectivity" format="ascii" RangeMin="0" RangeMax="17">
+        </DataArray>
+        <DataArray type="Int64" Name="offsets" format="ascii" RangeMin="19" RangeMax="19">
+        </DataArray>
+      </Polys>
+    </Piece>
+  </PolyData>
+</VTKFile>
