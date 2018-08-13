@@ -20,6 +20,7 @@ include(${Slicer_USE_FILE})
 #-----------------------------------------------------------------------------
 # Extension modules
 add_subdirectory(SkeletalRepresentationVisualizer)
+add_subdirectory(SkeletalRepresentationInitializer)
 ## NEXT_MODULE
 
 #-----------------------------------------------------------------------------

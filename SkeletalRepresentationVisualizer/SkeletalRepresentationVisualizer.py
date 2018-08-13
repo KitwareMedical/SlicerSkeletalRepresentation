@@ -21,12 +21,12 @@ class SkeletalRepresentationVisualizer(ScriptedLoadableModule):
         self.parent.title = "Skeletal Representation Visualizer"
         self.parent.categories = ["Skeleton, topology"]
         self.parent.dependencies = []
-        self.parent.contributors = ["Junpyo Hong, Zhiy Liu, Pablo Hernandez-Cerdan"]
+        self.parent.contributors = ["Junpyo Hong, Zhiyuan Liu, Pablo Hernandez-Cerdan"]
         self.parent.helpText = """
     Given an header.xml or a .m3d (legacy) file with a Skeletal Representation, visualize it.
     """
         self.parent.acknowledgementText = """
-    This file was originally developed by Junpyo Hong, Zhiy Liu, and currently maintained by the SlicerSALT team.
+    This file was originally developed by Junpyo Hong, Zhiyuan Liu, and currently maintained by the SlicerSALT team.
 """  # replace with organization, grant and thanks.
 
 
