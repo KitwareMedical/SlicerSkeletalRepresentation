@@ -39,6 +39,7 @@ public:
   virtual ~qSlicerSkeletalRepresentationInitializerModuleWidget();
 
 public slots:
+    void selectInput();
 
 
 protected:

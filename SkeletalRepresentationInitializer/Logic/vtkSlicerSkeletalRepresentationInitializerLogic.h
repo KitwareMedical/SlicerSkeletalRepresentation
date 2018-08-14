@@ -44,6 +44,7 @@ public:
   static vtkSlicerSkeletalRepresentationInitializerLogic *New();
   vtkTypeMacro(vtkSlicerSkeletalRepresentationInitializerLogic, vtkSlicerModuleLogic);
   void PrintSelf(ostream& os, vtkIndent indent);
+  void FlowSurfaceMesh(const std::string &filename);
 
 protected:
   vtkSlicerSkeletalRepresentationInitializerLogic();
@@ -55,6 +56,7 @@ protected:
   virtual void UpdateFromMRMLScene();
   virtual void OnMRMLSceneNodeAdded(vtkMRMLNode* node);
   virtual void OnMRMLSceneNodeRemoved(vtkMRMLNode* node);
+
 private:
 
   vtkSlicerSkeletalRepresentationInitializerLogic(const vtkSlicerSkeletalRepresentationInitializerLogic&); // Not implemented

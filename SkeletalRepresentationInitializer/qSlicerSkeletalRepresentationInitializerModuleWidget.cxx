@@ -22,21 +22,41 @@
 #include "qSlicerSkeletalRepresentationInitializerModuleWidget.h"
 #include "ui_qSlicerSkeletalRepresentationInitializerModuleWidget.h"
 
+// module logic file
+#include "vtkSlicerSkeletalRepresentationInitializerLogic.h"
+
+#include <QFileDialog>
+#include <QMessageBox>
+
 //-----------------------------------------------------------------------------
 /// \ingroup Slicer_QtModules_ExtensionTemplate
 class qSlicerSkeletalRepresentationInitializerModuleWidgetPrivate: public Ui_qSlicerSkeletalRepresentationInitializerModuleWidget
 {
+    Q_DECLARE_PUBLIC(qSlicerSkeletalRepresentationInitializerModuleWidget);
+protected:
+    qSlicerSkeletalRepresentationInitializerModuleWidget* const q_ptr;
 public:
-  qSlicerSkeletalRepresentationInitializerModuleWidgetPrivate();
+  qSlicerSkeletalRepresentationInitializerModuleWidgetPrivate(qSlicerSkeletalRepresentationInitializerModuleWidget &);
+    ~qSlicerSkeletalRepresentationInitializerModuleWidgetPrivate();
+    vtkSlicerSkeletalRepresentationInitializerLogic* logic() const;
 };
 
 //-----------------------------------------------------------------------------
 // qSlicerSkeletalRepresentationInitializerModuleWidgetPrivate methods
 
 //-----------------------------------------------------------------------------
-qSlicerSkeletalRepresentationInitializerModuleWidgetPrivate::qSlicerSkeletalRepresentationInitializerModuleWidgetPrivate()
+qSlicerSkeletalRepresentationInitializerModuleWidgetPrivate::qSlicerSkeletalRepresentationInitializerModuleWidgetPrivate(qSlicerSkeletalRepresentationInitializerModuleWidget& object) : q_ptr(&object)
 {
 }
+
+qSlicerSkeletalRepresentationInitializerModuleWidgetPrivate::~qSlicerSkeletalRepresentationInitializerModuleWidgetPrivate(){}
+
+vtkSlicerSkeletalRepresentationInitializerLogic* qSlicerSkeletalRepresentationInitializerModuleWidgetPrivate::logic() const
+{
+    Q_Q(const qSlicerSkeletalRepresentationInitializerModuleWidget);
+    return vtkSlicerSkeletalRepresentationInitializerLogic::SafeDownCast(q->logic());
+}
+
 
 //-----------------------------------------------------------------------------
 // qSlicerSkeletalRepresentationInitializerModuleWidget methods
@@ -44,7 +64,7 @@ qSlicerSkeletalRepresentationInitializerModuleWidgetPrivate::qSlicerSkeletalRepr
 //-----------------------------------------------------------------------------
 qSlicerSkeletalRepresentationInitializerModuleWidget::qSlicerSkeletalRepresentationInitializerModuleWidget(QWidget* _parent)
   : Superclass( _parent )
-  , d_ptr( new qSlicerSkeletalRepresentationInitializerModuleWidgetPrivate )
+  , d_ptr( new qSlicerSkeletalRepresentationInitializerModuleWidgetPrivate(*this) )
 {
 }
 
@@ -59,4 +79,12 @@ void qSlicerSkeletalRepresentationInitializerModuleWidget::setup()
   Q_D(qSlicerSkeletalRepresentationInitializerModuleWidget);
   d->setupUi(this);
   this->Superclass::setup();
+  QObject::connect(d->SelectInputButton, SIGNAL(clicked()), this, SLOT(selectInput()));
+}
+
+void qSlicerSkeletalRepresentationInitializerModuleWidget::selectInput()
+{
+    Q_D(qSlicerSkeletalRepresentationInitializerModuleWidget);
+    QString filename = QFileDialog::getOpenFileName(this, "Select input mesh");
+    d->logic()->FlowSurfaceMesh(filename.toUtf8().constData());
 }

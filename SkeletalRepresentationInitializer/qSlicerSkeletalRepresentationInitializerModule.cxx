@@ -88,7 +88,7 @@ QIcon qSlicerSkeletalRepresentationInitializerModule::icon() const
 //-----------------------------------------------------------------------------
 QStringList qSlicerSkeletalRepresentationInitializerModule::categories() const
 {
-  return QStringList() << "Skeleton, shape analysis";
+  return QStringList() << "Skeleton, topology";
 }
 
 //-----------------------------------------------------------------------------

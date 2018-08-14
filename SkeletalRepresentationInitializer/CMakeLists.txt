@@ -1,7 +1,7 @@
 
 #-----------------------------------------------------------------------------
 set(MODULE_NAME SkeletalRepresentationInitializer)
-set(MODULE_TITLE ${MODULE_NAME})
+set(MODULE_TITLE "Skeletal Representation Initializer")
 
 string(TOUPPER ${MODULE_NAME} MODULE_NAME_UPPER)
 
@@ -48,7 +48,7 @@ set(MODULE_RESOURCES
 #-----------------------------------------------------------------------------
 slicerMacroBuildLoadableModule(
   NAME ${MODULE_NAME}
-  TITLE "Skeletal Representation Initializer"
+  TITLE ${MODULE_TITLE}
   EXPORT_DIRECTIVE ${MODULE_EXPORT_DIRECTIVE}
   INCLUDE_DIRECTORIES ${MODULE_INCLUDE_DIRECTORIES}
   SRCS ${MODULE_SRCS}
@@ -63,3 +63,4 @@ slicerMacroBuildLoadableModule(
 if(BUILD_TESTING)
   add_subdirectory(Testing)
 endif()
+#message(STATUS "CMAKE INCLUDE_DIRECTORIES   " ${MODULE_INCLUDE_DIRECTORIES})

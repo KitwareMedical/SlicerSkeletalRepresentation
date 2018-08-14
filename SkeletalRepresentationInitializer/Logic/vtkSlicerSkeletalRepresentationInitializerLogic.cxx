@@ -29,6 +29,20 @@
 // STD includes
 #include <cassert>
 
+// include igl libraries
+#include <igl/barycenter.h>
+#include <igl/cotmatrix.h>
+#include <igl/doublearea.h>
+#include <igl/grad.h>
+#include <igl/jet.h>
+#include <igl/massmatrix.h>
+#include <igl/per_vertex_normals.h>
+#include <igl/readDMAT.h>
+#include <igl/readOFF.h>
+#include <igl/writeOFF.h>
+#include <igl/repdiag.h>
+
+
 //----------------------------------------------------------------------------
 vtkStandardNewMacro(vtkSlicerSkeletalRepresentationInitializerLogic);
 
@@ -80,4 +94,13 @@ void vtkSlicerSkeletalRepresentationInitializerLogic
 void vtkSlicerSkeletalRepresentationInitializerLogic
 ::OnMRMLSceneNodeRemoved(vtkMRMLNode* vtkNotUsed(node))
 {
+}
+void vtkSlicerSkeletalRepresentationInitializerLogic::FlowSurfaceMesh(const std::string &filename)
+{
+    using namespace Eigen;
+    using namespace std;
+
+    MatrixXd V,U;
+    MatrixXi F;
+    igl::readOFF(filename, V, F);
 }
