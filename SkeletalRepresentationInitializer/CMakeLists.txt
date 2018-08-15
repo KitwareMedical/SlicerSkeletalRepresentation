@@ -63,4 +63,3 @@ slicerMacroBuildLoadableModule(
 if(BUILD_TESTING)
   add_subdirectory(Testing)
 endif()
-#message(STATUS "CMAKE INCLUDE_DIRECTORIES   " ${MODULE_INCLUDE_DIRECTORIES})

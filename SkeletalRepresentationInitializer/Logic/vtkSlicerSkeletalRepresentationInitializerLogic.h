@@ -34,6 +34,7 @@
 
 #include "vtkSlicerSkeletalRepresentationInitializerModuleLogicExport.h"
 
+class vtkPolyData;
 
 /// \ingroup Slicer_QtModules_ExtensionTemplate
 class VTK_SLICER_SKELETALREPRESENTATIONINITIALIZER_MODULE_LOGIC_EXPORT vtkSlicerSkeletalRepresentationInitializerLogic :
@@ -44,7 +45,7 @@ public:
   static vtkSlicerSkeletalRepresentationInitializerLogic *New();
   vtkTypeMacro(vtkSlicerSkeletalRepresentationInitializerLogic, vtkSlicerModuleLogic);
   void PrintSelf(ostream& os, vtkIndent indent);
-  void FlowSurfaceMesh(const std::string &filename);
+  int FlowSurfaceMesh(const std::string &filename);
 
 protected:
   vtkSlicerSkeletalRepresentationInitializerLogic();
@@ -57,6 +58,8 @@ protected:
   virtual void OnMRMLSceneNodeAdded(vtkMRMLNode* node);
   virtual void OnMRMLSceneNodeRemoved(vtkMRMLNode* node);
 
+private:
+  void AddModelNodeToScene(vtkPolyData* mesh, char* modelName, bool isModelVisible);
 private:
 
   vtkSlicerSkeletalRepresentationInitializerLogic(const vtkSlicerSkeletalRepresentationInitializerLogic&); // Not implemented

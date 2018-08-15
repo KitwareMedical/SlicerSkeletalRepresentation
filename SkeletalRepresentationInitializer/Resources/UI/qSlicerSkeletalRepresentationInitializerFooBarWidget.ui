@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Select input mesh</string>
+   <string>Foo bar</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <property name="margin">
@@ -20,7 +20,7 @@
    <item>
     <widget class="QPushButton" name="FooBarButton">
      <property name="text">
-      <string>Select input mesh</string>
+      <string>Foo Bar</string>
      </property>
     </widget>
    </item>

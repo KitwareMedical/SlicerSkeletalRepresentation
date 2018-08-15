@@ -10,7 +10,7 @@ set(EXTENSION_CONTRIBUTORS "Jared Vicory (Kitware, Inc.), Pablo Hernandez-Cerdan
 set(EXTENSION_DESCRIPTION "Collection of Skeletal Model Extensions")
 set(EXTENSION_ICONURL "http://www.example.com/Slicer/Extensions/SkeletalRepresentation.png")
 set(EXTENSION_SCREENSHOTURLS "http://www.example.com/Slicer/Extensions/SkeletalRepresentation/Screenshots/1.png")
-set(EXTENSION_DEPENDS "NA") # Specified as a space separated string, a list or 'NA' if any
+set(EXTENSION_DEPENDS Eigen3) # Specified as a space separated string, a list or 'NA' if any
 
 #-----------------------------------------------------------------------------
 # Extension dependencies
