@@ -45,7 +45,22 @@ public:
   static vtkSlicerSkeletalRepresentationInitializerLogic *New();
   vtkTypeMacro(vtkSlicerSkeletalRepresentationInitializerLogic, vtkSlicerModuleLogic);
   void PrintSelf(ostream& os, vtkIndent indent);
-  int FlowSurfaceMesh(const std::string &filename);
+
+  // flow surface to the end: either it's ellipsoidal enough or reach max_itre
+  // input[dt]: delta t in each move
+  // input[smooth_amount]: 0-2 double value for smooth filter
+  // input[max_iter]: maximum of iteration number
+  // input[freq_output]: the frequence of output model(intermediate surface mesh of flow) node to scene
+  int FlowSurfaceMesh(const std::string &filename, double dt, double smooth_amount, int max_iter, int freq_output);
+
+  // flow one step only
+  // input[dt]: delta t in each move
+  // input[smooth_amount]: 0-2 double value for smooth filter
+  int FlowSurfaceOneStep(double dt, double smooth_amount);
+
+  // Select input mesh and render it in scene
+  // input[filename]: whole path of vtk file
+  int SetInputFileName(const std::string &filename);
 
 protected:
   vtkSlicerSkeletalRepresentationInitializerLogic();
@@ -59,11 +74,12 @@ protected:
   virtual void OnMRMLSceneNodeRemoved(vtkMRMLNode* node);
 
 private:
-  void AddModelNodeToScene(vtkPolyData* mesh, char* modelName, bool isModelVisible);
+  void AddModelNodeToScene(vtkPolyData* mesh, const char* modelName, bool isModelVisible);
 private:
 
   vtkSlicerSkeletalRepresentationInitializerLogic(const vtkSlicerSkeletalRepresentationInitializerLogic&); // Not implemented
   void operator=(const vtkSlicerSkeletalRepresentationInitializerLogic&); // Not implemented
+
 };
 
 #endif

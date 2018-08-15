@@ -106,9 +106,169 @@ void vtkSlicerSkeletalRepresentationInitializerLogic
 ::OnMRMLSceneNodeRemoved(vtkMRMLNode* vtkNotUsed(node))
 {
 }
-int vtkSlicerSkeletalRepresentationInitializerLogic::FlowSurfaceMesh(const std::string &filename)
+
+// flow surface in one step
+// basic idea: When the user select a mesh file, make a copy of vtk file in the application path.
+// In each step of flow, read in that copy, flow it and save it the same place with same name.
+// TODO: cleanup the hard disk when the module exits
+int vtkSlicerSkeletalRepresentationInitializerLogic::FlowSurfaceOneStep(double dt, double smooth_amount)
 {
-    // TODO: set parameters: dt, smooth_amount, max_iter
+    std::cout << "flow one step : dt-" << dt << std::endl;
+    std::cout << "flow one step : smooth amount-" << smooth_amount << std::endl;
+    std::string name = "temp_output.vtk";
+    vtkSmartPointer<vtkPolyDataReader> reader = vtkSmartPointer<vtkPolyDataReader>::New();
+    reader->SetFileName(name.c_str());
+    reader->Update();
+    vtkSmartPointer<vtkPolyData> mesh = reader->GetOutput();
+    if(mesh == NULL)
+    {
+        vtkErrorMacro("No mesh has read in this module. Please select input mesh file first.");
+        return -1;
+    }
+    vtkSmartPointer<vtkMassProperties> mass_filter =
+        vtkSmartPointer<vtkMassProperties>::New();
+    mass_filter->SetInputData(mesh);
+    mass_filter->Update();
+    double original_volume = mass_filter->GetVolume();
+//    std::cout << "Original Volume: " << original_volume << std::endl;
+    vtkSmartPointer<vtkWindowedSincPolyDataFilter> smooth_filter =
+        vtkSmartPointer<vtkWindowedSincPolyDataFilter>::New();
+    smooth_filter->SetPassBand(smooth_amount);
+    smooth_filter->NonManifoldSmoothingOn();
+    smooth_filter->NormalizeCoordinatesOn();
+    smooth_filter->SetNumberOfIterations(20);
+    smooth_filter->FeatureEdgeSmoothingOff();
+    smooth_filter->BoundarySmoothingOff();
+    smooth_filter->SetInputData(mesh);
+    smooth_filter->Update();
+    if(smooth_amount > 0) {
+        mesh = smooth_filter->GetOutput();
+    }
+
+//    normal filter
+    vtkSmartPointer<vtkPolyDataNormals> normal_filter =
+        vtkSmartPointer<vtkPolyDataNormals>::New();
+    normal_filter->SplittingOff();
+    normal_filter->ComputeCellNormalsOff();
+    normal_filter->ComputePointNormalsOn();
+    normal_filter->SetInputData(mesh);
+    normal_filter->Update();
+    // curvature filter
+    vtkSmartPointer<vtkCurvatures> curvature_filter =
+        vtkSmartPointer<vtkCurvatures>::New();
+    curvature_filter->SetCurvatureTypeToMean();
+    curvature_filter->SetInputData(mesh);
+    curvature_filter->Update();
+
+    vtkSmartPointer<vtkDoubleArray> H =
+        vtkDoubleArray::SafeDownCast(curvature_filter->GetOutput()->GetPointData()->GetArray("Mean_Curvature"));
+    if(H == NULL) {
+        vtkErrorMacro("error in getting mean curvature");
+        return -1;
+    }
+    vtkDataArray* N = normal_filter->GetOutput()->GetPointData()->GetNormals();
+    if(N == NULL) {
+        vtkErrorMacro("error in getting normals");
+        return -1;
+    }
+
+    // perform the flow
+    vtkSmartPointer<vtkPoints> points = mesh->GetPoints();
+    for(int i = 0; i < points->GetNumberOfPoints(); ++i) {
+        double p[3];
+        points->GetPoint(i, p);
+        double curr_N[3];
+        N->GetTuple(i, curr_N);
+        double curr_H = H->GetValue(i);
+        for(int idx = 0; idx < 3; ++idx) {
+            p[idx] -= dt * curr_H * curr_N[idx];
+        }
+        points->SetPoint(i, p);
+    }
+    points->Modified();
+
+    mass_filter->SetInputData(mesh);
+    mass_filter->Update();
+    double curr_volume = mass_filter->GetVolume();
+    for(int i = 0; i < points->GetNumberOfPoints(); ++i) {
+        double p[3];
+        points->GetPoint(i, p);
+        for(int j = 0; j < 3; ++j) {
+            p[j] *= std::pow( original_volume / curr_volume , 1.0 / 3.0 );
+        }
+    }
+    points->Modified();
+    // Eigen::MatrixXd point_matrix(points->GetNumberOfPoints(), 3);
+    // // compute best fitting ellipsoid
+    // // For now assume that the surface is centered and rotationally aligned
+    // // 1. compute the second moment
+    // Eigen::MatrixXd point_matrix_transposed = point_matrix.transpose();
+    // Eigen::Matrix3d second_moment = point_matrix_transposed * point_matrix;
+    // Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> es(second_moment);
+    // Eigen::VectorXd radii = es.eigenvalues();
+
+    // firstly get other intermediate result invisible
+    std::vector<vtkMRMLNode*> vectModelNodes;
+    vtkSmartPointer<vtkCollection> modelNodes = this->GetMRMLScene()->GetNodesByClassByName("vtkMRMLModelNode","curvate_flow_result");
+    modelNodes->InitTraversal();
+    for(int i = 0; i < modelNodes->GetNumberOfItems(); i++)
+    {
+        vtkSmartPointer<vtkMRMLModelNode> thisModelNode = vtkMRMLModelNode::SafeDownCast(modelNodes->GetNextItemAsObject());
+        vtkSmartPointer<vtkMRMLModelDisplayNode> displayNode;
+        displayNode = thisModelNode->GetModelDisplayNode();
+        if(displayNode == NULL)
+        {
+            continue;
+        }
+
+        displayNode->SetVisibility(0);
+
+    }
+
+    // then add this new intermediate result
+    std::string modelName("curvate_flow_result");
+    AddModelNodeToScene(mesh, modelName.c_str(), true);
+
+    vtkSmartPointer<vtkPolyDataWriter> writer =
+        vtkSmartPointer<vtkPolyDataWriter>::New();
+    writer->SetInputData(mesh);
+    writer->SetFileName(name.c_str());
+    writer->Update();
+
+    return 0;
+}
+int vtkSlicerSkeletalRepresentationInitializerLogic::SetInputFileName(const std::string &filename)
+{
+    vtkSmartPointer<vtkPolyDataReader> reader =
+        vtkSmartPointer<vtkPolyDataReader>::New();
+    reader->SetFileName(filename.c_str());
+    reader->Update();
+
+    vtkSmartPointer<vtkPolyData> mesh;
+    mesh = reader->GetOutput();
+    // output the original mesh
+    std::string modelName("original");
+    AddModelNodeToScene(mesh, modelName.c_str(), true);
+
+    // save
+    std::string name = "temp_output.vtk";
+    vtkSmartPointer<vtkPolyDataWriter> writer =
+        vtkSmartPointer<vtkPolyDataWriter>::New();
+    writer->SetInputData(mesh);
+    writer->SetFileName(name.c_str());
+    writer->Update();
+
+    return 0;
+}
+
+// flow surface to the end: either it's ellipsoidal enough or reach max_iter
+int vtkSlicerSkeletalRepresentationInitializerLogic::FlowSurfaceMesh(const std::string &filename, double dt, double smooth_amount, int max_iter, int freq_output)
+{
+    // std::cout << filename << std::endl;
+    // std::cout << dt << std::endl;
+    // std::cout << smooth_amount << std::endl;
+    // std::cout << max_iter << std::endl;
+    // std::cout << freq_output << std::endl;
     vtkSmartPointer<vtkPolyDataReader> reader =
         vtkSmartPointer<vtkPolyDataReader>::New();
     reader->SetFileName(filename.c_str());
@@ -118,19 +278,18 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::FlowSurfaceMesh(const std::
     vtkSmartPointer<vtkPolyData> mesh =
         vtkSmartPointer<vtkPolyData>::New();
     mesh = reader->GetOutput();
-    AddModelNodeToScene(reader->GetOutput(), "original", true);
 
     vtkSmartPointer<vtkMassProperties> mass_filter =
         vtkSmartPointer<vtkMassProperties>::New();
     mass_filter->SetInputData(mesh);
     mass_filter->Update();
     double original_volume = mass_filter->GetVolume();
-    std::cout << "Original Volume: " << original_volume << std::endl;
+//    std::cout << "Original Volume: " << original_volume << std::endl;
 
     // default parameters
-    double dt = 0.001;
-    double smooth_amount = 100.0;
-    int max_iter = 100;
+    // double dt = 0.001;
+    // double smooth_amount = 0.03;
+    // int max_iter = 300;
     int iter = 0;
     double tolerance = 0.05;
     double q = 1.0;
@@ -227,10 +386,13 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::FlowSurfaceMesh(const std::
         // writer->SetInputData(mesh);
         // writer->SetFileName(name);
         // writer->Update();
-        char modelName[128];
-        sprintf(modelName, "output#%04d", iter);
 
-        AddModelNodeToScene(mesh, modelName, false);
+        if((iter +1) % freq_output == 0)
+        {
+            char modelName[128];
+            sprintf(modelName, "output#%04d", iter+1);
+            AddModelNodeToScene(mesh, modelName, false);
+        }
 
         q -= 0.0001;
         iter++;
@@ -239,8 +401,9 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::FlowSurfaceMesh(const std::
     return 1;
 }
 
-void vtkSlicerSkeletalRepresentationInitializerLogic::AddModelNodeToScene(vtkPolyData* mesh, char* modelName, bool isModelVisible)
+void vtkSlicerSkeletalRepresentationInitializerLogic::AddModelNodeToScene(vtkPolyData* mesh, const char* modelName, bool isModelVisible)
 {
+    std::cout << "AddModelNodeToScene: parameters:" << modelName << std::endl;
     vtkMRMLScene *scene = this->GetMRMLScene();
     if(!scene)
     {

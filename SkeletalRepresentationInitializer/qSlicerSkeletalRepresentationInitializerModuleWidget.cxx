@@ -80,11 +80,37 @@ void qSlicerSkeletalRepresentationInitializerModuleWidget::setup()
   d->setupUi(this);
   this->Superclass::setup();
   QObject::connect(d->SelectInputButton, SIGNAL(clicked()), this, SLOT(selectInput()));
+  QObject::connect(d->btn_flow, SIGNAL(clicked()), this, SLOT(flow()));
+  QObject::connect(d->btn_one_step_flow, SIGNAL(clicked()), this, SLOT(flowOneStep()));
+  // QObject::connect(d->SelectInputButton, SIGNAL(clicked()), this, SLOT(selectInput()));
 }
 
 void qSlicerSkeletalRepresentationInitializerModuleWidget::selectInput()
 {
     Q_D(qSlicerSkeletalRepresentationInitializerModuleWidget);
-    QString filename = QFileDialog::getOpenFileName(this, "Select input mesh");
-    d->logic()->FlowSurfaceMesh(filename.toUtf8().constData());
+    QString fileName = QFileDialog::getOpenFileName(this, "Select input mesh");
+    d->lb_input_file_path->setText(fileName.toUtf8().constData());
+    d->logic()->SetInputFileName(fileName.toUtf8().constData());
+}
+
+void qSlicerSkeletalRepresentationInitializerModuleWidget::flow()
+{
+    Q_D(qSlicerSkeletalRepresentationInitializerModuleWidget);
+    std::string fileName= d->lb_input_file_path->text().toUtf8().constData();
+
+    double dt = d->sl_dt->value();
+    double smoothAmount = d->sl_smooth_amount->value();
+    int maxIter = int(d->sl_max_iter->value());
+    int freq_output = int(d->sl_freq_output->value());
+    d->logic()->FlowSurfaceMesh(fileName, dt, smoothAmount, maxIter, freq_output);
+}
+
+void qSlicerSkeletalRepresentationInitializerModuleWidget::flowOneStep()
+{
+    Q_D(qSlicerSkeletalRepresentationInitializerModuleWidget);
+    std::string fileName= d->lb_input_file_path->text().toUtf8().constData();
+    double dt = d->sl_dt->value();
+    double smoothAmount = d->sl_smooth_amount->value();
+
+    d->logic()->FlowSurfaceOneStep(dt, smoothAmount);
 }

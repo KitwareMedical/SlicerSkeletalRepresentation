@@ -39,7 +39,12 @@ public:
   virtual ~qSlicerSkeletalRepresentationInitializerModuleWidget();
 
 public slots:
+    // for select input mesh
     void selectInput();
+    // connect the button Flow to the end
+    void flow();
+    // connect the button Flow step by step
+    void flowOneStep();
 
 
 protected:
