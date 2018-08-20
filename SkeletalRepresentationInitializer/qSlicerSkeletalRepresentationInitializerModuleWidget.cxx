@@ -82,7 +82,14 @@ void qSlicerSkeletalRepresentationInitializerModuleWidget::setup()
   QObject::connect(d->SelectInputButton, SIGNAL(clicked()), this, SLOT(selectInput()));
   QObject::connect(d->btn_flow, SIGNAL(clicked()), this, SLOT(flow()));
   QObject::connect(d->btn_one_step_flow, SIGNAL(clicked()), this, SLOT(flowOneStep()));
-  // QObject::connect(d->SelectInputButton, SIGNAL(clicked()), this, SLOT(selectInput()));
+  //QObject::connect(d->btn_match_ell, SIGNAL(clicked()), this, SLOT(pullUpFittingEllipsoid()));
+  QObject::connect(d->btn_inkling_flow, SIGNAL(clicked()), this, SLOT(inklingFlow()));
+}
+
+void qSlicerSkeletalRepresentationInitializerModuleWidget::pullUpFittingEllipsoid()
+{
+    Q_D(qSlicerSkeletalRepresentationInitializerModuleWidget);
+//    d->logic()->ShowFittingEllipsoid();
 }
 
 void qSlicerSkeletalRepresentationInitializerModuleWidget::selectInput()
@@ -113,4 +120,17 @@ void qSlicerSkeletalRepresentationInitializerModuleWidget::flowOneStep()
     double smoothAmount = d->sl_smooth_amount->value();
 
     d->logic()->FlowSurfaceOneStep(dt, smoothAmount);
+}
+void qSlicerSkeletalRepresentationInitializerModuleWidget::inklingFlow()
+{
+    Q_D(qSlicerSkeletalRepresentationInitializerModuleWidget);
+    std::string fileName= d->lb_input_file_path->text().toUtf8().constData();
+
+    double dt = d->sl_dt->value();
+    double smoothAmount = d->sl_smooth_amount->value();
+    int maxIter = int(d->sl_max_iter->value());
+    int freq_output = int(d->sl_freq_output->value());
+//    double threshold = d->sl_threshold->value();
+    double threshold = 13.0;// for test 
+    d->logic()->InklingFlow(fileName, dt, smoothAmount, maxIter, freq_output, threshold);
 }

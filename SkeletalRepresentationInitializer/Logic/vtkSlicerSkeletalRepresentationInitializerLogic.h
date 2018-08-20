@@ -35,6 +35,7 @@
 #include "vtkSlicerSkeletalRepresentationInitializerModuleLogicExport.h"
 
 class vtkPolyData;
+class vtkPoints;
 
 /// \ingroup Slicer_QtModules_ExtensionTemplate
 class VTK_SLICER_SKELETALREPRESENTATIONINITIALIZER_MODULE_LOGIC_EXPORT vtkSlicerSkeletalRepresentationInitializerLogic :
@@ -62,6 +63,14 @@ public:
   // input[filename]: whole path of vtk file
   int SetInputFileName(const std::string &filename);
 
+  // Show fitting ellipsoid in 3D window
+  // Can be called after one step flow or overall flow
+  // if called after one step flow,  render the ellipsoid generated just now
+  // otherwise render the ellipsoid at the end
+  int ShowFittingEllipsoid(vtkPoints* points, double curr_volume, double center[3]);
+
+  int InklingFlow(const std::string &filename, double dt, double smooth_amount, int max_iter, int freq_output, double threshold);
+
 protected:
   vtkSlicerSkeletalRepresentationInitializerLogic();
   virtual ~vtkSlicerSkeletalRepresentationInitializerLogic();
@@ -74,7 +83,10 @@ protected:
   virtual void OnMRMLSceneNodeRemoved(vtkMRMLNode* node);
 
 private:
-  void AddModelNodeToScene(vtkPolyData* mesh, const char* modelName, bool isModelVisible);
+  void AddModelNodeToScene(vtkPolyData* mesh, const char* modelName, bool isModelVisible, double r = 0.25, double g = 0.25, double b = 0.25);
+  void HideNodesByNameByClass(const std::string & nodeName, const std::string &className);
+  void AddPointToScene(double x, double y, double z, int glyphType, double r = 1, double g = 0, double b = 0);
+
 private:
 
   vtkSlicerSkeletalRepresentationInitializerLogic(const vtkSlicerSkeletalRepresentationInitializerLogic&); // Not implemented

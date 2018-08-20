@@ -23,16 +23,21 @@
 #include <vtkMRMLModelNode.h>
 #include <vtkMRMLModelDisplayNode.h>
 #include <vtkMRMLDisplayNode.h>
+#include <vtkMRMLMarkupsDisplayNode.h>
+#include <vtkMRMLMarkupsFiducialNode.h>
+#include <vtkMRMLMarkupsNode.h>
+#include "vtkSlicerMarkupsLogic.h"
 
 // VTK includes
 #include <vtkIntArray.h>
 #include <vtkNew.h>
+#include <vtkCenterOfMass.h>
 #include <vtkObjectFactory.h>
 #include <vtkCurvatures.h>
 #include <vtkWindowedSincPolyDataFilter.h>
 #include <vtkSmoothPolyDataFilter.h>
 #include <vtkParametricEllipsoid.h>
-#include <vtkParametricFunction.h>
+#include <vtkParametricFunctionSource.h>
 #include <vtkImplicitPolyDataDistance.h>
 #include <vtkPolyDataNormals.h>
 
@@ -174,12 +179,14 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::FlowSurfaceOneStep(double d
 
     // perform the flow
     vtkSmartPointer<vtkPoints> points = mesh->GetPoints();
+
     for(int i = 0; i < points->GetNumberOfPoints(); ++i) {
         double p[3];
         points->GetPoint(i, p);
         double curr_N[3];
         N->GetTuple(i, curr_N);
         double curr_H = H->GetValue(i);
+
         for(int idx = 0; idx < 3; ++idx) {
             p[idx] -= dt * curr_H * curr_N[idx];
         }
@@ -196,34 +203,13 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::FlowSurfaceOneStep(double d
         for(int j = 0; j < 3; ++j) {
             p[j] *= std::pow( original_volume / curr_volume , 1.0 / 3.0 );
         }
+//        points->SetPoint(i, p);
     }
     points->Modified();
-    // Eigen::MatrixXd point_matrix(points->GetNumberOfPoints(), 3);
-    // // compute best fitting ellipsoid
-    // // For now assume that the surface is centered and rotationally aligned
-    // // 1. compute the second moment
-    // Eigen::MatrixXd point_matrix_transposed = point_matrix.transpose();
-    // Eigen::Matrix3d second_moment = point_matrix_transposed * point_matrix;
-    // Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> es(second_moment);
-    // Eigen::VectorXd radii = es.eigenvalues();
 
     // firstly get other intermediate result invisible
-    std::vector<vtkMRMLNode*> vectModelNodes;
-    vtkSmartPointer<vtkCollection> modelNodes = this->GetMRMLScene()->GetNodesByClassByName("vtkMRMLModelNode","curvate_flow_result");
-    modelNodes->InitTraversal();
-    for(int i = 0; i < modelNodes->GetNumberOfItems(); i++)
-    {
-        vtkSmartPointer<vtkMRMLModelNode> thisModelNode = vtkMRMLModelNode::SafeDownCast(modelNodes->GetNextItemAsObject());
-        vtkSmartPointer<vtkMRMLModelDisplayNode> displayNode;
-        displayNode = thisModelNode->GetModelDisplayNode();
-        if(displayNode == NULL)
-        {
-            continue;
-        }
-
-        displayNode->SetVisibility(0);
-
-    }
+    HideNodesByNameByClass("curvate_flow_result","vtkMRMLModelNode");
+    HideNodesByNameByClass("best_fitting_ellipsoid_polydata", "vtkMRMLModelNode");
 
     // then add this new intermediate result
     std::string modelName("curvate_flow_result");
@@ -235,6 +221,16 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::FlowSurfaceOneStep(double d
     writer->SetFileName(name.c_str());
     writer->Update();
 
+    // compute the fitting ellipsoid
+    vtkSmartPointer<vtkCenterOfMass> centerMassFilter =
+        vtkSmartPointer<vtkCenterOfMass>::New();
+    centerMassFilter->SetInputData(mesh);
+    centerMassFilter->SetUseScalarsAsWeights(false);
+    centerMassFilter->Update();
+    double center[3];
+    centerMassFilter->GetCenter(center);
+
+    ShowFittingEllipsoid(points, curr_volume, center);
     return 0;
 }
 int vtkSlicerSkeletalRepresentationInitializerLogic::SetInputFileName(const std::string &filename)
@@ -248,7 +244,7 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::SetInputFileName(const std:
     mesh = reader->GetOutput();
     // output the original mesh
     std::string modelName("original");
-    AddModelNodeToScene(mesh, modelName.c_str(), true);
+    AddModelNodeToScene(mesh, modelName.c_str(), true, 0.88, 0.88, 0.88);
 
     // save
     std::string name = "temp_output.vtk";
@@ -366,34 +362,26 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::FlowSurfaceMesh(const std::
             for(int j = 0; j < 3; ++j) {
                 p[j] *= std::pow( original_volume / curr_volume , 1.0 / 3.0 );
             }
+//            points->SetPoint(i, p);
         }
         points->Modified();
-	    Eigen::MatrixXd point_matrix(points->GetNumberOfPoints(), 3);
-        // compute best fitting ellipsoid
-	    // For now assume that the surface is centered and rotationally aligned
-	    // 1. compute the second moment
-	    Eigen::MatrixXd point_matrix_transposed = point_matrix.transpose();
-	    Eigen::Matrix3d second_moment = point_matrix_transposed * point_matrix;
-	    Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> es(second_moment);
-        Eigen::VectorXd radii = es.eigenvalues();
-
-
-	    // save the intermediate surface & output result
-        // char name[128];
-        // sprintf(name, "temp_%04d.vtk", iter);
-        // vtkSmartPointer<vtkPolyDataWriter> writer =
-        //     vtkSmartPointer<vtkPolyDataWriter>::New();
-        // writer->SetInputData(mesh);
-        // writer->SetFileName(name);
-        // writer->Update();
 
         if((iter +1) % freq_output == 0)
         {
             char modelName[128];
             sprintf(modelName, "output#%04d", iter+1);
             AddModelNodeToScene(mesh, modelName, false);
-        }
+            vtkSmartPointer<vtkCenterOfMass> centerMassFilter =
+                vtkSmartPointer<vtkCenterOfMass>::New();
+            centerMassFilter->SetInputData(mesh);
+            centerMassFilter->SetUseScalarsAsWeights(false);
+            centerMassFilter->Update();
+            double center[3];
+            centerMassFilter->GetCenter(center);
 
+            ShowFittingEllipsoid(points, curr_volume, center);
+
+        }
         q -= 0.0001;
         iter++;
     }
@@ -401,7 +389,7 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::FlowSurfaceMesh(const std::
     return 1;
 }
 
-void vtkSlicerSkeletalRepresentationInitializerLogic::AddModelNodeToScene(vtkPolyData* mesh, const char* modelName, bool isModelVisible)
+void vtkSlicerSkeletalRepresentationInitializerLogic::AddModelNodeToScene(vtkPolyData* mesh, const char* modelName, bool isModelVisible, double r, double g, double b)
 {
     std::cout << "AddModelNodeToScene: parameters:" << modelName << std::endl;
     vtkMRMLScene *scene = this->GetMRMLScene();
@@ -428,8 +416,9 @@ void vtkSlicerSkeletalRepresentationInitializerLogic::AddModelNodeToScene(vtkPol
         vtkErrorMacro("displayModelNode is NULL");
         return;
     }
-    displayModelNode->SetColor(0, 1, 1);
+    displayModelNode->SetColor(r, g, b);
     displayModelNode->SetScene(scene);
+    displayModelNode->SetLineWidth(2.0);
     displayModelNode->SetBackfaceCulling(0);
     displayModelNode->SetRepresentation(1);
     if(isModelVisible)
@@ -446,5 +435,355 @@ void vtkSlicerSkeletalRepresentationInitializerLogic::AddModelNodeToScene(vtkPol
     modelNode->AddAndObserveDisplayNodeID(displayModelNode->GetID());
 
     scene->AddNode(modelNode);
+
+}
+int vtkSlicerSkeletalRepresentationInitializerLogic::ShowFittingEllipsoid(vtkPoints* points, double curr_volume, double center[3])
+{
+    Eigen::MatrixXd point_matrix(points->GetNumberOfPoints(), 3);
+    for(int i = 0; i < points->GetNumberOfPoints(); ++i)
+    {
+        double p[3];
+        points->GetPoint(i, p);
+        point_matrix.row(i) << p[0], p[1], p[2];
+    }
+    // compute best fitting ellipsoid
+    // For now assume that the surface is centered and rotationally aligned
+    // 1. compute the second moment
+    Eigen::MatrixXd point_matrix_transposed = point_matrix.transpose();
+    Eigen::Matrix3d second_moment = point_matrix_transposed * point_matrix;
+    Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> es(second_moment);
+    Eigen::VectorXd radii = es.eigenvalues();
+    radii(0) = sqrt(radii(0));
+    radii(1) = sqrt(radii(1));
+    radii(2) = sqrt(radii(2));
+
+    double ellipsoid_volume = 4 / 3.0 * M_PI * radii(0) * radii(1) * radii(2);
+    double volume_factor = pow(curr_volume / ellipsoid_volume, 1.0 / 3.0); 
+    radii(0) *= volume_factor;
+    radii(1) *= volume_factor;
+    radii(2) *= volume_factor;
+    // obtain the best fitting ellipsoid from the second moment matrix
+    vtkSmartPointer<vtkParametricEllipsoid> ellipsoid =
+        vtkSmartPointer<vtkParametricEllipsoid>::New();
+    ellipsoid->SetXRadius(radii(0));
+    ellipsoid->SetYRadius(radii(1));
+    ellipsoid->SetZRadius(radii(2));
+
+    vtkSmartPointer<vtkParametricFunctionSource> parametric_function =
+        vtkSmartPointer<vtkParametricFunctionSource>::New();
+    parametric_function->SetParametricFunction(ellipsoid);
+    parametric_function->SetUResolution(30);
+    parametric_function->SetVResolution(30);
+    parametric_function->Update();
+    vtkSmartPointer<vtkPolyData> ellipsoid_polydata = parametric_function->GetOutput();
+
+    using namespace Eigen;
+    // Get ellipsoid points into the matrix
+    MatrixXd ellipsoid_points_matrix(ellipsoid_polydata->GetNumberOfPoints(), 3);
+    for(int i = 0; i < ellipsoid_polydata->GetNumberOfPoints(); ++i) {
+        double p[3];
+        ellipsoid_polydata->GetPoint(i,p);
+        ellipsoid_points_matrix(i,0) = p[0];
+        ellipsoid_points_matrix(i,1) = p[1];
+        ellipsoid_points_matrix(i,2) = p[2];
+    }
+    MatrixXd rotation;
+    rotation = es.eigenvectors(); // 3 by 3 rotation matrix
+
+    // rotate the points
+    MatrixXd rotated_ellipsoid_points = rotation * (ellipsoid_points_matrix.transpose()); 
+    rotated_ellipsoid_points.transposeInPlace(); // n x 3
+    // translate the points
+    MatrixXd cog(1, 3); // center of gravity
+    cog << center[0], center[1], center[2];
+    MatrixXd translated_points = rotated_ellipsoid_points + cog.replicate(rotated_ellipsoid_points.rows(),1);
+
+    // convert eigen matrix to vtk polydata
+    vtkSmartPointer<vtkPolyData> best_fitting_ellipsoid_polydata =
+        vtkSmartPointer<vtkPolyData>::New();
+    vtkSmartPointer<vtkPoints> best_fitting_ellipsoid_points = 
+        vtkSmartPointer<vtkPoints>::New();
+    for(int i = 0; i < translated_points.rows(); ++i) {
+        double p[3] = {translated_points(i,0), translated_points(i,1), translated_points(i,2)};
+        best_fitting_ellipsoid_points->InsertNextPoint(p);
+    }
+    best_fitting_ellipsoid_polydata->SetPoints(best_fitting_ellipsoid_points);
+    best_fitting_ellipsoid_polydata->SetPolys(ellipsoid_polydata->GetPolys());
+    best_fitting_ellipsoid_polydata->Modified();
+
+    // save ellipsoid mesh
+    // std::string ellFileName("temp_ellipsoid.vtk");
+    // writer->SetInputData(best_fitting_ellipsoid_polydata);
+    // writer->SetFileName(ellFileName.c_str());
+    // writer->Update();
+
+    // std::string filename("temp_ellipsoid.vtk");
+    // vtkSmartPointer<vtkPolyDataReader> reader =
+    //     vtkSmartPointer<vtkPolyDataReader>::New();
+    // reader->SetFileName(filename.c_str());
+    // reader->Update();
+
+    // vtkSmartPointer<vtkPolyData> mesh =
+    //     vtkSmartPointer<vtkPolyData>::New();
+    // mesh = reader->GetOutput();
+
+    AddModelNodeToScene(best_fitting_ellipsoid_polydata, "best_fitting_ellipsoid", false, 1, 1, 0);
+    return 0;
+}
+
+void vtkSlicerSkeletalRepresentationInitializerLogic::HideNodesByNameByClass(const std::string & nodeName, const std::string &className)
+{
+    std::cout << "node name:" << nodeName << std::endl;
+    std::cout << "class name:" << className << std::endl;
+    std::vector<vtkMRMLNode*> vectModelNodes;
+    vtkSmartPointer<vtkCollection> modelNodes = this->GetMRMLScene()->GetNodesByClassByName(className.c_str(), nodeName.c_str());
+    modelNodes->InitTraversal();
+    for(int i = 0; i < modelNodes->GetNumberOfItems(); i++)
+    {
+        vtkSmartPointer<vtkMRMLModelNode> thisModelNode = vtkMRMLModelNode::SafeDownCast(modelNodes->GetNextItemAsObject());
+        vtkSmartPointer<vtkMRMLModelDisplayNode> displayNode;
+        displayNode = thisModelNode->GetModelDisplayNode();
+        if(displayNode == NULL)
+        {
+            continue;
+        }
+
+        displayNode->SetVisibility(0);
+
+    }
+
+}
+
+int vtkSlicerSkeletalRepresentationInitializerLogic::InklingFlow(const std::string &filename, double dt, double smooth_amount, int max_iter, int freq_output, double threshold)
+{
+    std::cout << filename << std::endl;
+    std::cout << dt << std::endl;
+    std::cout << smooth_amount << std::endl;
+    std::cout << max_iter << std::endl;
+    std::cout << freq_output << std::endl;
+    vtkSmartPointer<vtkPolyDataReader> reader =
+        vtkSmartPointer<vtkPolyDataReader>::New();
+    reader->SetFileName("temp_output.vtk");
+    reader->Update();
+
+    vtkSmartPointer<vtkPolyData> mesh =
+        vtkSmartPointer<vtkPolyData>::New();
+    mesh = reader->GetOutput();
+
+    vtkSmartPointer<vtkMassProperties> mass_filter =
+        vtkSmartPointer<vtkMassProperties>::New();
+    mass_filter->SetInputData(mesh);
+    mass_filter->Update();
+    double original_volume = mass_filter->GetVolume();
+
+    int iter = 0;
+    double tolerance = 0.05;
+    double q = 1.0;
+
+//    while(q > tolerance && iter < max_iter)
+    {
+        // smooth filter
+        vtkSmartPointer<vtkWindowedSincPolyDataFilter> smooth_filter =
+            vtkSmartPointer<vtkWindowedSincPolyDataFilter>::New();
+        smooth_filter->SetPassBand(smooth_amount);
+        smooth_filter->NonManifoldSmoothingOn();
+        smooth_filter->NormalizeCoordinatesOn();
+        smooth_filter->SetNumberOfIterations(20);
+        smooth_filter->FeatureEdgeSmoothingOff();
+        smooth_filter->BoundarySmoothingOff();
+        smooth_filter->SetInputData(mesh);
+        smooth_filter->Update();
+        if(smooth_amount > 0) {
+            mesh = smooth_filter->GetOutput();
+        }
+
+        // normal filter
+        vtkSmartPointer<vtkPolyDataNormals> normal_filter =
+            vtkSmartPointer<vtkPolyDataNormals>::New();
+        normal_filter->SplittingOff();
+        normal_filter->ComputeCellNormalsOff();
+        normal_filter->ComputePointNormalsOn();
+        normal_filter->SetInputData(mesh);
+        normal_filter->Update();
+        vtkDataArray* N = normal_filter->GetOutput()->GetPointData()->GetNormals();
+        if(N == NULL) {
+            std::cerr << "error in getting normals" << std::endl;
+            return EXIT_FAILURE;
+        }
+
+        // mean curvature filter
+        vtkSmartPointer<vtkCurvatures> curvature_filter =
+            vtkSmartPointer<vtkCurvatures>::New();
+        curvature_filter->SetCurvatureTypeToMean();
+        curvature_filter->SetInputData(mesh);
+        curvature_filter->Update();
+
+        vtkSmartPointer<vtkDoubleArray> H =
+            vtkDoubleArray::SafeDownCast(curvature_filter->GetOutput()->GetPointData()->GetArray("Mean_Curvature"));
+
+
+        if(H == NULL) {
+            std::cerr << "error in getting mean curvature" << std::endl;
+            return EXIT_FAILURE;
+        }
+
+        curvature_filter->SetCurvatureTypeToGaussian();
+        curvature_filter->Update();
+        vtkSmartPointer<vtkDoubleArray> K =
+            vtkDoubleArray::SafeDownCast(curvature_filter->GetOutput()->GetPointData()->GetArray("Gauss_Curvature"));
+
+        if(K == NULL) {
+            std::cerr << "error in getting Gaussian curvature" << std::endl;
+            return EXIT_FAILURE;
+        }
+
+        curvature_filter->SetCurvatureTypeToMaximum();
+        curvature_filter->Update();
+        vtkSmartPointer<vtkDoubleArray> MC =
+            vtkDoubleArray::SafeDownCast(curvature_filter->GetOutput()->GetPointData()->GetArray("Maximum_Curvature"));
+
+        if(MC == NULL) {
+            std::cerr << "error in getting max curvature" << std::endl;
+            return EXIT_FAILURE;
+        }
+
+        curvature_filter->SetCurvatureTypeToMinimum();
+        curvature_filter->Update();
+        vtkSmartPointer<vtkDoubleArray> MinC =
+            vtkDoubleArray::SafeDownCast(curvature_filter->GetOutput()->GetPointData()->GetArray("Minimum_Curvature"));
+        if(MinC == NULL)
+        {
+            std::cout << "error in getting min curvature" << std::endl;
+            return -1;
+        }
+
+        // perform the flow
+        vtkSmartPointer<vtkPoints> points = mesh->GetPoints();
+        double maxVal = -10000.0;
+        double maxIndex = -1;
+        for(int i = 0; i < points->GetNumberOfPoints(); ++i) {
+            double p[3];
+            points->GetPoint(i, p);
+            double curr_N[3];
+            N->GetTuple(i, curr_N);
+            double curr_H = H->GetValue(i);
+            double curr_K = K->GetValue(i);
+            double curr_max = MC->GetValue(i);
+            double curr_min = MinC->GetValue(i);
+
+            double delta = 0.0;
+            double diffK = curr_max - curr_min;
+            delta = dt * curr_H; // * 1 / (diffK * diffK);
+            diffK = abs(diffK);
+
+            if(diffK > maxVal)
+            {
+                maxVal = diffK;
+                maxIndex = i;
+            }
+            if(curr_max >= 0 && curr_min >= 0)
+            {
+                delta = dt * curr_max;
+            }
+            else if(curr_max < 0 && curr_min < 0)
+            {
+                delta = dt * curr_min;
+            }
+            else
+            {
+                delta = dt * curr_H;
+            }
+            for(int idx = 0; idx < 3; ++idx)
+            {
+                p[idx] -= delta * curr_N[idx]; //dt * curr_H * curr_N[idx];
+            }
+            points->SetPoint(i, p);
+        }
+        // std::cout << "min diff^2:" << maxVal << std::endl;
+        // std::cout << "min position:" << maxIndex << std::endl;
+        points->Modified();
+
+        mass_filter->SetInputData(mesh);
+        mass_filter->Update();
+        double curr_volume = mass_filter->GetVolume();
+
+        for(int i = 0; i < points->GetNumberOfPoints(); ++i) {
+            double p[3];
+            points->GetPoint(i, p);
+            for(int j = 0; j < 3; ++j) {
+                p[j] *= std::pow( original_volume / curr_volume , 1.0 / 3.0 );
+            }
+        }
+        points->Modified();
+
+        double testRender[3];
+        points->GetPoint(maxIndex, testRender);
+//        AddPointToScene(testRender[0], testRender[1], testRender[2], 13); // sphere3D 
+
+        // TODO: best fitting ellipsoid
+        HideNodesByNameByClass("output_inkling","vtkMRMLModelNode");
+
+        // then add this new intermediate result
+
+        vtkSmartPointer<vtkPolyDataWriter> writer =
+            vtkSmartPointer<vtkPolyDataWriter>::New();
+        writer->SetInputData(mesh);
+        writer->SetFileName("temp_output.vtk");
+        writer->Update();
+
+        char modelName[128];
+        sprintf(modelName, "output_inkling");
+        AddModelNodeToScene(mesh, modelName, true);
+        // if((iter +1) % freq_output == 0)
+        // {
+        //     char modelName[128];
+        //     sprintf(modelName, "output#%04d", iter+1);
+        //     AddModelNodeToScene(mesh, modelName, false);
+        // }
+
+        q -= 0.0001;
+        iter++;
+    }
+
+    return 1;
+
+}
+
+void vtkSlicerSkeletalRepresentationInitializerLogic::AddPointToScene(double x, double y, double z, int glyphType, double r, double g, double b)
+{
+    std::cout << "AddPointToScene: parameters:" << x << ", y:" << y << ", z:" << z << std::endl;
+    vtkMRMLScene *scene = this->GetMRMLScene();
+    if(!scene)
+    {
+        vtkErrorMacro(" Invalid scene");
+        return;
+    }
+
+    // node which controls display properties
+    vtkSmartPointer<vtkMRMLMarkupsDisplayNode> displayNode;
+    displayNode = vtkSmartPointer<vtkMRMLMarkupsDisplayNode>::New();
+//    this->SetDisplayNodeToDefaults(displayNode);
+    displayNode->SetGlyphScale(1.10);
+    displayNode->SetTextScale(3.40);
+    displayNode->SetSelectedColor(r, g, b);
+
+    displayNode->SetGlyphType(glyphType); // 13: sphere3D
+    scene->AddNode(displayNode);
+
+    // model node
+    vtkSmartPointer<vtkMRMLMarkupsFiducialNode> fidNode;
+
+    fidNode = vtkSmartPointer<vtkMRMLMarkupsFiducialNode>::New();
+    if(fidNode == NULL)
+    {
+        vtkErrorMacro("fidNode is NULL");
+        return;
+    }
+    fidNode->SetAndObserveDisplayNodeID(displayNode->GetID());
+    fidNode->SetLocked(true);
+    fidNode->SetName("Highlight");
+    scene->AddNode(fidNode);
+
+    fidNode->AddFiducial(x, y, z);
 
 }

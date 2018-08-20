@@ -45,7 +45,10 @@ public slots:
     void flow();
     // connect the button Flow step by step
     void flowOneStep();
-
+    // connect the button Match ellipsoid
+    void pullUpFittingEllipsoid();
+    // connect the button flow with laplacian curvature
+    void inklingFlow();
 
 protected:
   QScopedPointer<qSlicerSkeletalRepresentationInitializerModuleWidgetPrivate> d_ptr;
