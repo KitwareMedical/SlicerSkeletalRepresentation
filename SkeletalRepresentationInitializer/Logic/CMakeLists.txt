@@ -1,4 +1,5 @@
 project(vtkSlicer${MODULE_NAME}ModuleLogic)
+find_package(Eigen3 REQUIRED CONFIG)
 
 set(KIT ${PROJECT_NAME})
 
@@ -16,6 +17,7 @@ set(${KIT}_TARGET_LIBRARIES
   ${ITK_LIBRARIES}
   vtkSlicerMarkupsModuleMRML
   vtkSlicerAnnotationsModuleMRML
+  Eigen3::Eigen
   )
 
 #-----------------------------------------------------------------------------
