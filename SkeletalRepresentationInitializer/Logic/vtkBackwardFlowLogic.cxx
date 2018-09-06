@@ -14,6 +14,10 @@
 #include "vtkPolyDataReader.h"
 #include "vtkPolyData.h"
 
+#define EPS			1e-9
+#define PI			3.141592653589793
+#define EQZERO(x)	(fabs(x)<EPS)
+
 void vtkBackwardFlowLogic::runApplyTPS()
 {
     
