@@ -125,3 +125,129 @@ void vtkBackwardFlowLogic::computePairwiseTPS(vtkPolyData* polyData_source, vtkP
 	fout.close();
 
 }
+void vtkBackwardFlowLogic::generateEllipsoidSrep(int numRow, int numCol, double ra, double rb, double rc, const char* outputPath)
+{
+    using namespace std;
+    ofstream fout(outputPath);
+    if (!fout.is_open()) {
+            cout << "File access failure!" <<endl;
+            return;
+    }
+
+    double mra = (ra*ra-rc*rc)/ra;
+    double mrb = (rb*rb-rc*rc)/rb;
+
+    fout << "model {" << endl
+             << "\tfigureCount = 1;" << endl
+             << "\tname = default;" << endl;
+    fout << "\tfigureTrees {" << endl
+             << "\t\tcount = 1;" << endl
+             << "\t\ttree[0] {" << endl
+             << "\t\t\tattachmentMode = 0;" << endl
+             << "\t\t\tblendAmount = 0;" << endl
+             << "\t\t\tblendExtent = 0;" << endl
+             << "\t\t\tchildCount = 0;" << endl
+             << "\t\t\tfigureId = 0;" << endl
+             << "\t\t\tlinkCount = 0;" << endl
+             << "\t\t}" << endl
+             << "\t}" << endl;
+    fout << "\tfigure[0] {" << endl
+             << "\t\tnumRows = " << numRow << ";" << endl
+             << "\t\tnumColumns = " << numCol << ";" << endl
+             << "\t\tnumLandmarks = 0;" << endl
+             << "\t\tpositivePolarity = 1;" << endl
+             << "\t\tpositiveSpace = 1;" << endl
+             << "\t\tsmoothness = 50;" << endl
+             << "\t\ttype = QuadFigure;" << endl;
+    fout << "\t\tcolor {" << endl
+             << "\t\t\tblue = 0;" << endl
+             << "\t\t\tgreen = 1;" << endl
+             << "\t\t\tred = 0;" << endl
+             << "\t\t}" << endl;
+
+    double ELLIPSE_SCALE = 0.9;
+    for (int row = 0; row < numRow; ++row) {
+            for (int col = 0; col < numCol; ++col) {
+                    fout << "\t\tprimitive[" << row << "][" << col << "] {" << endl;
+                    fout << "\t\t\tselected = 1;" << endl;
+                    if (row == 0 || row == numRow-1 || col == 0 || col == numCol-1) {
+                            fout << "\t\t\ttype = EndPrimitive;" << endl;
+                    } else {
+                            fout << "\t\t\ttype = StandardPrimitive;" << endl;
+                    }
+
+                    double x = 0;
+                    double y = 0;
+                    double z = 0;
+
+                    if (row == 1) {
+                            x = 2*mra*col / (numCol-1) - mra;
+                    } else {
+                            x = 2*mra*(col+1) / (numCol + 1) - mra;
+                    }
+                    y = (row - 1) * mrb*sqrt(1-x*x/(mra*mra));
+
+                    x*=ELLIPSE_SCALE;
+                    y*=ELLIPSE_SCALE;
+
+                    fout << "\t\t\tx = " << transform(x) << ";" << endl
+                             << "\t\t\ty = " << transform(y) << ";" << endl
+                             << "\t\t\tz = " << transform(z) << ";" << endl;
+
+                    double sinB = y*mra;
+                    double cosB = x*mrb;
+                    double l = normalize2(sinB, cosB);
+                    double cosA = l/(mra*mrb);
+                    double sinA = sqrt(1-cosA*cosA+EPS);
+
+                    double sx = ra * cosA * cosB - x;
+                    double sy = rb * cosA * sinB - y;
+                    double sz = rc * sinA ;
+
+                    double cx = ra * cosB - x;
+                    double cy = rb * sinB - y;
+                    double cz = 0;
+
+                    double len1 = normalize3(sx,sy,sz);
+                    double len2 = normalize2(cx,cy);
+                    if (EQZERO(len2)) cz = 1;
+
+                    fout << "\t\t\tux[0] = " << sx << ";" << endl
+                             << "\t\t\tux[1] = " << sx << ";" << endl
+                             << "\t\t\tux[2] = " << cx << ";" << endl
+                             << "\t\t\tuy[0] = " << sy << ";" << endl
+                             << "\t\t\tuy[1] = " << sy << ";" << endl
+                             << "\t\t\tuy[2] = " << cy << ";" << endl
+                             << "\t\t\tuz[0] = " <<-sz << ";" << endl
+                             << "\t\t\tuz[1] = " << sz << ";" << endl
+                             << "\t\t\tuz[2] = " << cz << ";" << endl;
+
+                    fout << "\t\t\tr[0] = " << scale(len1) << ";" << endl
+                             << "\t\t\tr[1] = " << scale(len1) << ";" << endl;
+                    if (row == 0 || row == numRow-1 || col == 0 || col == numCol-1) {
+                            fout << "\t\t\tr[2] = " << scale(len2) << ";" << endl;
+                    }
+
+                    fout << "\t\t}" << endl;
+            }
+    }
+
+    fout << "\t}" << endl;
+    fout << "\ttransformation {" << endl
+             << "\t\tscale = 1;" << endl
+             << "\t\trotation {" << endl
+             << "\t\t\tw = 1;" << endl
+             << "\t\t\tx = 0;" << endl
+             << "\t\t\ty = 0;" << endl
+             << "\t\t\tz = 0;" << endl
+             << "\t\t}" << endl
+             << "\t\ttranslation {" << endl
+             << "\t\t\tx = 0;" << endl
+             << "\t\t\ty = 0;" << endl
+             << "\t\t\tz = 0;" << endl
+             << "\t\t}" << endl
+             << "\t}" << endl;
+    fout << "}" << endl;
+    fout.flush();
+    fout.close();
+}
