@@ -13,6 +13,7 @@
 #include "vtkSmartPointer.h"
 #include "vtkPolyDataReader.h"
 #include "vtkPolyData.h"
+#include "vtkMath.h"
 
 #define EPS			1e-9
 #define PI			3.141592653589793
@@ -194,9 +195,9 @@ void vtkBackwardFlowLogic::generateEllipsoidSrep(int numRow, int numCol, double 
                     x*=ELLIPSE_SCALE;
                     y*=ELLIPSE_SCALE;
 
-                    fout << "\t\t\tx = " << transform(x) << ";" << endl
-                             << "\t\t\ty = " << transform(y) << ";" << endl
-                             << "\t\t\tz = " << transform(z) << ";" << endl;
+//                    fout << "\t\t\tx = " << transform(x) << ";" << endl
+//                             << "\t\t\ty = " << transform(y) << ";" << endl
+//                             << "\t\t\tz = " << transform(z) << ";" << endl;
 
                     double sinB = y*mra;
                     double cosB = x*mrb;
