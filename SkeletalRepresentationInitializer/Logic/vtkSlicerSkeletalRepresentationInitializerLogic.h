@@ -71,6 +71,10 @@ public:
 
   int InklingFlow(const std::string &filename, double dt, double smooth_amount, int max_iter, int freq_output, double threshold);
 
+  int BackwardFlow();
+
+  int GenerateSrep();
+  
 protected:
   vtkSlicerSkeletalRepresentationInitializerLogic();
   virtual ~vtkSlicerSkeletalRepresentationInitializerLogic();
@@ -92,6 +96,8 @@ private:
   vtkSlicerSkeletalRepresentationInitializerLogic(const vtkSlicerSkeletalRepresentationInitializerLogic&); // Not implemented
   void operator=(const vtkSlicerSkeletalRepresentationInitializerLogic&); // Not implemented
 
+private:
+  int forwardCount = 0;
 };
 
 #endif

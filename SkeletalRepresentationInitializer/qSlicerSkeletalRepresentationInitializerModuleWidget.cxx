@@ -84,6 +84,8 @@ void qSlicerSkeletalRepresentationInitializerModuleWidget::setup()
   QObject::connect(d->btn_one_step_flow, SIGNAL(clicked()), this, SLOT(flowOneStep()));
   //QObject::connect(d->btn_match_ell, SIGNAL(clicked()), this, SLOT(pullUpFittingEllipsoid()));
   QObject::connect(d->btn_inkling_flow, SIGNAL(clicked()), this, SLOT(inklingFlow()));
+  QObject::connect(d->btn_back_flow, SIGNAL(clicked()), this, SLOT(backwardFlow()));
+  QObject::connect(d->btn_generate_srep_ellipsoid, SIGNAL(clicked()), this, SLOT(generateSrep()));
 }
 
 void qSlicerSkeletalRepresentationInitializerModuleWidget::pullUpFittingEllipsoid()
@@ -133,4 +135,16 @@ void qSlicerSkeletalRepresentationInitializerModuleWidget::inklingFlow()
 //    double threshold = d->sl_threshold->value();
     double threshold = 13.0;// for test 
     d->logic()->InklingFlow(fileName, dt, smoothAmount, maxIter, freq_output, threshold);
+}
+
+void qSlicerSkeletalRepresentationInitializerModuleWidget::backwardFlow()
+{
+    Q_D(qSlicerSkeletalRepresentationInitializerModuleWidget);
+    d->logic()->BackwardFlow();
+}
+
+void qSlicerSkeletalRepresentationInitializerModuleWidget::generateSrep()
+{
+    Q_D(qSlicerSkeletalRepresentationInitializerModuleWidget);
+    d->logic()->GenerateSrep();
 }

@@ -58,7 +58,14 @@
 #include <cassert>
 #include <iostream>
 
+// vtk system tools
+#include <vtksys/SystemTools.hxx>
 
+#include "vtkBackwardFlowLogic.h"
+#include "qSlicerApplication.h"
+#include <QString>
+
+#define MAX_FILE_NAME  256
 //----------------------------------------------------------------------------
 vtkStandardNewMacro(vtkSlicerSkeletalRepresentationInitializerLogic);
 
@@ -120,6 +127,7 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::FlowSurfaceOneStep(double d
 {
     std::cout << "flow one step : dt-" << dt << std::endl;
     std::cout << "flow one step : smooth amount-" << smooth_amount << std::endl;
+    // TODO: put it in proper directory
     std::string name = "temp_output.vtk";
     vtkSmartPointer<vtkPolyDataReader> reader = vtkSmartPointer<vtkPolyDataReader>::New();
     reader->SetFileName(name.c_str());
@@ -208,11 +216,11 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::FlowSurfaceOneStep(double d
     points->Modified();
 
     // firstly get other intermediate result invisible
-    HideNodesByNameByClass("curvate_flow_result","vtkMRMLModelNode");
+    HideNodesByNameByClass("curvature_flow_result","vtkMRMLModelNode");
     HideNodesByNameByClass("best_fitting_ellipsoid_polydata", "vtkMRMLModelNode");
 
     // then add this new intermediate result
-    std::string modelName("curvate_flow_result");
+    std::string modelName("curvature_flow_result");
     AddModelNodeToScene(mesh, modelName.c_str(), true);
 
     vtkSmartPointer<vtkPolyDataWriter> writer =
@@ -230,7 +238,7 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::FlowSurfaceOneStep(double d
     double center[3];
     centerMassFilter->GetCenter(center);
 
-    ShowFittingEllipsoid(points, curr_volume, center);
+//    ShowFittingEllipsoid(points, curr_volume, center);
     return 0;
 }
 int vtkSlicerSkeletalRepresentationInitializerLogic::SetInputFileName(const std::string &filename)
@@ -290,7 +298,19 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::FlowSurfaceMesh(const std::
     double tolerance = 0.05;
     double q = 1.0;
 
+    // create folder if not exist
+    char forwardFolder[MAX_FILE_NAME];
+    const char *tempFolder = this->GetApplicationLogic()->GetTemporaryPath();
+    sprintf(forwardFolder, "%s/forward", tempFolder);
+    std::cout << "forward folder" << forwardFolder << std::endl;
+    if (!vtksys::SystemTools::FileExists(forwardFolder, false))
+    {
+      if (!vtksys::SystemTools::MakeDirectory(forwardFolder))
+      {
+              std::cout << "Failed to create folder : " << forwardFolder << std::endl;
 
+      }
+    }
     while(q > tolerance && iter < max_iter) {
         // smooth filter
         vtkSmartPointer<vtkWindowedSincPolyDataFilter> smooth_filter =
@@ -365,6 +385,16 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::FlowSurfaceMesh(const std::
 //            points->SetPoint(i, p);
         }
         points->Modified();
+        // TODO: move to the proper directory
+        // save the result for the purpose of backward flow
+        char fileName[MAX_FILE_NAME];
+        sprintf(fileName, "%s/forward_output#%04d.vtk", forwardFolder, iter+1);
+
+        vtkSmartPointer<vtkPolyDataWriter> writer =
+            vtkSmartPointer<vtkPolyDataWriter>::New();
+        writer->SetInputData(mesh);
+        writer->SetFileName(fileName);
+        writer->Update();
 
         if((iter +1) % freq_output == 0)
         {
@@ -379,12 +409,13 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::FlowSurfaceMesh(const std::
             double center[3];
             centerMassFilter->GetCenter(center);
 
-            ShowFittingEllipsoid(points, curr_volume, center);
+//            ShowFittingEllipsoid(points, curr_volume, center);
 
         }
         q -= 0.0001;
         iter++;
     }
+    forwardCount = iter;
 
     return 1;
 }
@@ -556,6 +587,7 @@ void vtkSlicerSkeletalRepresentationInitializerLogic::HideNodesByNameByClass(con
 
 int vtkSlicerSkeletalRepresentationInitializerLogic::InklingFlow(const std::string &filename, double dt, double smooth_amount, int max_iter, int freq_output, double threshold)
 {
+    std::cout << threshold << std::endl;
     std::cout << filename << std::endl;
     std::cout << dt << std::endl;
     std::cout << smooth_amount << std::endl;
@@ -580,7 +612,7 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::InklingFlow(const std::stri
     double tolerance = 0.05;
     double q = 1.0;
 
-//    while(q > tolerance && iter < max_iter)
+    while(q > tolerance && iter < max_iter)
     {
         // smooth filter
         vtkSmartPointer<vtkWindowedSincPolyDataFilter> smooth_filter =
@@ -667,7 +699,7 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::InklingFlow(const std::stri
             double curr_N[3];
             N->GetTuple(i, curr_N);
             double curr_H = H->GetValue(i);
-            double curr_K = K->GetValue(i);
+            //double curr_K = K->GetValue(i);
             double curr_max = MC->GetValue(i);
             double curr_min = MinC->GetValue(i);
 
@@ -725,21 +757,21 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::InklingFlow(const std::stri
 
         // then add this new intermediate result
 
-        vtkSmartPointer<vtkPolyDataWriter> writer =
-            vtkSmartPointer<vtkPolyDataWriter>::New();
-        writer->SetInputData(mesh);
-        writer->SetFileName("temp_output.vtk");
-        writer->Update();
+//        vtkSmartPointer<vtkPolyDataWriter> writer =
+//            vtkSmartPointer<vtkPolyDataWriter>::New();
+//        writer->SetInputData(mesh);
+//        writer->SetFileName("temp_output.vtk");
+//        writer->Update();
 
-        char modelName[128];
-        sprintf(modelName, "output_inkling");
-        AddModelNodeToScene(mesh, modelName, true);
-        // if((iter +1) % freq_output == 0)
-        // {
-        //     char modelName[128];
-        //     sprintf(modelName, "output#%04d", iter+1);
-        //     AddModelNodeToScene(mesh, modelName, false);
-        // }
+//        char modelName[128];
+//        sprintf(modelName, "output_inkling");
+//        AddModelNodeToScene(mesh, modelName, true);
+         if((iter +1) % freq_output == 0)
+         {
+             char modelName[128];
+             sprintf(modelName, "output_inkling#%04d", iter+1);
+             AddModelNodeToScene(mesh, modelName, false);
+         }
 
         q -= 0.0001;
         iter++;
@@ -786,4 +818,70 @@ void vtkSlicerSkeletalRepresentationInitializerLogic::AddPointToScene(double x, 
 
     fidNode->AddFiducial(x, y, z);
 
+}
+
+int vtkSlicerSkeletalRepresentationInitializerLogic::BackwardFlow()
+{
+    // 1. compute pairwise TPS
+    std::cout << "number of forward results:" << forwardCount << std::endl;
+    const char* tempFolder = this->GetApplicationLogic()->GetTemporaryPath();
+
+    vtkBackwardFlowLogic bf;
+    int i = forwardCount;
+
+    vtkSmartPointer<vtkPolyDataReader> source_reader = vtkSmartPointer<vtkPolyDataReader>::New();
+    vtkSmartPointer<vtkPolyDataReader> target_reader = vtkSmartPointer<vtkPolyDataReader>::New();
+
+    // create output folder for backward flow
+    char backwardFolder[MAX_FILE_NAME];
+    sprintf(backwardFolder, "%s/backward", tempFolder);
+    if (!vtksys::SystemTools::FileExists(backwardFolder, false))
+    {
+      if (!vtksys::SystemTools::MakeDirectory(backwardFolder))
+      {
+              std::cout << "Failed to create folder : " << backwardFolder << std::endl;
+      }
+    }
+
+    // check if forward folder exists
+    char forwardFolder[MAX_FILE_NAME];
+    sprintf(forwardFolder, "%s/forward", tempFolder);
+    if (!vtksys::SystemTools::FileExists(forwardFolder, false))
+    {
+      std::cerr << "Forward results are empty!" << std::endl;
+      return -1;
+    }
+
+    while(i > 1)
+    {
+        // read source
+        char fileName[MAX_FILE_NAME];
+        sprintf(fileName, "%s/forward_output#%04d.vtk", forwardFolder, i);
+        source_reader->SetFileName(fileName);
+        source_reader->Update();
+
+        vtkSmartPointer<vtkPolyData> poly_source = source_reader->GetOutput();
+
+        // read in target
+        sprintf(fileName, "%s/forward_output#%04d.vtk", forwardFolder, i-1);
+        target_reader->SetFileName(fileName);
+        target_reader->Update();
+        vtkSmartPointer<vtkPolyData> poly_target = target_reader->GetOutput();
+
+        char outputFileName[MAX_FILE_NAME];
+        sprintf(outputFileName, "%s/backward_trans_matrix%04d.txt",backwardFolder, i-1);
+        // compute pairwise TPS
+        bf.computePairwiseTPS(poly_source, poly_target, outputFileName);
+        i--;
+    }
+
+    // 2. generate s-rep for ellipsoid
+
+    // 3. run applyTPS
+    return 0;
+}
+
+int vtkSlicerSkeletalRepresentationInitializerLogic::GenerateSrep()
+{
+    return 0;
 }

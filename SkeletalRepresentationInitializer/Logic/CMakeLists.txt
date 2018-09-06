@@ -1,5 +1,4 @@
 project(vtkSlicer${MODULE_NAME}ModuleLogic)
-find_package(Eigen3 REQUIRED CONFIG)
 
 set(KIT ${PROJECT_NAME})
 
@@ -11,13 +10,16 @@ set(${KIT}_INCLUDE_DIRECTORIES
 set(${KIT}_SRCS
   vtkSlicer${MODULE_NAME}Logic.cxx
   vtkSlicer${MODULE_NAME}Logic.h
+  vtkBackwardFlowLogic.h
+  vtkBackwardFlowLogic.cxx
+  itkThinPlateSplineExtended.h
+  itkThinPlateSplineExtended.cxx
   )
 
 set(${KIT}_TARGET_LIBRARIES
   ${ITK_LIBRARIES}
   vtkSlicerMarkupsModuleMRML
   vtkSlicerAnnotationsModuleMRML
-  Eigen3::Eigen
   )
 
 #-----------------------------------------------------------------------------
