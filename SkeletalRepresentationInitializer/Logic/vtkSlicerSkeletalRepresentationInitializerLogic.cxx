@@ -58,7 +58,14 @@
 #include <cassert>
 #include <iostream>
 
+// vtk system tools
+#include <vtksys/SystemTools.hxx>
 
+#include "vtkBackwardFlowLogic.h"
+#include "qSlicerApplication.h"
+#include <QString>
+
+#define MAX_FILE_NAME  256
 //----------------------------------------------------------------------------
 vtkStandardNewMacro(vtkSlicerSkeletalRepresentationInitializerLogic);
 
@@ -120,9 +127,12 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::FlowSurfaceOneStep(double d
 {
     std::cout << "flow one step : dt-" << dt << std::endl;
     std::cout << "flow one step : smooth amount-" << smooth_amount << std::endl;
-    std::string name = "temp_output.vtk";
+
+    char tempFileName[MAX_FILE_NAME];
+    sprintf(tempFileName, "%s/temp_output.vtk", this->GetApplicationLogic()->GetTemporaryPath());
+
     vtkSmartPointer<vtkPolyDataReader> reader = vtkSmartPointer<vtkPolyDataReader>::New();
-    reader->SetFileName(name.c_str());
+    reader->SetFileName(tempFileName);
     reader->Update();
     vtkSmartPointer<vtkPolyData> mesh = reader->GetOutput();
     if(mesh == NULL)
@@ -208,17 +218,17 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::FlowSurfaceOneStep(double d
     points->Modified();
 
     // firstly get other intermediate result invisible
-    HideNodesByNameByClass("curvate_flow_result","vtkMRMLModelNode");
+    HideNodesByNameByClass("curvature_flow_result","vtkMRMLModelNode");
     HideNodesByNameByClass("best_fitting_ellipsoid_polydata", "vtkMRMLModelNode");
 
     // then add this new intermediate result
-    std::string modelName("curvate_flow_result");
+    std::string modelName("curvature_flow_result");
     AddModelNodeToScene(mesh, modelName.c_str(), true);
 
     vtkSmartPointer<vtkPolyDataWriter> writer =
         vtkSmartPointer<vtkPolyDataWriter>::New();
     writer->SetInputData(mesh);
-    writer->SetFileName(name.c_str());
+    writer->SetFileName(tempFileName);
     writer->Update();
 
     // compute the fitting ellipsoid
@@ -230,7 +240,7 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::FlowSurfaceOneStep(double d
     double center[3];
     centerMassFilter->GetCenter(center);
 
-    ShowFittingEllipsoid(points, curr_volume, center);
+//    ShowFittingEllipsoid(points, curr_volume, center);
     return 0;
 }
 int vtkSlicerSkeletalRepresentationInitializerLogic::SetInputFileName(const std::string &filename)
@@ -247,13 +257,32 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::SetInputFileName(const std:
     AddModelNodeToScene(mesh, modelName.c_str(), true, 0.88, 0.88, 0.88);
 
     // save
-    std::string name = "temp_output.vtk";
+    std::string tempDir = this->GetApplicationLogic()->GetTemporaryPath();
+    char tempFileName[MAX_FILE_NAME];
+    sprintf(tempFileName, "%s/temp_output.vtk", tempDir.c_str());
+
     vtkSmartPointer<vtkPolyDataWriter> writer =
         vtkSmartPointer<vtkPolyDataWriter>::New();
     writer->SetInputData(mesh);
-    writer->SetFileName(name.c_str());
+    writer->SetFileName(tempFileName);
     writer->Update();
 
+    // TODO: delete this part if genuine backflow works
+    std::string directory;
+    const size_t last_slash_idx = filename.rfind('/');
+    if (std::string::npos == last_slash_idx)
+    {
+        return -1;
+    }
+    directory = filename.substr(0, last_slash_idx);
+
+    std::string ellFile("/best_fitting_ellipsoid.vtk");
+    std::string modelFile("/srep.m3d");
+    std::string ellModel("/ellipsoid.m3d");
+    vtksys::SystemTools::CopyAFile(directory + ellFile, tempDir + ellFile, true);
+    vtksys::SystemTools::CopyAFile(directory + modelFile, tempDir + modelFile, true);
+    vtksys::SystemTools::CopyAFile(directory + ellModel, tempDir + ellModel, true);
+    ///////////////////////////////////////
     return 0;
 }
 
@@ -290,7 +319,19 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::FlowSurfaceMesh(const std::
     double tolerance = 0.05;
     double q = 1.0;
 
+    // create folder if not exist
+    char forwardFolder[MAX_FILE_NAME];
+    const char *tempFolder = this->GetApplicationLogic()->GetTemporaryPath();
+    sprintf(forwardFolder, "%s/forward", tempFolder);
+    std::cout << "forward folder" << forwardFolder << std::endl;
+    if (!vtksys::SystemTools::FileExists(forwardFolder, false))
+    {
+      if (!vtksys::SystemTools::MakeDirectory(forwardFolder))
+      {
+              std::cout << "Failed to create folder : " << forwardFolder << std::endl;
 
+      }
+    }
     while(q > tolerance && iter < max_iter) {
         // smooth filter
         vtkSmartPointer<vtkWindowedSincPolyDataFilter> smooth_filter =
@@ -365,6 +406,16 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::FlowSurfaceMesh(const std::
 //            points->SetPoint(i, p);
         }
         points->Modified();
+        // TODO: move to the proper directory
+        // save the result for the purpose of backward flow
+        char fileName[MAX_FILE_NAME];
+        sprintf(fileName, "%s/forward_output#%04d.vtk", forwardFolder, iter+1);
+
+        vtkSmartPointer<vtkPolyDataWriter> writer =
+            vtkSmartPointer<vtkPolyDataWriter>::New();
+        writer->SetInputData(mesh);
+        writer->SetFileName(fileName);
+        writer->Update();
 
         if((iter +1) % freq_output == 0)
         {
@@ -379,12 +430,13 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::FlowSurfaceMesh(const std::
             double center[3];
             centerMassFilter->GetCenter(center);
 
-            ShowFittingEllipsoid(points, curr_volume, center);
+//            ShowFittingEllipsoid(points, curr_volume, center);
 
         }
         q -= 0.0001;
         iter++;
     }
+    forwardCount = iter;
 
     return 1;
 }
@@ -439,95 +491,7 @@ void vtkSlicerSkeletalRepresentationInitializerLogic::AddModelNodeToScene(vtkPol
 }
 int vtkSlicerSkeletalRepresentationInitializerLogic::ShowFittingEllipsoid(vtkPoints* points, double curr_volume, double center[3])
 {
-    Eigen::MatrixXd point_matrix(points->GetNumberOfPoints(), 3);
-    for(int i = 0; i < points->GetNumberOfPoints(); ++i)
-    {
-        double p[3];
-        points->GetPoint(i, p);
-        point_matrix.row(i) << p[0], p[1], p[2];
-    }
-    // compute best fitting ellipsoid
-    // For now assume that the surface is centered and rotationally aligned
-    // 1. compute the second moment
-    Eigen::MatrixXd point_matrix_transposed = point_matrix.transpose();
-    Eigen::Matrix3d second_moment = point_matrix_transposed * point_matrix;
-    Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> es(second_moment);
-    Eigen::VectorXd radii = es.eigenvalues();
-    radii(0) = sqrt(radii(0));
-    radii(1) = sqrt(radii(1));
-    radii(2) = sqrt(radii(2));
 
-    double ellipsoid_volume = 4 / 3.0 * M_PI * radii(0) * radii(1) * radii(2);
-    double volume_factor = pow(curr_volume / ellipsoid_volume, 1.0 / 3.0); 
-    radii(0) *= volume_factor;
-    radii(1) *= volume_factor;
-    radii(2) *= volume_factor;
-    // obtain the best fitting ellipsoid from the second moment matrix
-    vtkSmartPointer<vtkParametricEllipsoid> ellipsoid =
-        vtkSmartPointer<vtkParametricEllipsoid>::New();
-    ellipsoid->SetXRadius(radii(0));
-    ellipsoid->SetYRadius(radii(1));
-    ellipsoid->SetZRadius(radii(2));
-
-    vtkSmartPointer<vtkParametricFunctionSource> parametric_function =
-        vtkSmartPointer<vtkParametricFunctionSource>::New();
-    parametric_function->SetParametricFunction(ellipsoid);
-    parametric_function->SetUResolution(30);
-    parametric_function->SetVResolution(30);
-    parametric_function->Update();
-    vtkSmartPointer<vtkPolyData> ellipsoid_polydata = parametric_function->GetOutput();
-
-    using namespace Eigen;
-    // Get ellipsoid points into the matrix
-    MatrixXd ellipsoid_points_matrix(ellipsoid_polydata->GetNumberOfPoints(), 3);
-    for(int i = 0; i < ellipsoid_polydata->GetNumberOfPoints(); ++i) {
-        double p[3];
-        ellipsoid_polydata->GetPoint(i,p);
-        ellipsoid_points_matrix(i,0) = p[0];
-        ellipsoid_points_matrix(i,1) = p[1];
-        ellipsoid_points_matrix(i,2) = p[2];
-    }
-    MatrixXd rotation;
-    rotation = es.eigenvectors(); // 3 by 3 rotation matrix
-
-    // rotate the points
-    MatrixXd rotated_ellipsoid_points = rotation * (ellipsoid_points_matrix.transpose()); 
-    rotated_ellipsoid_points.transposeInPlace(); // n x 3
-    // translate the points
-    MatrixXd cog(1, 3); // center of gravity
-    cog << center[0], center[1], center[2];
-    MatrixXd translated_points = rotated_ellipsoid_points + cog.replicate(rotated_ellipsoid_points.rows(),1);
-
-    // convert eigen matrix to vtk polydata
-    vtkSmartPointer<vtkPolyData> best_fitting_ellipsoid_polydata =
-        vtkSmartPointer<vtkPolyData>::New();
-    vtkSmartPointer<vtkPoints> best_fitting_ellipsoid_points = 
-        vtkSmartPointer<vtkPoints>::New();
-    for(int i = 0; i < translated_points.rows(); ++i) {
-        double p[3] = {translated_points(i,0), translated_points(i,1), translated_points(i,2)};
-        best_fitting_ellipsoid_points->InsertNextPoint(p);
-    }
-    best_fitting_ellipsoid_polydata->SetPoints(best_fitting_ellipsoid_points);
-    best_fitting_ellipsoid_polydata->SetPolys(ellipsoid_polydata->GetPolys());
-    best_fitting_ellipsoid_polydata->Modified();
-
-    // save ellipsoid mesh
-    // std::string ellFileName("temp_ellipsoid.vtk");
-    // writer->SetInputData(best_fitting_ellipsoid_polydata);
-    // writer->SetFileName(ellFileName.c_str());
-    // writer->Update();
-
-    // std::string filename("temp_ellipsoid.vtk");
-    // vtkSmartPointer<vtkPolyDataReader> reader =
-    //     vtkSmartPointer<vtkPolyDataReader>::New();
-    // reader->SetFileName(filename.c_str());
-    // reader->Update();
-
-    // vtkSmartPointer<vtkPolyData> mesh =
-    //     vtkSmartPointer<vtkPolyData>::New();
-    // mesh = reader->GetOutput();
-
-    AddModelNodeToScene(best_fitting_ellipsoid_polydata, "best_fitting_ellipsoid", false, 1, 1, 0);
     return 0;
 }
 
@@ -556,14 +520,19 @@ void vtkSlicerSkeletalRepresentationInitializerLogic::HideNodesByNameByClass(con
 
 int vtkSlicerSkeletalRepresentationInitializerLogic::InklingFlow(const std::string &filename, double dt, double smooth_amount, int max_iter, int freq_output, double threshold)
 {
+    std::cout << threshold << std::endl;
     std::cout << filename << std::endl;
     std::cout << dt << std::endl;
     std::cout << smooth_amount << std::endl;
     std::cout << max_iter << std::endl;
     std::cout << freq_output << std::endl;
+
+    char tempFileName[MAX_FILE_NAME];
+    sprintf(tempFileName, "%s/temp_output.vtk", this->GetApplicationLogic()->GetTemporaryPath());
+
     vtkSmartPointer<vtkPolyDataReader> reader =
         vtkSmartPointer<vtkPolyDataReader>::New();
-    reader->SetFileName("temp_output.vtk");
+    reader->SetFileName(tempFileName);
     reader->Update();
 
     vtkSmartPointer<vtkPolyData> mesh =
@@ -580,7 +549,7 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::InklingFlow(const std::stri
     double tolerance = 0.05;
     double q = 1.0;
 
-//    while(q > tolerance && iter < max_iter)
+    while(q > tolerance && iter < max_iter)
     {
         // smooth filter
         vtkSmartPointer<vtkWindowedSincPolyDataFilter> smooth_filter =
@@ -667,7 +636,7 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::InklingFlow(const std::stri
             double curr_N[3];
             N->GetTuple(i, curr_N);
             double curr_H = H->GetValue(i);
-            double curr_K = K->GetValue(i);
+            //double curr_K = K->GetValue(i);
             double curr_max = MC->GetValue(i);
             double curr_min = MinC->GetValue(i);
 
@@ -725,21 +694,21 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::InklingFlow(const std::stri
 
         // then add this new intermediate result
 
-        vtkSmartPointer<vtkPolyDataWriter> writer =
-            vtkSmartPointer<vtkPolyDataWriter>::New();
-        writer->SetInputData(mesh);
-        writer->SetFileName("temp_output.vtk");
-        writer->Update();
+//        vtkSmartPointer<vtkPolyDataWriter> writer =
+//            vtkSmartPointer<vtkPolyDataWriter>::New();
+//        writer->SetInputData(mesh);
+//        writer->SetFileName("temp_output.vtk");
+//        writer->Update();
 
-        char modelName[128];
-        sprintf(modelName, "output_inkling");
-        AddModelNodeToScene(mesh, modelName, true);
-        // if((iter +1) % freq_output == 0)
-        // {
-        //     char modelName[128];
-        //     sprintf(modelName, "output#%04d", iter+1);
-        //     AddModelNodeToScene(mesh, modelName, false);
-        // }
+//        char modelName[128];
+//        sprintf(modelName, "output_inkling");
+//        AddModelNodeToScene(mesh, modelName, true);
+         if((iter +1) % freq_output == 0)
+         {
+             char modelName[128];
+             sprintf(modelName, "output_inkling#%04d", iter+1);
+             AddModelNodeToScene(mesh, modelName, false);
+         }
 
         q -= 0.0001;
         iter++;
@@ -786,4 +755,43 @@ void vtkSlicerSkeletalRepresentationInitializerLogic::AddPointToScene(double x, 
 
     fidNode->AddFiducial(x, y, z);
 
+}
+
+int vtkSlicerSkeletalRepresentationInitializerLogic::BackwardFlow()
+{
+    // 1. compute pairwise TPS
+
+    // 2. generate s-rep for ellipsoid
+
+    // 3. run applyTPS
+    return 0;
+}
+
+int vtkSlicerSkeletalRepresentationInitializerLogic::DummyBackwardFlow(std::string& output)
+{
+    std::string tempDir(this->GetApplicationLogic()->GetTemporaryPath());
+    tempDir += "/srep.m3d";
+    output = tempDir;
+    return 0;
+}
+
+int vtkSlicerSkeletalRepresentationInitializerLogic::DummyShowFittingEllipsoid()
+{
+    std::string tempDir(this->GetApplicationLogic()->GetTemporaryPath());
+    tempDir += "/best_fitting_ellipsoid.vtk";
+    vtkSmartPointer<vtkPolyDataReader> reader = vtkSmartPointer<vtkPolyDataReader>::New();
+    reader->SetFileName(tempDir.c_str());
+    reader->Update();
+
+    vtkSmartPointer<vtkPolyData> poly = reader->GetOutput();
+    AddModelNodeToScene(poly, "best_fitting_ellipsoid", true);
+    return 0;
+}
+
+int vtkSlicerSkeletalRepresentationInitializerLogic::GenerateSrep(std::string& output)
+{
+    std::string tempDir(this->GetApplicationLogic()->GetTemporaryPath());
+    output = tempDir +  "/ellipsoid.m3d";
+
+    return 0;
 }
