@@ -73,7 +73,13 @@ public:
 
   int BackwardFlow();
 
-  int GenerateSrep();
+  // For the sake of completion of backward flow,
+  // add this function to show what the process like.
+  // This will be replaced by BackwardFlow later.
+  int DummyBackwardFlow(std::string& output);
+  int DummyShowFittingEllipsoid();
+
+  int GenerateSrep(std::string& output);
   
 protected:
   vtkSlicerSkeletalRepresentationInitializerLogic();
