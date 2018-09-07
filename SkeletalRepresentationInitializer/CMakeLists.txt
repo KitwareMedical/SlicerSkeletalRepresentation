@@ -1,3 +1,4 @@
+
 #-----------------------------------------------------------------------------
 set(MODULE_NAME SkeletalRepresentationInitializer)
 set(MODULE_TITLE "Skeletal Representation Initializer")

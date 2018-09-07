@@ -21,7 +21,7 @@
 // SkeletalRepresentationInitializer includes
 #include "qSlicerSkeletalRepresentationInitializerModule.h"
 #include "qSlicerSkeletalRepresentationInitializerModuleWidget.h"
-
+#include "qSlicerCoreApplication.h"
 //-----------------------------------------------------------------------------
 #if (QT_VERSION < QT_VERSION_CHECK(5, 0, 0))
 #include <QtPlugin>
