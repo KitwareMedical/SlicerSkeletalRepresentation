@@ -555,7 +555,7 @@ void vtkSlicerSkeletalRepresentationInitializerLogic::HideNodesByNameByClass(con
 
 }
 
-int vtkSlicerSkeletalRepresentationInitializerLogic::InklingFlow(const std::string &filename, double dt, double smooth_amount, int max_iter, int freq_output, double threshold)
+int vtkSlicerSkeletalRepresentationInitializerLogic::InklingFlow(const std::string &filename, double dt, double smooth_amount, int max_iter, int freq_output, double /*threshold*/)
 {
     std::cout << filename << std::endl;
     std::cout << dt << std::endl;
@@ -578,7 +578,7 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::InklingFlow(const std::stri
     double original_volume = mass_filter->GetVolume();
 
     int iter = 0;
-    double tolerance = 0.05;
+    // double tolerance = 0.05;
     double q = 1.0;
 
 //    while(q > tolerance && iter < max_iter)
@@ -668,7 +668,7 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::InklingFlow(const std::stri
             double curr_N[3];
             N->GetTuple(i, curr_N);
             double curr_H = H->GetValue(i);
-            double curr_K = K->GetValue(i);
+            //double curr_K = K->GetValue(i);
             double curr_max = MC->GetValue(i);
             double curr_min = MinC->GetValue(i);
 
