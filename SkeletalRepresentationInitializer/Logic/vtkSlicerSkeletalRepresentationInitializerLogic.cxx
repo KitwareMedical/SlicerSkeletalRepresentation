@@ -30,6 +30,7 @@
 
 // VTK includes
 #include <vtkIntArray.h>
+#include <vtkMath.h>
 #include <vtkNew.h>
 #include <vtkCenterOfMass.h>
 #include <vtkObjectFactory.h>
@@ -457,7 +458,7 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::ShowFittingEllipsoid(vtkPoi
     radii(1) = sqrt(radii(1));
     radii(2) = sqrt(radii(2));
 
-    double ellipsoid_volume = 4 / 3.0 * M_PI * radii(0) * radii(1) * radii(2);
+    double ellipsoid_volume = 4 / 3.0 * vtkMath::Pi() * radii(0) * radii(1) * radii(2);
     double volume_factor = pow(curr_volume / ellipsoid_volume, 1.0 / 3.0); 
     radii(0) *= volume_factor;
     radii(1) *= volume_factor;
