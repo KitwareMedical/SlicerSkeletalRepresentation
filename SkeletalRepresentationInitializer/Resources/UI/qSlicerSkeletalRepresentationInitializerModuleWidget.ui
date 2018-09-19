@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>525</width>
-    <height>319</height>
+    <height>328</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -15,8 +15,8 @@
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
-    <widget class="ctkCollapsibleButton" name="CTKCollapsibleButton">
-     <property name="text">
+    <widget class="ctkCollapsibleButton" name="CTKCollapsibleButton" native="true">
+     <property name="text" stdset="0">
       <string>Forward flow</string>
      </property>
      <layout class="QVBoxLayout" name="verticalLayout_3">
@@ -55,21 +55,21 @@
          </widget>
         </item>
         <item>
-         <widget class="qMRMLSliderWidget" name="sl_max_iter">
-          <property name="decimals">
+         <widget class="qMRMLSliderWidget" name="sl_max_iter" native="true">
+          <property name="decimals" stdset="0">
            <number>0</number>
           </property>
-          <property name="pageStep">
+          <property name="pageStep" stdset="0">
            <double>10.000000000000000</double>
           </property>
-          <property name="minimum">
+          <property name="minimum" stdset="0">
            <double>1.000000000000000</double>
           </property>
-          <property name="maximum">
+          <property name="maximum" stdset="0">
            <double>9999.000000000000000</double>
           </property>
-          <property name="value">
-           <double>300.000000000000000</double>
+          <property name="value" stdset="0">
+           <double>500.000000000000000</double>
           </property>
          </widget>
         </item>
@@ -85,14 +85,14 @@
          </widget>
         </item>
         <item>
-         <widget class="qMRMLSliderWidget" name="sl_dt">
-          <property name="decimals">
+         <widget class="qMRMLSliderWidget" name="sl_dt" native="true">
+          <property name="decimals" stdset="0">
            <number>6</number>
           </property>
-          <property name="singleStep">
+          <property name="singleStep" stdset="0">
            <double>0.010000000000000</double>
           </property>
-          <property name="value">
+          <property name="value" stdset="0">
            <double>0.001000000000000</double>
           </property>
          </widget>
@@ -109,18 +109,18 @@
          </widget>
         </item>
         <item>
-         <widget class="qMRMLSliderWidget" name="sl_smooth_amount">
-          <property name="decimals">
+         <widget class="qMRMLSliderWidget" name="sl_smooth_amount" native="true">
+          <property name="decimals" stdset="0">
            <number>3</number>
           </property>
-          <property name="singleStep">
+          <property name="singleStep" stdset="0">
            <double>0.010000000000000</double>
           </property>
-          <property name="maximum">
+          <property name="maximum" stdset="0">
            <double>2.000000000000000</double>
           </property>
-          <property name="value">
-           <double>0.030000000000000</double>
+          <property name="value" stdset="0">
+           <double>0.010000000000000</double>
           </property>
          </widget>
         </item>
@@ -136,17 +136,17 @@
          </widget>
         </item>
         <item>
-         <widget class="qMRMLSliderWidget" name="sl_freq_output">
-          <property name="decimals">
+         <widget class="qMRMLSliderWidget" name="sl_freq_output" native="true">
+          <property name="decimals" stdset="0">
            <number>0</number>
           </property>
-          <property name="minimum">
+          <property name="minimum" stdset="0">
            <double>1.000000000000000</double>
           </property>
-          <property name="maximum">
+          <property name="maximum" stdset="0">
            <double>9999.000000000000000</double>
           </property>
-          <property name="value">
+          <property name="value" stdset="0">
            <double>100.000000000000000</double>
           </property>
          </widget>
@@ -174,6 +174,13 @@
         </property>
        </widget>
       </item>
+      <item>
+       <widget class="QPushButton" name="btn_match_ell">
+        <property name="text">
+         <string>Show best fitting ellipsoid</string>
+        </property>
+       </widget>
+      </item>
      </layout>
     </widget>
    </item>
@@ -181,6 +188,9 @@
     <spacer name="verticalSpacer">
      <property name="orientation">
       <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeType">
+      <enum>QSizePolicy::Minimum</enum>
      </property>
      <property name="sizeHint" stdset="0">
       <size>
@@ -190,12 +200,48 @@
      </property>
     </spacer>
    </item>
+   <item>
+    <widget class="ctkCollapsibleButton" name="CTKCollapsibleButton2" native="true">
+     <property name="text" stdset="0">
+      <string>Backward flow</string>
+     </property>
+     <layout class="QVBoxLayout" name="verticalLayout_31">
+      <item>
+       <widget class="QPushButton" name="btn_generate_srep_ellipsoid">
+        <property name="text">
+         <string>Generate S-rep for ellipsoid</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="btn_back_flow">
+        <property name="text">
+         <string>Generate S-rep for object</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <spacer name="verticalSpacer_5">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>20</width>
+       <height>40</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
   </layout>
  </widget>
  <customwidgets>
   <customwidget>
    <class>qMRMLSliderWidget</class>
-   <extends>ctkSliderWidget</extends>
+   <extends>QWidget</extends>
    <header>qMRMLSliderWidget.h</header>
   </customwidget>
   <customwidget>
@@ -209,11 +255,6 @@
    <extends>QWidget</extends>
    <header>ctkCollapsibleButton.h</header>
    <container>1</container>
-  </customwidget>
-  <customwidget>
-   <class>ctkSliderWidget</class>
-   <extends>QWidget</extends>
-   <header>ctkSliderWidget.h</header>
   </customwidget>
  </customwidgets>
  <resources/>

@@ -71,6 +71,16 @@ public:
 
   int InklingFlow(const std::string &filename, double dt, double smooth_amount, int max_iter, int freq_output, double threshold);
 
+  int BackwardFlow();
+
+  // For the sake of completion of backward flow,
+  // add this function to show what the process like.
+  // This will be replaced by BackwardFlow later.
+  int DummyBackwardFlow(std::string& output);
+  int DummyShowFittingEllipsoid();
+
+  int GenerateSrep(std::string& output);
+  
 protected:
   vtkSlicerSkeletalRepresentationInitializerLogic();
   virtual ~vtkSlicerSkeletalRepresentationInitializerLogic();
@@ -92,6 +102,8 @@ private:
   vtkSlicerSkeletalRepresentationInitializerLogic(const vtkSlicerSkeletalRepresentationInitializerLogic&); // Not implemented
   void operator=(const vtkSlicerSkeletalRepresentationInitializerLogic&); // Not implemented
 
+private:
+  int forwardCount = 0;
 };
 
 #endif

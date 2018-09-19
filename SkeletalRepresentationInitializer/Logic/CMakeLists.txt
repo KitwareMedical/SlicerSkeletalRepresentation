@@ -11,6 +11,10 @@ set(${KIT}_INCLUDE_DIRECTORIES
 set(${KIT}_SRCS
   vtkSlicer${MODULE_NAME}Logic.cxx
   vtkSlicer${MODULE_NAME}Logic.h
+  vtkBackwardFlowLogic.h
+  vtkBackwardFlowLogic.cxx
+  itkThinPlateSplineExtended.h
+  itkThinPlateSplineExtended.cxx
   )
 
 set(${KIT}_TARGET_LIBRARIES
