@@ -5,11 +5,11 @@ project(SkeletalRepresentation)
 #-----------------------------------------------------------------------------
 # Extension meta-information
 set(EXTENSION_HOMEPAGE "http://slicer.org/slicerWiki/index.php/Documentation/Nightly/Extensions/SkeletalRepresentation")
-set(EXTENSION_CATEGORY "Topology, Skeletonization")
+set(EXTENSION_CATEGORY "Shape Analysis")
 set(EXTENSION_CONTRIBUTORS "Zhiyuan Liu (University of North Carolina at Chapel Hill), Junpyo Hong (University of North Carolina at Chapel Hill), Stephen M. Pizer (University of North Carolina at Chapel Hill), Jared Vicory (Kitware, Inc.), Pablo Hernandez-Cerdan (Kitware, Inc.), Beatriz Paniagua (Kitware, Inc.), Jean-Christophe Fillion-Robin (Kitware, Inc.)")
 set(EXTENSION_DESCRIPTION "Toolkit that provides users to establish, refine, and visualize skeletal representation of an object.")
-set(EXTENSION_ICONURL "http://slicer.org/slicerWiki/index.php/Documentation/Nightly/Extensions/SkeletalRepresentation.png")
-set(EXTENSION_SCREENSHOTURLS "https://github.com/KitwareMedical/SlicerSkeletalRepresentation/blob/master/VisualizationScreenshot.png")
+set(EXTENSION_ICONURL "https://www.slicer.org/w/images/a/a1/SkeletalRepresentation.png")
+set(EXTENSION_SCREENSHOTURLS "https://www.slicer.org/w/images/0/08/New_srep.png")
 set(EXTENSION_DEPENDS "NA") # Specified as a space separated string, a list or 'NA' if any
 
 #-----------------------------------------------------------------------------
