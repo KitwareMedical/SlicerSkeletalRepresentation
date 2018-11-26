@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>525</width>
-    <height>328</height>
+    <height>357</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -171,13 +171,6 @@
        <widget class="QPushButton" name="btn_inkling_flow">
         <property name="text">
          <string>Flow with anti-aliasing curvature</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QPushButton" name="btn_match_ell">
-        <property name="text">
-         <string>Show best fitting ellipsoid</string>
         </property>
        </widget>
       </item>

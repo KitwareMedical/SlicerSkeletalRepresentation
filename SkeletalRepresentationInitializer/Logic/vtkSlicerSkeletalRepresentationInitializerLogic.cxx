@@ -430,15 +430,12 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::FlowSurfaceMesh(const std::
             centerMassFilter->Update();
             double center[3];
             centerMassFilter->GetCenter(center);
-
-//            ShowFittingEllipsoid(points, curr_volume, center);
-
         }
         q -= 0.0001;
         iter++;
     }
     forwardCount = iter;
-
+    ShowFittingEllipsoid(mesh);
     return 1;
 }
 
@@ -490,8 +487,9 @@ void vtkSlicerSkeletalRepresentationInitializerLogic::AddModelNodeToScene(vtkPol
     scene->AddNode(modelNode);
 
 }
-int vtkSlicerSkeletalRepresentationInitializerLogic::ShowFittingEllipsoid(vtkPoints* points, double curr_volume, double center[3])
+int vtkSlicerSkeletalRepresentationInitializerLogic::ShowFittingEllipsoid(vtkPolyData* mesh)
 {
+    vtkSmartPointer<vtkPoints> points = mesh->GetPoints();
     Eigen::MatrixXd point_matrix(points->GetNumberOfPoints(), 3);
     for(int i = 0; i < points->GetNumberOfPoints(); ++i)
     {
@@ -501,9 +499,11 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::ShowFittingEllipsoid(vtkPoi
     }
     // compute best fitting ellipsoid
     // For now assume that the surface is centered and rotationally aligned
-    // 1. compute the second moment
-    Eigen::MatrixXd point_matrix_transposed = point_matrix.transpose();
-    Eigen::Matrix3d second_moment = point_matrix_transposed * point_matrix;
+    // 1. compute the second moment after centering the data points
+    Eigen::MatrixXd center = point_matrix.colwise().mean();
+    Eigen::MatrixXd centered_point_mat = point_matrix - center.replicate(point_matrix.rows(), 1);
+    Eigen::MatrixXd point_matrix_transposed = centered_point_mat.transpose();
+    Eigen::Matrix3d second_moment = point_matrix_transposed * centered_point_mat;
     Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> es(second_moment);
     Eigen::VectorXd radii = es.eigenvalues();
     radii(0) = sqrt(radii(0));
@@ -511,7 +511,12 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::ShowFittingEllipsoid(vtkPoi
     radii(2) = sqrt(radii(2));
 
     double ellipsoid_volume = 4 / 3.0 * vtkMath::Pi() * radii(0) * radii(1) * radii(2);
-    double volume_factor = pow(curr_volume / ellipsoid_volume, 1.0 / 3.0); 
+    vtkSmartPointer<vtkMassProperties> mass =
+        vtkSmartPointer<vtkMassProperties>::New();
+    mass->SetInputData(mesh);
+    mass->Update();
+
+    double volume_factor = pow(mass->GetVolume() / ellipsoid_volume, 1.0 / 3.0);
     radii(0) *= volume_factor;
     radii(1) *= volume_factor;
     radii(2) *= volume_factor;
@@ -544,17 +549,15 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::ShowFittingEllipsoid(vtkPoi
     rotation = es.eigenvectors(); // 3 by 3 rotation matrix
 
     // rotate the points
-    MatrixXd rotated_ellipsoid_points = rotation * (ellipsoid_points_matrix.transpose()); 
+    MatrixXd rotated_ellipsoid_points = rotation * (ellipsoid_points_matrix.transpose());
     rotated_ellipsoid_points.transposeInPlace(); // n x 3
     // translate the points
-    MatrixXd cog(1, 3); // center of gravity
-    cog << center[0], center[1], center[2];
-    MatrixXd translated_points = rotated_ellipsoid_points + cog.replicate(rotated_ellipsoid_points.rows(),1);
+    MatrixXd translated_points = rotated_ellipsoid_points + center.replicate(rotated_ellipsoid_points.rows(),1);
 
     // convert eigen matrix to vtk polydata
     vtkSmartPointer<vtkPolyData> best_fitting_ellipsoid_polydata =
         vtkSmartPointer<vtkPolyData>::New();
-    vtkSmartPointer<vtkPoints> best_fitting_ellipsoid_points = 
+    vtkSmartPointer<vtkPoints> best_fitting_ellipsoid_points =
         vtkSmartPointer<vtkPoints>::New();
     for(int i = 0; i < translated_points.rows(); ++i) {
         double p[3] = {translated_points(i,0), translated_points(i,1), translated_points(i,2)};
@@ -564,23 +567,7 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::ShowFittingEllipsoid(vtkPoi
     best_fitting_ellipsoid_polydata->SetPolys(ellipsoid_polydata->GetPolys());
     best_fitting_ellipsoid_polydata->Modified();
 
-    // save ellipsoid mesh
-    // std::string ellFileName("temp_ellipsoid.vtk");
-    // writer->SetInputData(best_fitting_ellipsoid_polydata);
-    // writer->SetFileName(ellFileName.c_str());
-    // writer->Update();
-
-    // std::string filename("temp_ellipsoid.vtk");
-    // vtkSmartPointer<vtkPolyDataReader> reader =
-    //     vtkSmartPointer<vtkPolyDataReader>::New();
-    // reader->SetFileName(filename.c_str());
-    // reader->Update();
-
-    // vtkSmartPointer<vtkPolyData> mesh =
-    //     vtkSmartPointer<vtkPolyData>::New();
-    // mesh = reader->GetOutput();
-
-    AddModelNodeToScene(best_fitting_ellipsoid_polydata, "best_fitting_ellipsoid", false, 1, 1, 0);
+    AddModelNodeToScene(best_fitting_ellipsoid_polydata, "best_fitting_ellipsoid", true, 1, 1, 0);
 
     return 0;
 }
@@ -862,19 +849,6 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::DummyBackwardFlow(std::stri
     std::string tempDir(this->GetApplicationLogic()->GetTemporaryPath());
     tempDir += "/srep.m3d";
     output = tempDir;
-    return 0;
-}
-
-int vtkSlicerSkeletalRepresentationInitializerLogic::DummyShowFittingEllipsoid()
-{
-    std::string tempDir(this->GetApplicationLogic()->GetTemporaryPath());
-    tempDir += "/best_fitting_ellipsoid.vtk";
-    vtkSmartPointer<vtkPolyDataReader> reader = vtkSmartPointer<vtkPolyDataReader>::New();
-    reader->SetFileName(tempDir.c_str());
-    reader->Update();
-
-    vtkSmartPointer<vtkPolyData> poly = reader->GetOutput();
-    AddModelNodeToScene(poly, "best_fitting_ellipsoid", true);
     return 0;
 }
 
