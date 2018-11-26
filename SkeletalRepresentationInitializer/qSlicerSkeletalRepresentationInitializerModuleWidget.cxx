@@ -82,7 +82,7 @@ void qSlicerSkeletalRepresentationInitializerModuleWidget::setup()
   QObject::connect(d->SelectInputButton, SIGNAL(clicked()), this, SLOT(selectInput()));
   QObject::connect(d->btn_flow, SIGNAL(clicked()), this, SLOT(flow()));
   QObject::connect(d->btn_one_step_flow, SIGNAL(clicked()), this, SLOT(flowOneStep()));
-  QObject::connect(d->btn_match_ell, SIGNAL(clicked()), this, SLOT(pullUpFittingEllipsoid()));
+  //QObject::connect(d->btn_match_ell, SIGNAL(clicked()), this, SLOT(pullUpFittingEllipsoid()));
   QObject::connect(d->btn_inkling_flow, SIGNAL(clicked()), this, SLOT(inklingFlow()));
   QObject::connect(d->btn_back_flow, SIGNAL(clicked()), this, SLOT(backwardFlow()));
   QObject::connect(d->btn_generate_srep_ellipsoid, SIGNAL(clicked()), this, SLOT(generateSrep()));
@@ -91,7 +91,8 @@ void qSlicerSkeletalRepresentationInitializerModuleWidget::setup()
 void qSlicerSkeletalRepresentationInitializerModuleWidget::pullUpFittingEllipsoid()
 {
     Q_D(qSlicerSkeletalRepresentationInitializerModuleWidget);
-    d->logic()->DummyShowFittingEllipsoid();
+    //d->logic()->DummyShowFittingEllipsoid();
+
 }
 
 void qSlicerSkeletalRepresentationInitializerModuleWidget::selectInput()

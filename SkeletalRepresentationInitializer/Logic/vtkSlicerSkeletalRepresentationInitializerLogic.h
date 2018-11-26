@@ -67,7 +67,7 @@ public:
   // Can be called after one step flow or overall flow
   // if called after one step flow,  render the ellipsoid generated just now
   // otherwise render the ellipsoid at the end
-  int ShowFittingEllipsoid(vtkPoints* points, double curr_volume, double center[3]);
+  int ShowFittingEllipsoid(vtkPolyData* points);
 
   int InklingFlow(const std::string &filename, double dt, double smooth_amount, int max_iter, int freq_output, double threshold);
 
@@ -77,8 +77,6 @@ public:
   // add this function to show what the process like.
   // This will be replaced by BackwardFlow later.
   int DummyBackwardFlow(std::string& output);
-  int DummyShowFittingEllipsoid();
-
   int GenerateSrep(std::string& output);
   
 protected:
