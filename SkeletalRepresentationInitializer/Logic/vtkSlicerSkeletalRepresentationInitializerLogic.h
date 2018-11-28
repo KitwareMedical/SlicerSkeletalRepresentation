@@ -67,7 +67,11 @@ public:
   // Can be called after one step flow or overall flow
   // if called after one step flow,  render the ellipsoid generated just now
   // otherwise render the ellipsoid at the end
-  int ShowFittingEllipsoid(vtkPolyData* points);
+  // input the forward flow deformed mesh, output radii ( double &rx, double &ry, double &rz)
+  int ShowFittingEllipsoid(vtkPolyData* mesh, double &rx, double &ry, double &rz);
+
+  // generate srep given an ellipsoid and expected rows and columns of medial sheet.
+  int GenerateSrepForEllipsoid(vtkPolyData* mesh, int rows, int cols);
 
   int InklingFlow(const std::string &filename, double dt, double smooth_amount, int max_iter, int freq_output, double threshold);
 
