@@ -52,8 +52,6 @@ public slots:
 
     // connect the button backward flow
     void backwardFlow();
-    //connect the button generate srep for ellipsoid
-    void generateSrep();
 
 protected:
   QScopedPointer<qSlicerSkeletalRepresentationInitializerModuleWidgetPrivate> d_ptr;

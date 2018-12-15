@@ -34,6 +34,9 @@
 
 #include "vtkSlicerSkeletalRepresentationInitializerModuleLogicExport.h"
 
+// itk lib
+#include "itkThinPlateSplineExtended.h"
+#include "itkPointSet.h"
 class vtkPolyData;
 class vtkPoints;
 
@@ -42,7 +45,8 @@ class VTK_SLICER_SKELETALREPRESENTATIONINITIALIZER_MODULE_LOGIC_EXPORT vtkSlicer
   public vtkSlicerModuleLogic
 {
 public:
-
+  typedef double CoordinateRepType;
+  typedef itk::Point< CoordinateRepType, 3 > PointType;
   static vtkSlicerSkeletalRepresentationInitializerLogic *New();
   vtkTypeMacro(vtkSlicerSkeletalRepresentationInitializerLogic, vtkSlicerModuleLogic);
   void PrintSelf(ostream& os, vtkIndent indent);
@@ -71,17 +75,15 @@ public:
   int ShowFittingEllipsoid(vtkPolyData* mesh, double &rx, double &ry, double &rz);
 
   // generate srep given an ellipsoid and expected rows and columns of medial sheet.
-  int GenerateSrepForEllipsoid(vtkPolyData* mesh, int rows, int cols);
+  int GenerateSrepForEllipsoid(vtkPolyData* mesh, int rows, int cols, int forwardCount);
 
   int InklingFlow(const std::string &filename, double dt, double smooth_amount, int max_iter, int freq_output, double threshold);
 
-  int BackwardFlow();
-
-  // For the sake of completion of backward flow,
-  // add this function to show what the process like.
-  // This will be replaced by BackwardFlow later.
-  int DummyBackwardFlow(std::string& output);
-  int GenerateSrep(std::string& output);
+  // Real backward flow
+  // input: totalNum of surface files from forward flow
+  //
+  // output: files and srep of initial object
+  int BackwardFlow(int totalNum);
   
 protected:
   vtkSlicerSkeletalRepresentationInitializerLogic();
@@ -97,8 +99,18 @@ protected:
 private:
   void AddModelNodeToScene(vtkPolyData* mesh, const char* modelName, bool isModelVisible, double r = 0.25, double g = 0.25, double b = 0.25);
   void HideNodesByNameByClass(const std::string & nodeName, const std::string &className);
+  void HideNodesByClass(const std::string &className);
   void AddPointToScene(double x, double y, double z, int glyphType, double r = 1, double g = 0, double b = 0);
 
+  int ComputePairwiseTps(int totalNum);
+  int ApplyTps(int totalNum);
+  int DisplayResultSrep();
+  int TransformNOutput(itkThinPlateSplineExtended::Pointer tps,
+                       vtkPolyData* spokes, const std::string& outputFileName);
+  int TransformPoints(itkThinPlateSplineExtended::Pointer tps,
+                       vtkPolyData* poly, const std::string& outputFileName);
+  double CalculateSpokeLength(PointType tail, PointType tip);
+  void CalculateSpokeDirection(PointType tail, PointType tip, double *x, double *y, double *z);
 private:
 
   vtkSlicerSkeletalRepresentationInitializerLogic(const vtkSlicerSkeletalRepresentationInitializerLogic&); // Not implemented
