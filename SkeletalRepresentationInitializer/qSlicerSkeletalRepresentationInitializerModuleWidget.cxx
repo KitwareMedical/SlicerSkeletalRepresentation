@@ -140,6 +140,6 @@ void qSlicerSkeletalRepresentationInitializerModuleWidget::inklingFlow()
 void qSlicerSkeletalRepresentationInitializerModuleWidget::backwardFlow()
 {
     Q_D(qSlicerSkeletalRepresentationInitializerModuleWidget);
-    int maxIter = int(d->sl_max_iter->value());
+    int maxIter = static_cast<int>(d->sl_max_iter->value());
     d->logic()->BackwardFlow(maxIter);
 }

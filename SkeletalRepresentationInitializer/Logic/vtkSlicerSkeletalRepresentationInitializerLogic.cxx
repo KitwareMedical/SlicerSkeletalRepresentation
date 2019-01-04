@@ -136,11 +136,11 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::FlowSurfaceOneStep(double d
     std::cout << "flow one step : dt-" << dt << std::endl;
     std::cout << "flow one step : smooth amount-" << smooth_amount << std::endl;
 
-    char tempFileName[MAX_FILE_NAME];
-    sprintf(tempFileName, "%s/temp_output.vtk", this->GetApplicationLogic()->GetTemporaryPath());
+    std::string tempFileName(this->GetApplicationLogic()->GetTemporaryPath());
+    tempFileName += "/temp_output.vtk";
 
     vtkSmartPointer<vtkPolyDataReader> reader = vtkSmartPointer<vtkPolyDataReader>::New();
-    reader->SetFileName(tempFileName);
+    reader->SetFileName(tempFileName.c_str());
     reader->Update();
     vtkSmartPointer<vtkPolyData> mesh = reader->GetOutput();
     if(mesh == NULL)
@@ -236,7 +236,7 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::FlowSurfaceOneStep(double d
     vtkSmartPointer<vtkPolyDataWriter> writer =
         vtkSmartPointer<vtkPolyDataWriter>::New();
     writer->SetInputData(mesh);
-    writer->SetFileName(tempFileName);
+    writer->SetFileName(tempFileName.c_str());
     writer->Update();
 
     // compute the fitting ellipsoid
@@ -266,31 +266,14 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::SetInputFileName(const std:
 
     // save
     std::string tempDir = this->GetApplicationLogic()->GetTemporaryPath();
-    char tempFileName[MAX_FILE_NAME];
-    sprintf(tempFileName, "%s/initial_surface.vtk", tempDir.c_str());
+    std::string tempFileName;
+    tempFileName = tempDir + "/initial_surface.vtk";
 
     vtkSmartPointer<vtkPolyDataWriter> writer =
         vtkSmartPointer<vtkPolyDataWriter>::New();
     writer->SetInputData(mesh);
-    writer->SetFileName(tempFileName);
+    writer->SetFileName(tempFileName.c_str());
     writer->Update();
-
-    // TODO: delete this part if genuine backflow works
-//    std::string directory;
-//    const size_t last_slash_idx = filename.rfind('/');
-//    if (std::string::npos == last_slash_idx)
-//    {
-//        return -1;
-//    }
-//    directory = filename.substr(0, last_slash_idx);
-
-//    std::string ellFile("/best_fitting_ellipsoid.vtk");
-//    std::string modelFile("/srep.m3d");
-//    std::string ellModel("/ellipsoid.m3d");
-//    vtksys::SystemTools::CopyAFile(directory + ellFile, tempDir + ellFile, true);
-//    vtksys::SystemTools::CopyAFile(directory + modelFile, tempDir + modelFile, true);
-//    vtksys::SystemTools::CopyAFile(directory + ellModel, tempDir + ellModel, true);
-    ///////////////////////////////////////
     return 0;
 }
 
@@ -311,20 +294,18 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::FlowSurfaceMesh(const std::
     mass_filter->SetInputData(mesh);
     mass_filter->Update();
     double original_volume = mass_filter->GetVolume();
-//    std::cout << "Original Volume: " << original_volume << std::endl;
-
     // default parameters
     // double dt = 0.001;
     // double smooth_amount = 0.03;
-    // int max_iter = 300;
+    // int max_iter = 500;
     int iter = 0;
     double tolerance = 0.05;
     double q = 1.0;
 
     // create folder if not exist
-    char forwardFolder[MAX_FILE_NAME];
     const char *tempFolder = this->GetApplicationLogic()->GetTemporaryPath();
-    sprintf(forwardFolder, "%s/forward", tempFolder);
+    std::string forwardFolder(tempFolder);
+    forwardFolder += "/forward";
     std::cout << "forward folder" << forwardFolder << std::endl;
     if (!vtksys::SystemTools::FileExists(forwardFolder, false))
     {
@@ -406,20 +387,19 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::FlowSurfaceMesh(const std::
         points->Modified();
         // TODO: move to the proper directory
         // save the result for the purpose of backward flow
-        char fileName[MAX_FILE_NAME];
-        sprintf(fileName, "%s/%04d.vtk", forwardFolder, iter+1);
-
+        std::string fileName;
+        fileName = forwardFolder + "/" + std::to_string(iter+1) + ".vtk";
         vtkSmartPointer<vtkPolyDataWriter> writer =
             vtkSmartPointer<vtkPolyDataWriter>::New();
         writer->SetInputData(mesh);
-        writer->SetFileName(fileName);
+        writer->SetFileName(fileName.c_str());
         writer->Update();
 
         if((iter +1) % freq_output == 0)
         {
-            char modelName[128];
-            sprintf(modelName, "output#%04d", iter+1);
-            AddModelNodeToScene(mesh, modelName, false);
+            std::string modelName;
+            modelName = "output" + std::to_string(iter+1);
+            AddModelNodeToScene(mesh, modelName.c_str(), false);
             vtkSmartPointer<vtkCenterOfMass> centerMassFilter =
                 vtkSmartPointer<vtkCenterOfMass>::New();
             centerMassFilter->SetInputData(mesh);
@@ -572,13 +552,14 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::ShowFittingEllipsoid(vtkPol
     rx = radii(2); ry = radii(1); rz = radii(0);
 
     // output to file
-    char ellipsoidFile[MAX_FILE_NAME];
     const char *tempFolder = this->GetApplicationLogic()->GetTemporaryPath();
-    sprintf(ellipsoidFile, "%s/ellipsoid.vtk", tempFolder);
+
+    std::string ellipsoidFile(tempFolder);
+    ellipsoidFile += "/ellipsoid.vtk";
     vtkSmartPointer<vtkPolyDataWriter> writer =
         vtkSmartPointer<vtkPolyDataWriter>::New();
     writer->SetInputData(best_fitting_ellipsoid_polydata);
-    writer->SetFileName(ellipsoidFile);
+    writer->SetFileName(ellipsoidFile.c_str());
     writer->Update();
 
     return 0;
@@ -590,9 +571,9 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::GenerateSrepForEllipsoid(vt
                                                                               int nRows, int nCols, int totalNum)
 {
     // create folder if not exist
-    char modelFolder[MAX_FILE_NAME];
     const char *tempFolder = this->GetApplicationLogic()->GetTemporaryPath();
-    sprintf(modelFolder, "%s/model", tempFolder);
+    std::string modelFolder(tempFolder);
+    modelFolder += "/model";
     std::cout << "s-reps folder" << modelFolder << std::endl;
     if (!vtksys::SystemTools::FileExists(modelFolder, false))
     {
@@ -603,10 +584,10 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::GenerateSrepForEllipsoid(vt
     }
 
     // copy surface of ellipsoid to model folder
-    char ellSurfaceFile[MAX_FILE_NAME];
-    char newEllSurfaceFile[MAX_FILE_NAME];
-    sprintf(ellSurfaceFile, "%s/ellipsoid.vtk", tempFolder);
-    sprintf(newEllSurfaceFile, "%s/forward/%04d.vtk", tempFolder, totalNum + 1);
+    std::string ellSurfaceFile(tempFolder);
+    ellSurfaceFile += "/ellipsoid.vtk";
+    std::string  newEllSurfaceFile(tempFolder);
+    newEllSurfaceFile = newEllSurfaceFile + "/forward/" + std::to_string(totalNum + 1) + ".vtk";
     vtksys::SystemTools::CopyAFile(ellSurfaceFile, newEllSurfaceFile, true);
 
     using namespace Eigen;
@@ -928,11 +909,11 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::GenerateSrepForEllipsoid(vt
 
     // write to file
     vtkSmartPointer<vtkPolyDataWriter> upSpokeWriter = vtkSmartPointer<vtkPolyDataWriter>::New();
-    char upFileName[MAX_FILE_NAME];
-    char downFileName[MAX_FILE_NAME];
-    char crestFileName[MAX_FILE_NAME];
-    sprintf(upFileName, "%s/up%04d.vtk", modelFolder, totalNum);
-    upSpokeWriter->SetFileName(upFileName);
+    std::string upFileName(modelFolder);
+    std::string downFileName(modelFolder);
+    std::string crestFileName(modelFolder);
+    upFileName = upFileName + "/up" + std::to_string(totalNum) + ".vtk";
+    upSpokeWriter->SetFileName(upFileName.c_str());
     upSpokeWriter->SetInputData(upSpokes_poly);
     upSpokeWriter->Update();
 
@@ -947,9 +928,9 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::GenerateSrepForEllipsoid(vt
 
     AddModelNodeToScene(downSpokes_poly, "down spokes for ellipsoid", true, 1, 0, 1);
 
-    sprintf(downFileName, "%s/down%04d.vtk", modelFolder, totalNum);
+    downFileName = downFileName + "/down" + std::to_string(totalNum) + ".vtk";
     vtkSmartPointer<vtkPolyDataWriter> downSpokeWriter = vtkSmartPointer<vtkPolyDataWriter>::New();
-    downSpokeWriter->SetFileName(downFileName);
+    downSpokeWriter->SetFileName(downFileName.c_str());
     downSpokeWriter->SetInputData(downSpokes_poly);
     downSpokeWriter->Update();
 
@@ -977,10 +958,10 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::GenerateSrepForEllipsoid(vt
     srep_poly->SetPolys(skeletal_mesh);
     AddModelNodeToScene(srep_poly, "skeletal mesh for ellipsoid", true, 0, 0, 0);
 
-    char meshFileName[MAX_FILE_NAME];
-    sprintf(meshFileName, "%s/mesh%04d.vtk", modelFolder, totalNum);
+    std::string meshFileName(modelFolder);
+    meshFileName = meshFileName + "/mesh" + std::to_string(totalNum) + ".vtk";
     vtkSmartPointer<vtkPolyDataWriter> meshWriter = vtkSmartPointer<vtkPolyDataWriter>::New();
-    meshWriter->SetFileName(meshFileName);
+    meshWriter->SetFileName(meshFileName.c_str());
     meshWriter->SetInputData(srep_poly);
     meshWriter->Update();
 
@@ -1030,9 +1011,9 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::GenerateSrepForEllipsoid(vt
     crestSpokes_poly->GetPointData()->SetActiveScalars("spokeLength");
 
     AddModelNodeToScene(crestSpokes_poly, "crest spokes for ellipsoid", true, 1, 0, 0);
-    sprintf(crestFileName, "%s/crest%04d.vtk", modelFolder, totalNum);
+    crestFileName = crestFileName + "/crest" + std::to_string(totalNum) + ".vtk";
     vtkSmartPointer<vtkPolyDataWriter> crestSpokeWriter = vtkSmartPointer<vtkPolyDataWriter>::New();
-    crestSpokeWriter->SetFileName(crestFileName);
+    crestSpokeWriter->SetFileName(crestFileName.c_str());
     crestSpokeWriter->SetInputData(crestSpokes_poly);
     crestSpokeWriter->Update();
 
@@ -1113,10 +1094,10 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::GenerateSrepForEllipsoid(vt
     foldCurve_poly->SetLines(fold_curve);
     AddModelNodeToScene(foldCurve_poly, "fold curve of ellipsoid", true, 1, 1, 0);
 
-    char curveFileName[MAX_FILE_NAME];
-    sprintf(curveFileName, "%s/curve%04d.vtk", modelFolder, totalNum);
+    std::string curveFileName(modelFolder);
+    curveFileName = curveFileName + "/curve" + std::to_string(totalNum) + ".vtk";
     vtkSmartPointer<vtkPolyDataWriter> curveWriter = vtkSmartPointer<vtkPolyDataWriter>::New();
-    curveWriter->SetFileName(curveFileName);
+    curveWriter->SetFileName(curveFileName.c_str());
     curveWriter->SetInputData(foldCurve_poly);
     curveWriter->Update();
     return 0;
@@ -1176,12 +1157,12 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::InklingFlow(const std::stri
     std::cout << max_iter << std::endl;
     std::cout << freq_output << std::endl;
 
-    char tempFileName[MAX_FILE_NAME];
-    sprintf(tempFileName, "%s/temp_output.vtk", this->GetApplicationLogic()->GetTemporaryPath());
+    std::string tempFileName(this->GetApplicationLogic()->GetTemporaryPath());
+    tempFileName += "/temp_output.vtk";
 
     vtkSmartPointer<vtkPolyDataReader> reader =
         vtkSmartPointer<vtkPolyDataReader>::New();
-    reader->SetFileName(tempFileName);
+    reader->SetFileName(tempFileName.c_str());
     reader->Update();
 
     vtkSmartPointer<vtkPolyData> mesh =
@@ -1317,8 +1298,6 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::InklingFlow(const std::stri
             }
             points->SetPoint(i, p);
         }
-        // std::cout << "min diff^2:" << maxVal << std::endl;
-        // std::cout << "min position:" << maxIndex << std::endl;
         points->Modified();
 
         mass_filter->SetInputData(mesh);
@@ -1338,7 +1317,6 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::InklingFlow(const std::stri
         points->GetPoint(maxIndex, testRender);
 //        AddPointToScene(testRender[0], testRender[1], testRender[2], 13); // sphere3D 
 
-        // TODO: best fitting ellipsoid
         HideNodesByNameByClass("output_inkling","vtkMRMLModelNode");
 
         // then add this new intermediate result
@@ -1354,9 +1332,9 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::InklingFlow(const std::stri
 //        AddModelNodeToScene(mesh, modelName, true);
          if((iter +1) % freq_output == 0)
          {
-             char modelName[128];
-             sprintf(modelName, "output_inkling#%04d", iter+1);
-             AddModelNodeToScene(mesh, modelName, false);
+             std::string modelName("output_inkling");
+             modelName += std::to_string(iter+1);
+             AddModelNodeToScene(mesh, modelName.c_str(), false);
          }
 
         q -= 0.0001;
@@ -1416,9 +1394,11 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::ComputePairwiseTps(int tota
     typedef PointSetType::PointIdentifier PointIdType;
 
     // create folder if not exist
-    char backwardFolder[MAX_FILE_NAME];
-    const char *tempFolder = this->GetApplicationLogic()->GetTemporaryPath();
-    sprintf(backwardFolder, "%s/backward", tempFolder);
+
+    const char *c_tempFolder = this->GetApplicationLogic()->GetTemporaryPath();
+    std::string tempFolder(c_tempFolder);
+    std::string backwardFolder(tempFolder);
+    backwardFolder += "/backward";
     std::cout << "backward folder" << backwardFolder << std::endl;
     if (!vtksys::SystemTools::FileExists(backwardFolder, false))
     {
@@ -1430,23 +1410,26 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::ComputePairwiseTps(int tota
     }
 
     // compute transformation matrix by current surface and backward surface
-    char inputMeshFile[MAX_FILE_NAME];
-    char nextMeshFile[MAX_FILE_NAME];
+
     vtkSmartPointer<vtkPolyDataReader> sourceSurfaceReader = vtkSmartPointer<vtkPolyDataReader>::New();
     vtkSmartPointer<vtkPolyDataReader> targetSurfaceReader = vtkSmartPointer<vtkPolyDataReader>::New();
 
     std::cout << "Computing pairwise transformation matrix via TPS for " << totalNum << " cases..." << std::endl;
     for(int stepNum = totalNum; stepNum > 1; --stepNum)
     {
-        sprintf(inputMeshFile, "%s/forward/%04d.vtk", tempFolder, stepNum);
-        sprintf(nextMeshFile, "%s/forward/%04d.vtk", tempFolder, stepNum-1);
-        sourceSurfaceReader->SetFileName(inputMeshFile);
+        std::string inputMeshFile(tempFolder);
+        std::string nextMeshFile(tempFolder);
+        inputMeshFile += "/forward/";
+        nextMeshFile += "/forward/";
+        inputMeshFile = inputMeshFile + std::to_string(stepNum) + ".vtk";
+        nextMeshFile = nextMeshFile + std::to_string(stepNum - 1) + ".vtk";
+        sourceSurfaceReader->SetFileName(inputMeshFile.c_str());
         sourceSurfaceReader->Update();
 
         // current surface mesh
         vtkSmartPointer<vtkPolyData> polyData_source = sourceSurfaceReader->GetOutput();
 
-        targetSurfaceReader->SetFileName(nextMeshFile);
+        targetSurfaceReader->SetFileName(nextMeshFile.c_str());
         targetSurfaceReader->Update();
         // next surface mesh which back flow to
         vtkSmartPointer<vtkPolyData> polyData_target = targetSurfaceReader->GetOutput();
@@ -1492,58 +1475,58 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::ComputePairwiseTps(int tota
         // Apply tps on the srep in future (from the ellipsoid)
         // srep of totalNum == srep of ellipsoid
 //        std::cout << "Applying transformation matrix on from step:" << stepNum << " to " << stepNum-1 << std::endl;
-        char upFileName[MAX_FILE_NAME];
-        char downFileName[MAX_FILE_NAME];
-        char crestFileName[MAX_FILE_NAME];
-        sprintf(upFileName, "%s/model/up%04d.vtk", tempFolder, stepNum);
-        sprintf(downFileName, "%s/model/down%04d.vtk", tempFolder, stepNum);
-        sprintf(crestFileName, "%s/model/crest%04d.vtk", tempFolder, stepNum);
+        std::string upFileName(tempFolder);
+        std::string downFileName(tempFolder);
+        std::string crestFileName(tempFolder);
+        upFileName = upFileName + "/model/up" + std::to_string(stepNum) + ".vtk";
+        downFileName = downFileName + "/model/down" + std::to_string(stepNum) + ".vtk";
+        crestFileName = crestFileName + "/model/crest" + std::to_string(stepNum) + ".vtk";
         // read source srep
         vtkSmartPointer<vtkPolyDataReader> upSpokeReader = vtkSmartPointer<vtkPolyDataReader>::New();
-        upSpokeReader->SetFileName(upFileName);
+        upSpokeReader->SetFileName(upFileName.c_str());
         upSpokeReader->Update();
         vtkSmartPointer<vtkPolyData> upSpokes = upSpokeReader->GetOutput();
 
         vtkSmartPointer<vtkPolyDataReader> downSpokeReader = vtkSmartPointer<vtkPolyDataReader>::New();
-        downSpokeReader->SetFileName(downFileName);
+        downSpokeReader->SetFileName(downFileName.c_str());
         downSpokeReader->Update();
         vtkSmartPointer<vtkPolyData> downSpokes = downSpokeReader->GetOutput();
 
         vtkSmartPointer<vtkPolyDataReader> crestSpokeReader = vtkSmartPointer<vtkPolyDataReader>::New();
-        crestSpokeReader->SetFileName(crestFileName);
+        crestSpokeReader->SetFileName(crestFileName.c_str());
         crestSpokeReader->Update();
         vtkSmartPointer<vtkPolyData> crestSpokes = crestSpokeReader->GetOutput();
 
-        sprintf(upFileName, "%s/model/up%04d.vtk", tempFolder, stepNum-1);
-        std::string upOutputFile(upFileName);
+        upFileName = tempFolder + "/model/up" + std::to_string(stepNum - 1) + ".vtk";
+        std::string upOutputFile(upFileName.c_str());
         TransformNOutput(tps, upSpokes, upOutputFile);
         // display upspokes
 
-        sprintf(downFileName, "%s/model/down%04d.vtk", tempFolder, stepNum-1);
-        std::string downOutputFile(downFileName);
+        downFileName = tempFolder + "/model/down" + std::to_string(stepNum - 1) + ".vtk";
+        std::string downOutputFile(downFileName.c_str());
         TransformNOutput(tps, downSpokes, downOutputFile);
 
-        sprintf(crestFileName, "%s/model/crest%04d.vtk", tempFolder, stepNum-1);
-        std::string crestOutputFile(crestFileName);
+        crestFileName = tempFolder + "/model/crest" + std::to_string(stepNum - 1) + ".vtk";
+        std::string crestOutputFile(crestFileName.c_str());
         TransformNOutput(tps, crestSpokes, crestOutputFile);
 
         // Apply transformation matrix on the skeletal sheet and fold curve
-        char meshFileName[MAX_FILE_NAME];
-        sprintf(meshFileName, "%s/model/mesh%04d.vtk", tempFolder, stepNum); // Transform input
+        std::string meshFileName(tempFolder);
+        meshFileName = tempFolder + "/model/mesh" + std::to_string(stepNum) + ".vtk";// Transform input
         vtkSmartPointer<vtkPolyDataReader> meshReader = vtkSmartPointer<vtkPolyDataReader>::New();
-        meshReader->SetFileName(meshFileName);
+        meshReader->SetFileName(meshFileName.c_str());
         meshReader->Update();
         vtkSmartPointer<vtkPolyData> meshPoly = meshReader->GetOutput();
-        sprintf(meshFileName, "%s/model/mesh%04d.vtk", tempFolder, stepNum-1); // output
+        meshFileName = tempFolder + "/model/mesh" + std::to_string(stepNum-1) + ".vtk";// output
         TransformPoints(tps, meshPoly, meshFileName);
 
-        char curveFileName[MAX_FILE_NAME];
-        sprintf(curveFileName, "%s/model/curve%04d.vtk", tempFolder, stepNum); // Transform input
+        std::string curveFileName(tempFolder);
+        curveFileName = tempFolder + "/model/curve" + std::to_string(stepNum) + ".vtk"; // Transform input
         vtkSmartPointer<vtkPolyDataReader> curveReader = vtkSmartPointer<vtkPolyDataReader>::New();
-        curveReader->SetFileName(curveFileName);
+        curveReader->SetFileName(curveFileName.c_str());
         curveReader->Update();
         vtkSmartPointer<vtkPolyData> curvePoly = curveReader->GetOutput();
-        sprintf(curveFileName, "%s/model/curve%04d.vtk", tempFolder, stepNum-1); // output
+        curveFileName = tempFolder + "/model/curve" + std::to_string(stepNum-1) + ".vtk"; // output
         TransformPoints(tps, curvePoly, curveFileName);
     }
 }
@@ -1566,7 +1549,8 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::ApplyTps(int totalNum)
 {
 
     std::cout << "Applying transformation matrix to s-reps..." << std::endl;
-    const char *tempFolder = this->GetApplicationLogic()->GetTemporaryPath();
+    const char *c_tempFolder = this->GetApplicationLogic()->GetTemporaryPath();
+    std::string tempFolder(c_tempFolder);
     typedef double CoordinateRepType;
     typedef itkThinPlateSplineExtended TransformType;
     typedef itk::Point< CoordinateRepType, 3 > PointType;
@@ -1577,8 +1561,8 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::ApplyTps(int totalNum)
 
     for(int stepNum = totalNum; stepNum > 0; --stepNum)
     {
-        char transformFileName[MAX_FILE_NAME];
-        sprintf(transformFileName, "%s/backward/%04d.txt", tempFolder, stepNum);
+        std::string transformFileName(tempFolder);
+        transformFileName = transformFileName + "/backward/" + std::to_string(stepNum) + ".txt";
         ifstream inFile;
         inFile.open(transformFileName);
         if(!inFile) {
@@ -1636,9 +1620,9 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::ApplyTps(int totalNum)
         vtkSmartPointer<vtkPolyDataReader> reader_source = vtkSmartPointer<vtkPolyDataReader>::New();
         vtkSmartPointer<vtkPolyData> polyData_source = vtkSmartPointer<vtkPolyData>::New();
 
-        char sourceLandMarkFileName[MAX_FILE_NAME];
-        sprintf(sourceLandMarkFileName, "%s/forward/%04d.vtk", tempFolder, stepNum+1);
-        reader_source->SetFileName(sourceLandMarkFileName);
+        std::string sourceLandMarkFileName(tempFolder);
+        sourceLandMarkFileName = sourceLandMarkFileName + "/forward/" + std::to_string(stepNum + 1) + ".vtk";
+        reader_source->SetFileName(sourceLandMarkFileName.c_str());
         reader_source->Update();
         polyData_source = reader_source->GetOutput();
         PointIdType id_s = itk::NumericTraits< PointIdType >::Zero;
@@ -1657,39 +1641,40 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::ApplyTps(int totalNum)
         }
         tps->SetSourceLandmarks(sourceLandMarks);
 
-        char upFileName[MAX_FILE_NAME];
-        char downFileName[MAX_FILE_NAME];
-        char crestFileName[MAX_FILE_NAME];
-        sprintf(upFileName, "%s/model/up%04d.vtk", tempFolder, stepNum+1);
-        sprintf(downFileName, "%s/model/down%04d.vtk", tempFolder, stepNum+1);
-        sprintf(crestFileName, "%s/model/crest%04d.vtk", tempFolder, stepNum+1);
+        std::string upFileName(tempFolder);
+        std::string downFileName(tempFolder);
+        std::string crestFileName(tempFolder);
+        upFileName = upFileName + "/model/up" + std::to_string(stepNum + 1) + ".vtk";
+        downFileName = downFileName + "/model/down" + std::to_string(stepNum + 1) + ".vtk";
+        crestFileName = crestFileName + "/model/crest" + std::to_string(stepNum + 1) + ".vtk";
+
         // read source srep
         vtkSmartPointer<vtkPolyDataReader> upSpokeReader = vtkSmartPointer<vtkPolyDataReader>::New();
-        upSpokeReader->SetFileName(upFileName);
+        upSpokeReader->SetFileName(upFileName.c_str());
         upSpokeReader->Update();
         vtkSmartPointer<vtkPolyData> upSpokes = upSpokeReader->GetOutput();
 
         vtkSmartPointer<vtkPolyDataReader> downSpokeReader = vtkSmartPointer<vtkPolyDataReader>::New();
-        downSpokeReader->SetFileName(downFileName);
+        downSpokeReader->SetFileName(downFileName.c_str());
         downSpokeReader->Update();
         vtkSmartPointer<vtkPolyData> downSpokes = downSpokeReader->GetOutput();
 
         vtkSmartPointer<vtkPolyDataReader> crestSpokeReader = vtkSmartPointer<vtkPolyDataReader>::New();
-        crestSpokeReader->SetFileName(crestFileName);
+        crestSpokeReader->SetFileName(crestFileName.c_str());
         crestSpokeReader->Update();
         vtkSmartPointer<vtkPolyData> crestSpokes = crestSpokeReader->GetOutput();
 
-        sprintf(upFileName, "%s/model/up%04d.vtk", tempFolder, stepNum);
-        std::string upOutputFile(upFileName);
+        upFileName = tempFolder + "/model/up" + std::to_string(stepNum);
+        std::string upOutputFile(upFileName.c_str());
         TransformNOutput(tps, upSpokes, upOutputFile);
         // display upspokes
 
-        sprintf(downFileName, "%s/model/down%04d.vtk", tempFolder, stepNum);
-        std::string downOutputFile(downFileName);
+        downFileName = tempFolder + "/model/down" + std::to_string(stepNum);
+        std::string downOutputFile(downFileName.c_str());
         TransformNOutput(tps, downSpokes, downOutputFile);
 
-        sprintf(crestFileName, "%s/model/crest%04d.vtk", tempFolder, stepNum);
-        std::string crestOutputFile(crestFileName);
+        crestFileName = tempFolder + "/model/crest" + std::to_string(stepNum);
+        std::string crestOutputFile(crestFileName.c_str());
         TransformNOutput(tps, crestSpokes, crestOutputFile);
 
     }
@@ -1700,41 +1685,41 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::DisplayResultSrep()
 {
     // Hide other nodes.
     HideNodesByClass("vtkMRMLModelNode");
-
-    char upFileName[MAX_FILE_NAME];
-    char downFileName[MAX_FILE_NAME];
-    char crestFileName[MAX_FILE_NAME];
-    char meshFileName[MAX_FILE_NAME];
-    char curveFileName[MAX_FILE_NAME];
     const char *tempFolder = this->GetApplicationLogic()->GetTemporaryPath();
-    sprintf(upFileName, "%s/model/up0001.vtk", tempFolder);
-    sprintf(downFileName, "%s/model/down0001.vtk", tempFolder);
-    sprintf(crestFileName, "%s/model/crest0001.vtk", tempFolder);
-    sprintf(meshFileName, "%s/model/mesh0001.vtk", tempFolder);
-    sprintf(curveFileName, "%s/model/curve0001.vtk",tempFolder);
+    std::string upFileName(tempFolder);
+    std::string downFileName(tempFolder);
+    std::string crestFileName(tempFolder);
+    std::string meshFileName(tempFolder);
+    std::string curveFileName(tempFolder);
+
+    upFileName += "/model/up1.vtk";
+    downFileName += "/model/down1.vtk";
+    crestFileName += "/model/crest1.vtk";
+    meshFileName += "/model/mesh1.vtk";
+    curveFileName += "/model/curve1.vtk";
 
     vtkSmartPointer<vtkPolyDataReader> upSpokeReader = vtkSmartPointer<vtkPolyDataReader>::New();
-    upSpokeReader->SetFileName(upFileName);
+    upSpokeReader->SetFileName(upFileName.c_str());
     upSpokeReader->Update();
     vtkSmartPointer<vtkPolyData> upSpoke_poly = upSpokeReader->GetOutput();
 
     vtkSmartPointer<vtkPolyDataReader> downSpokeReader = vtkSmartPointer<vtkPolyDataReader>::New();
-    downSpokeReader->SetFileName(downFileName);
+    downSpokeReader->SetFileName(downFileName.c_str());
     downSpokeReader->Update();
     vtkSmartPointer<vtkPolyData> downSpoke_poly = downSpokeReader->GetOutput();
 
     vtkSmartPointer<vtkPolyDataReader> crestSpokeReader = vtkSmartPointer<vtkPolyDataReader>::New();
-    crestSpokeReader->SetFileName(crestFileName);
+    crestSpokeReader->SetFileName(crestFileName.c_str());
     crestSpokeReader->Update();
     vtkSmartPointer<vtkPolyData> crestSpoke_poly = crestSpokeReader->GetOutput();
 
     vtkSmartPointer<vtkPolyDataReader> meshReader = vtkSmartPointer<vtkPolyDataReader>::New();
-    meshReader->SetFileName(meshFileName);
+    meshReader->SetFileName(meshFileName.c_str());
     meshReader->Update();
     vtkSmartPointer<vtkPolyData> meshPoly = meshReader->GetOutput();
 
     vtkSmartPointer<vtkPolyDataReader> curveReader = vtkSmartPointer<vtkPolyDataReader>::New();
-    curveReader->SetFileName(curveFileName);
+    curveReader->SetFileName(curveFileName.c_str());
     curveReader->Update();
     vtkSmartPointer<vtkPolyData> curvePoly = curveReader->GetOutput();
 
