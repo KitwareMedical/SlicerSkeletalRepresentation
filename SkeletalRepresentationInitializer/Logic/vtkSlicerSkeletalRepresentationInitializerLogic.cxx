@@ -1509,6 +1509,7 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::ComputePairwiseTps(int tota
         curveFileName = tempFolder + "/model/curve" + std::to_string(stepNum-1) + ".vtk"; // output
         TransformPoints(tps, curvePoly, curveFileName);
     }
+    return 0;
 }
 
 int vtkSlicerSkeletalRepresentationInitializerLogic::BackwardFlow(int totalNum)
@@ -1533,9 +1534,7 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::ApplyTps(int totalNum)
     typedef double CoordinateRepType;
     typedef itkThinPlateSplineExtended TransformType;
     typedef itk::Point< CoordinateRepType, 3 > PointType;
-    typedef std::vector< PointType > PointArrayType;
     typedef TransformType::PointSetType PointSetType;
-    typedef PointSetType::Pointer PointSetPointer;
     typedef PointSetType::PointIdentifier PointIdType;
 
     for(int stepNum = totalNum; stepNum > 0; --stepNum)
@@ -1571,8 +1570,8 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::ApplyTps(int totalNum)
         buffer.clear();
         std::getline(inFile, buffer);
         std::getline(inFile, buffer);
-        for(int i = 0; i < A.rows(); i++) {
-            for(int j = 0; j < A.cols(); j++) {
+        for(unsigned int i = 0; i < A.rows(); i++) {
+            for(unsigned int j = 0; j < A.cols(); j++) {
                 std::string buffer2;
                 std::getline(inFile, buffer2,',');
                 double entry = atof(buffer2.c_str());
@@ -1582,7 +1581,7 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::ApplyTps(int totalNum)
         buffer.clear();
         std::getline(inFile, buffer);
         std::getline(inFile, buffer);
-        for(int i = 0; i < B.size(); i++) {
+        for(unsigned int i = 0; i < B.size(); i++) {
             std::string buffer2;
             std::getline(inFile, buffer2, ',');
             double entry = atof(buffer2.c_str());
@@ -1655,7 +1654,7 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::ApplyTps(int totalNum)
         TransformNOutput(tps, crestSpokes, crestOutputFile);
 
     }
-
+    return 0;
 }
 
 int vtkSlicerSkeletalRepresentationInitializerLogic::DisplayResultSrep()
@@ -1699,6 +1698,7 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::DisplayResultSrep()
     AddModelNodeToScene(crestSpoke_poly, "crest spokes for initial object", true, 1, 0, 0);
     AddModelNodeToScene(meshPoly, "skeletal mesh for initial object", true, 0, 0, 0);
     AddModelNodeToScene(curvePoly, "fold curve for initial object", true, 1, 1, 0);
+    return 0;
 }
 int vtkSlicerSkeletalRepresentationInitializerLogic::TransformNOutput(itkThinPlateSplineExtended::Pointer tps, vtkPolyData* spokes, const std::string& outputFileName)
 {
@@ -1775,6 +1775,7 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::TransformPoints(itkThinPlat
     writer->SetFileName(outputFileName.c_str());
     writer->SetInputData(poly);
     writer->Update();
+    return 0;
 }
 double vtkSlicerSkeletalRepresentationInitializerLogic::CalculateSpokeLength(PointType tail, PointType tip){
     PointType spokeVector;
