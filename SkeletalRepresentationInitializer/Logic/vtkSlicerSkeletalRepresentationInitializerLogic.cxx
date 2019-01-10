@@ -385,7 +385,6 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::FlowSurfaceMesh(const std::
 //            points->SetPoint(i, p);
         }
         points->Modified();
-        // TODO: move to the proper directory
         // save the result for the purpose of backward flow
         std::string fileName;
         fileName = forwardFolder + "/" + std::to_string(iter+1) + ".vtk";
