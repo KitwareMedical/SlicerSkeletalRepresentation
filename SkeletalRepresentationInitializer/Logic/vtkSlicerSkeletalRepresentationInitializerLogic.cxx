@@ -251,7 +251,7 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::FlowSurfaceOneStep(double d
 //    ShowFittingEllipsoid(points, curr_volume, center);
     return 0;
 }
-int vtkSlicerSkeletalRepresentationInitializerLogic::SetInputFileName(const std::string &filename)
+void vtkSlicerSkeletalRepresentationInitializerLogic::SetInputFileName(const std::string &filename)
 {
     vtkSmartPointer<vtkPolyDataReader> reader =
         vtkSmartPointer<vtkPolyDataReader>::New();
@@ -274,7 +274,6 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::SetInputFileName(const std:
     writer->SetInputData(mesh);
     writer->SetFileName(tempFileName.c_str());
     writer->Update();
-    return 0;
 }
 
 // flow surface to the end: either it's ellipsoidal enough or reach max_iter
@@ -466,7 +465,7 @@ void vtkSlicerSkeletalRepresentationInitializerLogic::AddModelNodeToScene(vtkPol
     scene->AddNode(modelNode);
 
 }
-int vtkSlicerSkeletalRepresentationInitializerLogic::ShowFittingEllipsoid(vtkPolyData* mesh, double &rx, double &ry, double &rz)
+void vtkSlicerSkeletalRepresentationInitializerLogic::ShowFittingEllipsoid(vtkPolyData* mesh, double &rx, double &ry, double &rz)
 {
     vtkSmartPointer<vtkPoints> points = mesh->GetPoints();
     Eigen::MatrixXd point_matrix(points->GetNumberOfPoints(), 3);
@@ -559,12 +558,11 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::ShowFittingEllipsoid(vtkPol
     writer->SetFileName(ellipsoidFile.c_str());
     writer->Update();
 
-    return 0;
 }
 
 const double ELLIPSE_SCALE = 0.9;
 const double EPS = 0.0001;
-int vtkSlicerSkeletalRepresentationInitializerLogic::GenerateSrepForEllipsoid(vtkPolyData *mesh,
+void vtkSlicerSkeletalRepresentationInitializerLogic::GenerateSrepForEllipsoid(vtkPolyData *mesh,
                                                                               int nRows, int nCols, int totalNum)
 {
     // create folder if not exist
@@ -1089,7 +1087,6 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::GenerateSrepForEllipsoid(vt
     curveWriter->SetFileName(curveFileName.c_str());
     curveWriter->SetInputData(foldCurve_poly);
     curveWriter->Update();
-    return 0;
 }
 
 void vtkSlicerSkeletalRepresentationInitializerLogic::HideNodesByNameByClass(const std::string & nodeName, const std::string &className)
@@ -1374,7 +1371,7 @@ void vtkSlicerSkeletalRepresentationInitializerLogic::AddPointToScene(double x, 
 }
 
 // compute and apply tps transformation matrix
-int vtkSlicerSkeletalRepresentationInitializerLogic::ComputePairwiseTps(int totalNum)
+void vtkSlicerSkeletalRepresentationInitializerLogic::ComputePairwiseTps(int totalNum)
 {
 
     typedef itkThinPlateSplineExtended TransformType;
@@ -1509,10 +1506,9 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::ComputePairwiseTps(int tota
         curveFileName = tempFolder + "/model/curve" + std::to_string(stepNum-1) + ".vtk"; // output
         TransformPoints(tps, curvePoly, curveFileName);
     }
-    return 0;
 }
 
-int vtkSlicerSkeletalRepresentationInitializerLogic::BackwardFlow(int totalNum)
+void vtkSlicerSkeletalRepresentationInitializerLogic::BackwardFlow(int totalNum)
 {
 
     // 1. compute pairwise TPS
@@ -1523,7 +1519,6 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::BackwardFlow(int totalNum)
 
     // 2. display the srep for the initial object
     DisplayResultSrep();
-    return 0;
 }
 
 int vtkSlicerSkeletalRepresentationInitializerLogic::ApplyTps(int totalNum)
@@ -1657,7 +1652,7 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::ApplyTps(int totalNum)
     return 0;
 }
 
-int vtkSlicerSkeletalRepresentationInitializerLogic::DisplayResultSrep()
+void vtkSlicerSkeletalRepresentationInitializerLogic::DisplayResultSrep()
 {
     // Hide other nodes.
     HideNodesByClass("vtkMRMLModelNode");
@@ -1698,9 +1693,9 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::DisplayResultSrep()
     AddModelNodeToScene(crestSpoke_poly, "crest spokes for initial object", true, 1, 0, 0);
     AddModelNodeToScene(meshPoly, "skeletal mesh for initial object", true, 0, 0, 0);
     AddModelNodeToScene(curvePoly, "fold curve for initial object", true, 1, 1, 0);
-    return 0;
+
 }
-int vtkSlicerSkeletalRepresentationInitializerLogic::TransformNOutput(itkThinPlateSplineExtended::Pointer tps, vtkPolyData* spokes, const std::string& outputFileName)
+void vtkSlicerSkeletalRepresentationInitializerLogic::TransformNOutput(itkThinPlateSplineExtended::Pointer tps, vtkPolyData* spokes, const std::string& outputFileName)
 {
     vtkPoints* newPoints = vtkPoints::New();
     newPoints->SetDataTypeToDouble();
@@ -1750,11 +1745,9 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::TransformNOutput(itkThinPla
     writer->SetFileName(outputFileName.c_str());
     writer->SetInputData(newSpokePoly);
     writer->Update();
-
-    return 1;
 }
 
-int vtkSlicerSkeletalRepresentationInitializerLogic::TransformPoints(itkThinPlateSplineExtended::Pointer tps,
+void vtkSlicerSkeletalRepresentationInitializerLogic::TransformPoints(itkThinPlateSplineExtended::Pointer tps,
                                                                      vtkPolyData *poly, const std::string &outputFileName)
 {
     vtkSmartPointer<vtkPoints> pts = poly->GetPoints();
@@ -1775,7 +1768,6 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::TransformPoints(itkThinPlat
     writer->SetFileName(outputFileName.c_str());
     writer->SetInputData(poly);
     writer->Update();
-    return 0;
 }
 double vtkSlicerSkeletalRepresentationInitializerLogic::CalculateSpokeLength(PointType tail, PointType tip){
     PointType spokeVector;
