@@ -820,6 +820,7 @@ void vtkSlicerSkeletalRepresentationInitializerLogic::GenerateSrepForEllipsoid(v
     upSpokes_pts->SetDataTypeToDouble();
     downSpokes_pts->SetDataTypeToDouble();
     crestSpokes_pts->SetDataTypeToDouble();
+    foldCurve_pts->SetDataTypeToDouble();
 
     vtkSmartPointer<vtkDoubleArray> upSpokeLengths = vtkSmartPointer<vtkDoubleArray>::New();
     vtkSmartPointer<vtkDoubleArray> downSpokeLengths = vtkSmartPointer<vtkDoubleArray>::New();
