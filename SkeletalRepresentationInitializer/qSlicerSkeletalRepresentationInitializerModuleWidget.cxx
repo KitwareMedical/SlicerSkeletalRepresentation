@@ -85,7 +85,6 @@ void qSlicerSkeletalRepresentationInitializerModuleWidget::setup()
   //QObject::connect(d->btn_match_ell, SIGNAL(clicked()), this, SLOT(pullUpFittingEllipsoid()));
   QObject::connect(d->btn_inkling_flow, SIGNAL(clicked()), this, SLOT(inklingFlow()));
   QObject::connect(d->btn_back_flow, SIGNAL(clicked()), this, SLOT(backwardFlow()));
-  QObject::connect(d->btn_generate_srep_ellipsoid, SIGNAL(clicked()), this, SLOT(generateSrep()));
 }
 
 void qSlicerSkeletalRepresentationInitializerModuleWidget::pullUpFittingEllipsoid()
@@ -141,25 +140,6 @@ void qSlicerSkeletalRepresentationInitializerModuleWidget::inklingFlow()
 void qSlicerSkeletalRepresentationInitializerModuleWidget::backwardFlow()
 {
     Q_D(qSlicerSkeletalRepresentationInitializerModuleWidget);
-    std::string filePath;
-    d->logic()->DummyBackwardFlow(filePath);
-
-    std::string msg("The result can be visualized with visualizer module. The result has been save to: ");
-    msg += filePath;
-    QMessageBox msgBox;
-    msgBox.setText(msg.c_str());
-    msgBox.exec();
-}
-
-void qSlicerSkeletalRepresentationInitializerModuleWidget::generateSrep()
-{
-    Q_D(qSlicerSkeletalRepresentationInitializerModuleWidget);
-    std::string filePath;
-    d->logic()->GenerateSrep(filePath);
-
-    std::string msg("The result can be visualized with visualizer module. The result has been save to: ");
-    msg += filePath;
-    QMessageBox msgBox;
-    msgBox.setText(msg.c_str());
-    msgBox.exec();
+    int maxIter = static_cast<int>(d->sl_max_iter->value());
+    d->logic()->BackwardFlow(maxIter);
 }
