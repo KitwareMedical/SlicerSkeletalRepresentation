@@ -2,10 +2,13 @@ import vtk, qt, ctk, slicer
 import os
 import logging
 import math
+import numpy as np
 import xml.etree.ElementTree as ET
 from slicer.ScriptedLoadableModule import (ScriptedLoadableModule, ScriptedLoadableModuleWidget,
                                            ScriptedLoadableModuleLogic, ScriptedLoadableModuleTest)
 from LegacyTransformer.legacyTransformer import legacyTransformer as transformer
+from LegacyTransformer import srep_io
+from LegacyTransformer import srep
 
 #
 # visualize new srep format
@@ -98,16 +101,18 @@ class SkeletalRepresentationVisualizerWidget(ScriptedLoadableModuleWidget):
         self.applyButton.toolTip = "Parse and visualize s-rep."
         self.layout.addWidget(self.applyButton)
 
-        # Unused
-        # self.boundarySurfaceRendering = qt.QCheckBox()
-        # self.boundarySurfaceRendering.checked = 0
-        # self.boundarySurfaceRendering.setToolTip("If checked, set the visibility of the boundary mesh")
-        # self.layout.addWidget(self.boundarySurfaceRendering)
+        #
+        # Convert SALT srep to legacy one
+        #
+        self.convertButton = qt.QPushButton("Convert s-rep")
+        self.convertButton.toolTip = "Convert the s-rep from SALT format to legacy"
+        self.layout.addWidget(self.convertButton)
 
         # connections
         self.applyButton.connect('clicked(bool)', self.onApplyButton)
         self.inputFileButton.connect('clicked(bool)', self.onInputFileButtonClicked)
         self.outputFolderButton.connect('clicked(bool)', self.onOutputFolderButtonClicked)
+        self.convertButton.connect('clicked(bool)', self.onConvertSrep)
         # Add vertical spacer
         self.layout.addStretch(1)
 
@@ -131,7 +136,9 @@ class SkeletalRepresentationVisualizerWidget(ScriptedLoadableModuleWidget):
         elif filename.endswith('.xml'):
             self.parametersCollapsibleButton.collapsed = True
             self.distSlider.setEnabled(False)
-            self.outputFolderButton.setEnabled(False)
+
+            # need to convert this format srep to legacy format
+#            self.outputFolderButton.setEnabled(False)
         else:
             logging.warning('Invalid input file')
             return False
@@ -145,6 +152,12 @@ class SkeletalRepresentationVisualizerWidget(ScriptedLoadableModuleWidget):
 
         # Show the filename in the label.
         self.outputFolderLabelFile.text = foldername
+
+    def onConvertSrep(self):
+        logic = SkeletalRepresentationVisualizerLogic()
+        filename = self.inputFileLabelFile.text
+        outputFolder = self.outputFolderLabelFile.text
+        logic.convert(filename, outputFolder)
 
     def onApplyButton(self):
         logic = SkeletalRepresentationVisualizerLogic()
@@ -492,6 +505,145 @@ class SkeletalRepresentationVisualizerLogic(ScriptedLoadableModuleLogic):
             logging.error('Need legacy s-rep(*.m3d) or new s-rep files.')
             return False
 
+    def convert(self, filename, outputFolder):
+        """
+        Convert an s-rep file format from SALT to legacy
+        """
+
+        # 1. check the file exists?
+        if os.path.exists(filename) is False or filename.endswith('.xml') is False:
+            logging.error('Input file path:' + filename + ' is not a valid header file (.xml). Choose a header file for SALT srep.')
+            return False
+
+        # 2. start converting
+        logging.info('Processing started')
+        """ Parse header.xml file, create models from the data, and visualize it. """
+
+        # parse header file
+        tree = ET.parse(filename)
+        upFileName = ''
+        crestFileName = ''
+        downFileName = ''
+        nCols = 0
+        nRows = 0
+        headerFolder = os.path.dirname(filename)
+        for child in tree.getroot():
+            if child.tag == 'upSpoke':
+                if os.path.isabs(child.text):
+                    upFileName = os.path.join(headerFolder, child.text)
+                upFileName = os.path.join(headerFolder, child.text)
+            elif child.tag == 'downSpoke':
+                downFileName = os.path.join(headerFolder, child.text)
+            elif child.tag == 'crestSpoke':
+                crestFileName = os.path.join(headerFolder, child.text)
+            elif child.tag == 'nRows':
+                nRows = (int)(child.text)
+            elif child.tag == 'nCols':
+                nCols = (int)(child.text)
+
+        legacySrep = srep.figure(nRows, nCols)
+
+        reader = vtk.vtkXMLPolyDataReader()
+        reader.SetFileName(upFileName)
+        reader.Update()
+        upSpokes = reader.GetOutput()
+
+        downSpokeReader = vtk.vtkXMLPolyDataReader()
+        downSpokeReader.SetFileName(downFileName)
+        downSpokeReader.Update()
+        downSpokes = downSpokeReader.GetOutput()
+
+        crestSpokeReader = vtk.vtkXMLPolyDataReader()
+        crestSpokeReader.SetFileName(crestFileName)
+        crestSpokeReader.Update()
+        crestSpokes = crestSpokeReader.GetOutput()
+
+        upPointData = upSpokes.GetPointData()
+        numberOfArrays = upPointData.GetNumberOfArrays()
+        downSpokesData = downSpokes.GetPointData()
+        numOfDownSpokes = downSpokesData.GetNumberOfArrays()
+        crestSpokeData = crestSpokes.GetPointData()
+        numOfCrestSpokes = crestSpokes.GetNumberOfPoints()
+
+        if numberOfArrays is 0 or numOfDownSpokes is 0 or numOfCrestSpokes is 0:
+            logging.warning("Up down and crest spoke can not be empty")
+            return False
+
+        if numberOfArrays != numOfDownSpokes:
+            logging.warning("Up spokes and down spokes don't match")
+            return False
+
+        if numOfCrestSpokes < nRows * 2 + (nCols - 2) * 2:
+            logging.warning("Too few crest spokes")
+            return False
+        upSpoke_points = vtk.vtkPoints()
+        upSpoke_lines = vtk.vtkCellArray()
+
+        arr_length = upPointData.GetArray('spokeLength')
+        arr_dirs = upPointData.GetArray('spokeDirection')
+
+        downSpokeLengths = downSpokesData.GetArray('spokeLength')
+        downSpokeDirs = downSpokesData.GetArray('spokeDirection')
+
+        crestSpokeLengths = crestSpokeData.GetArray('spokeLength')
+        crestSpokeDirs = crestSpokeData.GetArray('spokeDirection')
+        
+        for i in range(upSpokes.GetNumberOfPoints()):
+            pt = [0] * 3
+            upSpokes.GetPoint(i, pt)
+            up_spoke_length = arr_length.GetValue(i)
+            down_spoke_length = downSpokeLengths.GetValue(i)
+
+            baseIdx = i * 3
+            dirX = arr_dirs.GetValue(baseIdx)
+            dirY = arr_dirs.GetValue(baseIdx + 1)
+            dirZ = arr_dirs.GetValue(baseIdx + 2)
+            downDirX = downSpokeDirs.GetValue(baseIdx)
+            downDirY = downSpokeDirs.GetValue(baseIdx + 1)
+            downDirZ = downSpokeDirs.GetValue(baseIdx + 2)
+
+            currHub = srep.hub(pt[0], pt[1], pt[2])
+            currAtom = srep.atom(currHub)
+            topSpoke = srep.spoke(dirX, dirY, dirZ, up_spoke_length)
+            downSpoke = srep.spoke(downDirX, downDirY, downDirZ, down_spoke_length)
+            currAtom.addSpoke(topSpoke, 0)
+            currAtom.addSpoke(downSpoke, 1)
+
+            r = int(np.floor(i / nCols))
+            c = int(i - r * nCols)
+
+            if r == 0 or c == 0 or r == nRows - 1 or c == nCols - 1:
+                # crest spokeDirection
+                # convert from this index i to index in crest file
+                # the order of traversing crest atoms is starting from 1st row
+                # then traverse cw
+                crest_index = 0
+                if r == 0:
+                    # 1st rows
+                    crest_index = i
+                elif c == nCols - 1:
+                    # last col
+                    crest_index = nCols + r - 1
+                elif r == nRows - 1:
+                    # last row: the last parenthesis is about the dist from last col to current col
+                    crest_index = nCols - 1 + nRows - 1 + (nCols - 1 - c)
+                else:
+                    # first col
+                    crest_index = nCols - 1 + nRows - 1 + nCols - 1 + (nRows - 1 - r)
+                crest_spoke_length = crestSpokeLengths.GetValue(crest_index)
+
+                crestBase = crest_index * 3;
+                crestDirX = crestSpokeDirs.GetValue(crestBase)
+                crestDirY = crestSpokeDirs.GetValue(crestBase + 1)
+                crestDirZ = crestSpokeDirs.GetValue(crestBase + 2)
+                crestSpoke = srep.spoke(crestDirX, crestDirY, crestDirZ, crest_spoke_length)
+                currAtom.addSpoke(crestSpoke, 2)
+            currAtom.setLocation(r, c)
+            legacySrep.addAtom(r, c, currAtom)
+
+        outputFileName = outputFolder + '/legacy.m3d'
+        srep_io.writeSrepToM3D(outputFileName, legacySrep)
+        logging.info('Processing completed')
     def run(self, filename, dist, outputFolder):
 
         """

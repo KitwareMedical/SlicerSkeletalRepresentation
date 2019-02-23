@@ -40,6 +40,12 @@ class figure:
         self.numCols = numCols
         self.atoms = np.ndarray([numRows, numCols], dtype=object)
 
+    # the index is a mapping from [r,c] to single number
+    def addAtom(self, index, atom):
+        row = int(np.floor(index / self.numCols))
+        col = int(index - numCols * row)
+        self.addAtom(row, col, atom)
+        
     def addAtom(self, row, col, atom):
         self.atoms[row, col] = atom
 
