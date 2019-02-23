@@ -89,7 +89,7 @@ def writeSrepToM3D(filename, fig):
             if isCrest:
                 f.write('\t\t\tr[2] = {0};\n'.format(fig.atoms[row,col].crestSpoke.r).expandtabs(4));
             
-            f.write('\t\t\tselected = 1;\n'.format(fig.atoms[row,col].selected).expandtabs(4));
+#            f.write('\t\t\tselected = 1;\n'.format(fig.atoms[row,col].selected).expandtabs(4));
             
             if isCrest:
                 f.write('\t\t\ttype = EndPrimitive;\n'.expandtabs(4));
