@@ -30,9 +30,9 @@ void vtkBackwardFlowLogic::computePairwiseTPS(vtkPolyData* polyData_source, vtkP
 //	typedef itk::ThinPlateSplineKernelTransform< CoordinateRepType,3> TransformType;
 	typedef itkThinPlateSplineExtended TransformType;
 	typedef itk::Point< CoordinateRepType, 3 > PointType;
-	typedef std::vector< PointType > PointArrayType;
+	// typedef std::vector< PointType > PointArrayType;
 	typedef TransformType::PointSetType PointSetType;
-	typedef PointSetType::Pointer PointSetPointer;
+	// typedef PointSetType::Pointer PointSetPointer;
 	typedef PointSetType::PointIdentifier PointIdType;
 
 	PointSetType::Pointer sourceLandMarks = PointSetType::New();
@@ -92,29 +92,29 @@ void vtkBackwardFlowLogic::computePairwiseTPS(vtkPolyData* polyData_source, vtkP
 	fout.open(outputFileName);
 
 	if (fout)  {
-//        for (int i=0;i< featurematrix.size();i++){
-//            for (int j=0;j< featurematrix[i].size();j++)
+//        for (unsigned int i=0;i< featurematrix.size();i++){
+//            for (unsigned int j=0;j< featurematrix[i].size();j++)
 //                fout<< featurematrix[i][j]<<" ";
 //            fout<<endl;
 //        }
 		fout << D.rows() << "x" << D.cols() << "\n";
-		for(int i = 0; i < D.rows(); i++) {
-			for(int j = 0; j < D.cols(); j++) {
+		for(unsigned int i = 0; i < D.rows(); i++) {
+			for(unsigned int j = 0; j < D.cols(); j++) {
 				fout << D.get(i,j)<<",";
 			}
 			fout << "\n";
 		}
 
 		fout << A.rows() << "x" << A.cols() << "\n";
-		for(int i = 0; i < A.rows(); i++) {
-			for(int j = 0; j < A.cols(); j++) {
+		for(unsigned int i = 0; i < A.rows(); i++) {
+			for(unsigned int j = 0; j < A.cols(); j++) {
 				fout << A.get(i,j)<<",";
 			}
 			fout << "\n";
 		}
 
 		fout << B.size() << "\n";
-		for(int i = 0; i < B.size(); i++) {
+		for(unsigned int i = 0; i < B.size(); i++) {
 			fout << B.get(i)<<",";
 		}
 		fout << "\n";
@@ -130,8 +130,8 @@ void vtkBackwardFlowLogic::computePairwiseTPS(vtkPolyData* polyData_source, vtkP
 	fout.close();
 
 }
-void vtkBackwardFlowLogic::generateEllipsoidSrep(int numRow, int numCol, double ra, double rb, double rc, const char* outputPath)
-{
+// void vtkBackwardFlowLogic::generateEllipsoidSrep(int numRow, int numCol, double ra, double rb, double rc, const char* outputPath)
+// {
 //    using namespace std;
 //    ofstream fout(outputPath);
 //    if (!fout.is_open()) {
@@ -255,4 +255,4 @@ void vtkBackwardFlowLogic::generateEllipsoidSrep(int numRow, int numCol, double 
 //    fout << "}" << endl;
 //    fout.flush();
 //    fout.close();
-}
+// }

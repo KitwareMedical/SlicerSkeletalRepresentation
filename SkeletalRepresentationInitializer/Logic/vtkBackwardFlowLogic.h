@@ -12,6 +12,6 @@ public:
 
     void runApplyTPS();
     void computePairwiseTPS(vtkPolyData* afterFlow, vtkPolyData* beforeFlow, const char* outputFileName);
-    void generateEllipsoidSrep(int numRow, int numCol, double ra, double rb, double rc, const char* outputPath);
+    // void generateEllipsoidSrep(int numRow, int numCol, double ra, double rb, double rc, const char* outputPath);
 };
 #endif
