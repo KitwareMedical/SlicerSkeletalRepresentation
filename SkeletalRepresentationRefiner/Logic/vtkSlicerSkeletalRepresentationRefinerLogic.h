@@ -45,6 +45,15 @@ public:
   vtkTypeMacro(vtkSlicerSkeletalRepresentationRefinerLogic, vtkSlicerModuleLogic);
   void PrintSelf(ostream& os, vtkIndent indent);
 
+  // Select image file
+  void SetImageFileName(const std::string &imageFilePath);
+
+  // Select srep file
+  void SetSrepFileName(const std::string &srepFilePath);
+
+  // Start refinement
+  void Refine();
+
 protected:
   vtkSlicerSkeletalRepresentationRefinerLogic();
   virtual ~vtkSlicerSkeletalRepresentationRefinerLogic();
@@ -55,6 +64,14 @@ protected:
   virtual void UpdateFromMRMLScene();
   virtual void OnMRMLSceneNodeAdded(vtkMRMLNode* node);
   virtual void OnMRMLSceneNodeRemoved(vtkMRMLNode* node);
+
+private:
+  // interpolate s-rep
+  void Interpolate();
+
+private:
+  std::string mImageFilePath;
+  std::string mSrepFilePath;
 private:
 
   vtkSlicerSkeletalRepresentationRefinerLogic(const vtkSlicerSkeletalRepresentationRefinerLogic&); // Not implemented

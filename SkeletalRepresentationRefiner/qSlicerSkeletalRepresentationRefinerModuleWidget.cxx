@@ -22,20 +22,41 @@
 #include "qSlicerSkeletalRepresentationRefinerModuleWidget.h"
 #include "ui_qSlicerSkeletalRepresentationRefinerModuleWidget.h"
 
+#include "vtkSlicerSkeletalRepresentationRefinerLogic.h"
+
+#include <QFileDialog>
+#include <QMessageBox>
+
 //-----------------------------------------------------------------------------
 /// \ingroup Slicer_QtModules_ExtensionTemplate
 class qSlicerSkeletalRepresentationRefinerModuleWidgetPrivate: public Ui_qSlicerSkeletalRepresentationRefinerModuleWidget
 {
+    Q_DECLARE_PUBLIC(qSlicerSkeletalRepresentationRefinerModuleWidget);
+protected:
+    qSlicerSkeletalRepresentationRefinerModuleWidget* const q_ptr;
 public:
-  qSlicerSkeletalRepresentationRefinerModuleWidgetPrivate();
+  qSlicerSkeletalRepresentationRefinerModuleWidgetPrivate(qSlicerSkeletalRepresentationRefinerModuleWidget &);
+  ~qSlicerSkeletalRepresentationRefinerModuleWidgetPrivate();
+  vtkSlicerSkeletalRepresentationRefinerLogic* logic() const;
 };
 
 //-----------------------------------------------------------------------------
 // qSlicerSkeletalRepresentationRefinerModuleWidgetPrivate methods
 
 //-----------------------------------------------------------------------------
-qSlicerSkeletalRepresentationRefinerModuleWidgetPrivate::qSlicerSkeletalRepresentationRefinerModuleWidgetPrivate()
+qSlicerSkeletalRepresentationRefinerModuleWidgetPrivate::qSlicerSkeletalRepresentationRefinerModuleWidgetPrivate(qSlicerSkeletalRepresentationRefinerModuleWidget &object)
+ : q_ptr(&object){
+}
+
+qSlicerSkeletalRepresentationRefinerModuleWidgetPrivate::~qSlicerSkeletalRepresentationRefinerModuleWidgetPrivate()
 {
+
+}
+
+vtkSlicerSkeletalRepresentationRefinerLogic *qSlicerSkeletalRepresentationRefinerModuleWidgetPrivate::logic() const
+{
+    Q_Q(const qSlicerSkeletalRepresentationRefinerModuleWidget);
+    return vtkSlicerSkeletalRepresentationRefinerLogic::SafeDownCast(q->logic());
 }
 
 //-----------------------------------------------------------------------------
@@ -44,7 +65,7 @@ qSlicerSkeletalRepresentationRefinerModuleWidgetPrivate::qSlicerSkeletalRepresen
 //-----------------------------------------------------------------------------
 qSlicerSkeletalRepresentationRefinerModuleWidget::qSlicerSkeletalRepresentationRefinerModuleWidget(QWidget* _parent)
   : Superclass( _parent )
-  , d_ptr( new qSlicerSkeletalRepresentationRefinerModuleWidgetPrivate )
+  , d_ptr( new qSlicerSkeletalRepresentationRefinerModuleWidgetPrivate(*this) )
 {
 }
 
@@ -53,10 +74,36 @@ qSlicerSkeletalRepresentationRefinerModuleWidget::~qSlicerSkeletalRepresentation
 {
 }
 
+void qSlicerSkeletalRepresentationRefinerModuleWidget::SelectImage()
+{
+    Q_D(qSlicerSkeletalRepresentationRefinerModuleWidget);
+    QString fileName = QFileDialog::getOpenFileName(this, "Select image file");
+    d->lb_imagePath->setText(fileName.toUtf8().constData());
+    d->logic()->SetImageFileName(fileName.toUtf8().constData());
+}
+
+void qSlicerSkeletalRepresentationRefinerModuleWidget::SelectSrep()
+{
+    Q_D(qSlicerSkeletalRepresentationRefinerModuleWidget);
+    QString fileName = QFileDialog::getOpenFileName(this, "Select s-rep file");
+    d->lb_srepPath->setText(fileName.toUtf8().constData());
+    d->logic()->SetSrepFileName(fileName.toUtf8().constData());
+}
+
+void qSlicerSkeletalRepresentationRefinerModuleWidget::Submit()
+{
+    Q_D(qSlicerSkeletalRepresentationRefinerModuleWidget);
+    d->logic()->Refine();
+}
+
 //-----------------------------------------------------------------------------
 void qSlicerSkeletalRepresentationRefinerModuleWidget::setup()
 {
   Q_D(qSlicerSkeletalRepresentationRefinerModuleWidget);
   d->setupUi(this);
   this->Superclass::setup();
+  QObject::connect(d->btn_browseImage, SIGNAL(clicked()), this, SLOT(SelectImage()));
+  QObject::connect(d->btn_browseSrep, SIGNAL(clicked()), this, SLOT(SelectSrep()));
+  QObject::connect(d->btn_submit, SIGNAL(clicked()), this, SLOT(Submit()));
 }
+

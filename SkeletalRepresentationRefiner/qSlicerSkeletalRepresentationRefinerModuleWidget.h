@@ -39,7 +39,12 @@ public:
   virtual ~qSlicerSkeletalRepresentationRefinerModuleWidget();
 
 public slots:
-
+  // select image
+  void SelectImage();
+  // select srep model
+  void SelectSrep();
+  // start refinement
+  void Submit();
 
 protected:
   QScopedPointer<qSlicerSkeletalRepresentationRefinerModuleWidgetPrivate> d_ptr;

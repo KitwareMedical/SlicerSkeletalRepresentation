@@ -45,7 +45,22 @@ vtkSlicerSkeletalRepresentationRefinerLogic::~vtkSlicerSkeletalRepresentationRef
 //----------------------------------------------------------------------------
 void vtkSlicerSkeletalRepresentationRefinerLogic::PrintSelf(ostream& os, vtkIndent indent)
 {
-  this->Superclass::PrintSelf(os, indent);
+    this->Superclass::PrintSelf(os, indent);
+}
+
+void vtkSlicerSkeletalRepresentationRefinerLogic::SetImageFileName(const std::__cxx11::string &imageFilePath)
+{
+    mImageFilePath = imageFilePath;
+}
+
+void vtkSlicerSkeletalRepresentationRefinerLogic::SetSrepFileName(const std::__cxx11::string &srepFilePath)
+{
+    mSrepFilePath = srepFilePath;
+}
+
+void vtkSlicerSkeletalRepresentationRefinerLogic::Refine()
+{
+
 }
 
 //---------------------------------------------------------------------------

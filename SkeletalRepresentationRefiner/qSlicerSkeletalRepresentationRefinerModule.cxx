@@ -68,14 +68,14 @@ QString qSlicerSkeletalRepresentationRefinerModule::helpText() const
 //-----------------------------------------------------------------------------
 QString qSlicerSkeletalRepresentationRefinerModule::acknowledgementText() const
 {
-  return "This work was partially funded by NIH grant NXNNXXNNNNNN-NNXN";
+  return "This file was originally developed by Zhiyuan Liu, and currently maintained by the SlicerSALT team.";
 }
 
 //-----------------------------------------------------------------------------
 QStringList qSlicerSkeletalRepresentationRefinerModule::contributors() const
 {
   QStringList moduleContributors;
-  moduleContributors << QString("John Doe (AnyWare Corp.)");
+  moduleContributors << QString("Zhiyuan Liu, Pablo Hernandez-Cerdan");
   return moduleContributors;
 }
 
@@ -88,7 +88,7 @@ QIcon qSlicerSkeletalRepresentationRefinerModule::icon() const
 //-----------------------------------------------------------------------------
 QStringList qSlicerSkeletalRepresentationRefinerModule::categories() const
 {
-  return QStringList() << "Examples";
+  return QStringList() << "Skeleton, topology";
 }
 
 //-----------------------------------------------------------------------------
