@@ -85,6 +85,7 @@ void qSlicerSkeletalRepresentationInitializerModuleWidget::setup()
   //QObject::connect(d->btn_match_ell, SIGNAL(clicked()), this, SLOT(pullUpFittingEllipsoid()));
   QObject::connect(d->btn_inkling_flow, SIGNAL(clicked()), this, SLOT(inklingFlow()));
   QObject::connect(d->btn_back_flow, SIGNAL(clicked()), this, SLOT(backwardFlow()));
+  
 }
 
 void qSlicerSkeletalRepresentationInitializerModuleWidget::pullUpFittingEllipsoid()
@@ -121,7 +122,7 @@ void qSlicerSkeletalRepresentationInitializerModuleWidget::flowOneStep()
     double dt = d->sl_dt->value();
     double smoothAmount = d->sl_smooth_amount->value();
 
-    d->logic()->FlowSurfaceOneStep(dt, smoothAmount);
+    d->logic()->FlowSurfaceOneStep(fileName, dt, smoothAmount);
 }
 void qSlicerSkeletalRepresentationInitializerModuleWidget::inklingFlow()
 {

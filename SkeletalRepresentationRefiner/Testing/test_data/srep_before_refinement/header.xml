@@ -1,8 +1,6 @@
-<?xml version="1.0" ?>
 <s-rep>
-  <nRows>3</nRows>
-  <nCols>8</nCols>
-  <meshType>Quad</meshType>
+  <nRows>9</nRows>
+  <nCols>9</nCols>
   <color>
     <red>0</red>
     <green>0.5</green>
@@ -13,5 +11,4 @@
   <upSpoke>up.vtp</upSpoke>
   <downSpoke>down.vtp</downSpoke>
   <crestSpoke>crest.vtp</crestSpoke>
-  <crestShift>0.02</crestShift>
 </s-rep>
