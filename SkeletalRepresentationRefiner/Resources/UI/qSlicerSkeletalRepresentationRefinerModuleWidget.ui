@@ -70,14 +70,51 @@
         </item>
        </layout>
       </item>
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout_3">
+        <item>
+         <widget class="QLabel" name="label">
+          <property name="text">
+           <string>Interpolation level:</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="qMRMLSliderWidget" name="sl_interp" native="true">
+          <property name="decimals" stdset="0">
+           <number>0</number>
+          </property>
+          <property name="pageStep" stdset="0">
+           <double>10.000000000000000</double>
+          </property>
+          <property name="minimum" stdset="0">
+           <double>1.000000000000000</double>
+          </property>
+          <property name="maximum" stdset="0">
+           <double>15.000000000000000</double>
+          </property>
+          <property name="value" stdset="0">
+           <double>3.000000000000000</double>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <widget class="QPushButton" name="btn_interp">
+        <property name="text">
+         <string>Interpolate</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="btn_submit">
+        <property name="text">
+         <string>Start refinement</string>
+        </property>
+       </widget>
+      </item>
      </layout>
-    </widget>
-   </item>
-   <item>
-    <widget class="QPushButton" name="btn_submit">
-     <property name="text">
-      <string>Start refinement</string>
-     </property>
     </widget>
    </item>
    <item>
@@ -96,6 +133,11 @@
   </layout>
  </widget>
  <customwidgets>
+  <customwidget>
+   <class>qMRMLSliderWidget</class>
+   <extends>QWidget</extends>
+   <header>qMRMLSliderWidget.h</header>
+  </customwidget>
   <customwidget>
    <class>qSlicerWidget</class>
    <extends>QWidget</extends>

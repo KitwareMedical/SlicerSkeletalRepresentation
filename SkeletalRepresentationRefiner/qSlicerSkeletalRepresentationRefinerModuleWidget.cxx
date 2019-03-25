@@ -96,6 +96,14 @@ void qSlicerSkeletalRepresentationRefinerModuleWidget::Submit()
     d->logic()->Refine();
 }
 
+void qSlicerSkeletalRepresentationRefinerModuleWidget::StartInterpolate()
+{
+    Q_D(qSlicerSkeletalRepresentationRefinerModuleWidget);
+    int interpolationLevel = int(d->sl_interp->value());
+    std::string srepFileName = d->lb_srepPath->text().toUtf8().constData();
+    d->logic()->InterpolateSrep(interpolationLevel, srepFileName);
+}
+
 //-----------------------------------------------------------------------------
 void qSlicerSkeletalRepresentationRefinerModuleWidget::setup()
 {
@@ -105,5 +113,6 @@ void qSlicerSkeletalRepresentationRefinerModuleWidget::setup()
   QObject::connect(d->btn_browseImage, SIGNAL(clicked()), this, SLOT(SelectImage()));
   QObject::connect(d->btn_browseSrep, SIGNAL(clicked()), this, SLOT(SelectSrep()));
   QObject::connect(d->btn_submit, SIGNAL(clicked()), this, SLOT(Submit()));
+  QObject::connect(d->btn_interp, SIGNAL(clicked()), this, SLOT(StartInterpolate()));
 }
 

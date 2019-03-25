@@ -33,8 +33,10 @@
 #include <cstdlib>
 
 #include "vtkSlicerSkeletalRepresentationRefinerModuleLogicExport.h"
+#include "vtkSlicerSkeletalRepresentationInterpolater.h"
 
-
+class vtkPolyData;
+class vtkSpoke;
 /// \ingroup Slicer_QtModules_ExtensionTemplate
 class VTK_SLICER_SKELETALREPRESENTATIONREFINER_MODULE_LOGIC_EXPORT vtkSlicerSkeletalRepresentationRefinerLogic :
   public vtkSlicerModuleLogic
@@ -53,6 +55,9 @@ public:
 
   // Start refinement
   void Refine();
+  
+  // Interpolate srep
+  void InterpolateSrep(int interpolationLevel, const std::string& srepFileName);
 
 protected:
   vtkSlicerSkeletalRepresentationRefinerLogic();
@@ -68,6 +73,24 @@ protected:
 private:
   // interpolate s-rep
   void Interpolate();
+
+  // parse the s-rep
+  // put the spoke length and direction into coeffArray
+  void Parse(const std::string &modelFileName, std::vector<double> &coeffArray, 
+             std::vector<double> &radii, std::vector<double> &dirs, std::vector<double> &skeletalPoints);
+  
+  // parse the header of s-rep including the rows and cols in the s-rep
+  void ParseHeader(const std::string &headerFileName, int *nRows, int *nCols);
+  
+  void computeDiff(double *head, double *tail, double factor, double *output);
+  
+  // derivative of skeletal point
+  void computeDerivative(std::vector<double> skeletalPoints, int r, int c, int nRows, int nCols, double *dXdu, double *dXdv);
+  
+  void convertSpokes2PolyData(std::vector<vtkSpoke*> input, vtkPolyData* output);
+
+  // visualize model in MRMLScene
+  void Visualize(vtkPolyData* model, const std::string &modelName, double r, double g, double b);
 
 private:
   std::string mImageFilePath;

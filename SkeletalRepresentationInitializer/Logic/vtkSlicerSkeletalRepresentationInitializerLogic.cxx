@@ -69,7 +69,6 @@
 // vtk system tools
 #include <vtksys/SystemTools.hxx>
 
-#include "vtkBackwardFlowLogic.h"
 #include "qSlicerApplication.h"
 #include <QString>
 

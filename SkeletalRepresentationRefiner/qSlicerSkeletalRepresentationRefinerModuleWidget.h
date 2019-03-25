@@ -45,6 +45,8 @@ public slots:
   void SelectSrep();
   // start refinement
   void Submit();
+  // interpolate
+  void StartInterpolate();
 
 protected:
   QScopedPointer<qSlicerSkeletalRepresentationRefinerModuleWidgetPrivate> d_ptr;
