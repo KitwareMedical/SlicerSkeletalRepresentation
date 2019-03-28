@@ -90,10 +90,20 @@ void qSlicerSkeletalRepresentationRefinerModuleWidget::SelectSrep()
     d->logic()->SetSrepFileName(fileName.toUtf8().constData());
 }
 
-void qSlicerSkeletalRepresentationRefinerModuleWidget::Submit()
+void qSlicerSkeletalRepresentationRefinerModuleWidget::StartRefinement()
 {
     Q_D(qSlicerSkeletalRepresentationRefinerModuleWidget);
-    d->logic()->Refine();
+    double stepSize = d->sl_stepSize->value();
+    double tol = d->sl_tol->value();
+    int maxIter = d->sl_maxIter->value();
+    
+    double wtImageMatch = d->sl_wtImageMatch->value();
+    double wtNormalMatch = d->sl_wtNormal->value();
+    double wtSrad = d->sl_wtSrad->value();
+    
+    
+    d->logic()->SetWeights(wtImageMatch, wtNormalMatch, wtSrad);
+    d->logic()->Refine(stepSize, tol, maxIter);
 }
 
 void qSlicerSkeletalRepresentationRefinerModuleWidget::StartInterpolate()
@@ -104,6 +114,12 @@ void qSlicerSkeletalRepresentationRefinerModuleWidget::StartInterpolate()
     d->logic()->InterpolateSrep(interpolationLevel, srepFileName);
 }
 
+void qSlicerSkeletalRepresentationRefinerModuleWidget::GenerateImage()
+{
+    Q_D(qSlicerSkeletalRepresentationRefinerModuleWidget);
+    d->logic()->AntiAliasSignedDistanceMap(d->lb_imagePath->text().toUtf8().constData());
+}
+
 //-----------------------------------------------------------------------------
 void qSlicerSkeletalRepresentationRefinerModuleWidget::setup()
 {
@@ -112,7 +128,8 @@ void qSlicerSkeletalRepresentationRefinerModuleWidget::setup()
   this->Superclass::setup();
   QObject::connect(d->btn_browseImage, SIGNAL(clicked()), this, SLOT(SelectImage()));
   QObject::connect(d->btn_browseSrep, SIGNAL(clicked()), this, SLOT(SelectSrep()));
-  QObject::connect(d->btn_submit, SIGNAL(clicked()), this, SLOT(Submit()));
+  QObject::connect(d->btn_submit, SIGNAL(clicked()), this, SLOT(StartRefinement()));
   QObject::connect(d->btn_interp, SIGNAL(clicked()), this, SLOT(StartInterpolate()));
+  QObject::connect(d->btn_image, SIGNAL(clicked()), this, SLOT(GenerateImage()));
 }
 

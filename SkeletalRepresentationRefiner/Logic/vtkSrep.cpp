@@ -1,4 +1,22 @@
+/*==============================================================================
+
+  Program: 3D Slicer
+
+  Portions (c) Copyright Brigham and Women's Hospital (BWH) All Rights Reserved.
+
+  See COPYRIGHT.txt
+  or http://www.slicer.org/copyright/copyright.txt for details.
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+
+==============================================================================*/
+
 #include "vtkSrep.h"
+#include <math.h>
 #include "vtkSpoke.h"
 
 vtkSrep::vtkSrep()
@@ -50,4 +68,27 @@ bool vtkSrep::IsEmpty() const
 std::vector<vtkSpoke *> &vtkSrep::GetAllSpokes()
 {
     return spokes;
+}
+
+void vtkSrep::Refine(const double *coeff)
+{
+    if(spokes.empty())
+    {
+        return;
+    }
+    for(int i = 0; i < spokes.size(); ++i)
+    {
+        int idx = i * 4;
+        double newU[3], newR, oldR;
+        newU[0] = coeff[idx];
+        newU[1] = coeff[idx+1];
+        newU[2] = coeff[idx+2];
+        
+        vtkSpoke* thisSpoke = spokes[i];
+        oldR = thisSpoke->GetRadius();
+        newR = exp(coeff[idx+3]) * oldR;
+        
+        thisSpoke->SetDirection(newU);
+        thisSpoke->SetRadius(newR);
+    }
 }

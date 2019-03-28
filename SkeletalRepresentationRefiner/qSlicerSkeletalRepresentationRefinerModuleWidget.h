@@ -44,9 +44,11 @@ public slots:
   // select srep model
   void SelectSrep();
   // start refinement
-  void Submit();
+  void StartRefinement();
   // interpolate
   void StartInterpolate();
+  // generate anti-aliased image from surfacemesh
+  void GenerateImage();
 
 protected:
   QScopedPointer<qSlicerSkeletalRepresentationRefinerModuleWidgetPrivate> d_ptr;

@@ -31,12 +31,17 @@
 
 // STD includes
 #include <cstdlib>
+#include <set>
+#include <utility>
 
 #include "vtkSlicerSkeletalRepresentationRefinerModuleLogicExport.h"
 #include "vtkSlicerSkeletalRepresentationInterpolater.h"
+#include "vtkImageData.h"
+#include "vtkSmartPointer.h"
 
 class vtkPolyData;
 class vtkSpoke;
+class vtkSrep;
 /// \ingroup Slicer_QtModules_ExtensionTemplate
 class VTK_SLICER_SKELETALREPRESENTATIONREFINER_MODULE_LOGIC_EXPORT vtkSlicerSkeletalRepresentationRefinerLogic :
   public vtkSlicerModuleLogic
@@ -54,10 +59,26 @@ public:
   void SetSrepFileName(const std::string &srepFilePath);
 
   // Start refinement
-  void Refine();
+  void Refine(double stepSize, double endCriterion, int maxIter);
   
   // Interpolate srep
-  void InterpolateSrep(int interpolationLevel, const std::string& srepFileName);
+  void InterpolateSrep(int interpolationLevel, std::string& srepFileName);
+  
+  // set weights for three items in the objective function
+  void SetWeights(double wtImageMatch, double wtNormal, double wtSrad);
+  
+  // Description: Override operator (). Required by min_newuoa.
+  // Parameter: @coeff: the pointer to coefficients
+  double operator () (double *coeff);
+  
+  // This function returns the cost value result from defined objective function
+  // given the current coeff array
+  double EvaluateObjectiveFunction(double *coeff);
+  
+  // Generate anti-aliased signed distance map from surface mesh
+  // Input: vtk file that contains target surface mesh
+  // Output: image file that can be used in refinement
+  void AntiAliasSignedDistanceMap(const std::string &meshFileName);
 
 protected:
   vtkSlicerSkeletalRepresentationRefinerLogic();
@@ -82,7 +103,11 @@ private:
   // parse the header of s-rep including the rows and cols in the s-rep
   void ParseHeader(const std::string &headerFileName, int *nRows, int *nCols);
   
+  // compute the difference between two vectors, factor can be used to compute center-difference
   void computeDiff(double *head, double *tail, double factor, double *output);
+  
+  // compute distance from implied boundary in signed distance map
+  void computeDistance(vtkSpoke *theSpoke);
   
   // derivative of skeletal point
   void computeDerivative(std::vector<double> skeletalPoints, int r, int c, int nRows, int nCols, double *dXdu, double *dXdv);
@@ -91,10 +116,28 @@ private:
 
   // visualize model in MRMLScene
   void Visualize(vtkPolyData* model, const std::string &modelName, double r, double g, double b);
+  
+  void HideNodesByClass(const std::string &className);
+  
 
 private:
   std::string mImageFilePath;
   std::string mSrepFilePath;
+  // weights in optimization algorithm
+  double mWtImageMatch;
+  double mWtNormalMatch;
+  double mWtSrad;
+  
+  // output the first terms in object func can help to set weights
+  bool mFirstCost = true;
+  
+  // store the data at the beginning of refinement
+  int mNumRows;
+  int mNumCols;
+  vtkSrep* mSrep;
+  std::vector<double> mCoeffArray;
+  std::set<std::pair<double, double> > mInterpolatePositions;
+  vtkSmartPointer<vtkImageData> mAntiAliasedImage = vtkSmartPointer<vtkImageData>::New();
 private:
 
   vtkSlicerSkeletalRepresentationRefinerLogic(const vtkSlicerSkeletalRepresentationRefinerLogic&); // Not implemented

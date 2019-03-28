@@ -17,6 +17,14 @@ set(${KIT}_SRCS
   vtkSrep.h
   vtkSrep.cpp
   newuoa.h
+  vtkPolyData2ImageData.cpp
+  vtkPolyData2ImageData.h
+  vtkImage2SignedDistanceMap.h
+  vtkImage2SignedDistanceMap.cpp
+  vtkAntiAlias.h
+  vtkAntiAlias.cpp
+  vtkApproximateSignedDistanceMap.h
+  vtkApproximateSignedDistanceMap.cpp
   )
 
 set(${KIT}_TARGET_LIBRARIES

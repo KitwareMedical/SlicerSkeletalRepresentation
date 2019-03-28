@@ -1114,8 +1114,6 @@ void vtkSlicerSkeletalRepresentationInitializerLogic::HideNodesByNameByClass(con
 
 void vtkSlicerSkeletalRepresentationInitializerLogic::HideNodesByClass(const std::string &className)
 {
-    std::cout << "Hide node class name:" << className << std::endl;
-    std::vector<vtkMRMLNode*> vectModelNodes;
     vtkSmartPointer<vtkCollection> modelNodes = this->GetMRMLScene()->GetNodesByClass(className.c_str());
     modelNodes->InitTraversal();
     for(int i = 0; i < modelNodes->GetNumberOfItems(); i++)

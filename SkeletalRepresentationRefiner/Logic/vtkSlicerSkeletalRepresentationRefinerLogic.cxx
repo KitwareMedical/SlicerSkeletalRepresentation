@@ -39,6 +39,7 @@
 #include <vtkPointData.h>
 #include <vtkDataArray.h>
 #include <vtkDoubleArray.h>
+#include <vtkImageData.h>
 #include <vtkPolyDataReader.h>
 #include <vtkPolyDataWriter.h>
 #include <vtkXMLPolyDataReader.h>
@@ -47,6 +48,11 @@
 #include "vtkSrep.h"
 #include "vtkSpoke.h"
 #include "newuoa.h"
+#include "vtkPolyData2ImageData.h"
+#include "vtkImage2SignedDistanceMap.h"
+#include "vtkAntiAlias.h"
+#include "vtkApproximateSignedDistanceMap.h"
+
 // STD includes
 #include <cassert>
 
@@ -69,24 +75,25 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::PrintSelf(ostream& os, vtkInde
     this->Superclass::PrintSelf(os, indent);
 }
 
-void vtkSlicerSkeletalRepresentationRefinerLogic::SetImageFileName(const std::__cxx11::string &imageFilePath)
+void vtkSlicerSkeletalRepresentationRefinerLogic::SetImageFileName(const std::string &imageFilePath)
 {
     mImageFilePath = imageFilePath;
 }
 
-void vtkSlicerSkeletalRepresentationRefinerLogic::SetSrepFileName(const std::__cxx11::string &srepFilePath)
+void vtkSlicerSkeletalRepresentationRefinerLogic::SetSrepFileName(const std::string &srepFilePath)
 {
     mSrepFilePath = srepFilePath;
 }
 
-void vtkSlicerSkeletalRepresentationRefinerLogic::Refine()
+void vtkSlicerSkeletalRepresentationRefinerLogic::Refine(double stepSize, double endCriterion, int maxIter)
 {
     // 1. parse file
     const std::string srepFileName = "/playpen/ra_job/SlicerSkeletalRepresentation/SkeletalRepresentationVisualizer/Testing/test_data/hippo/up.vtp";
     const std::string headerFileName = "/playpen/ra_job/SlicerSkeletalRepresentation/SkeletalRepresentationVisualizer/Testing/test_data/hippo/header.xml";
-    // 1. Parse the model into a parameter array that needs to be optimized
-    std::vector<double> coeffArrayUp, radiiUp, dirsUp, skeletalPointsUp;
-    Parse(srepFileName, coeffArrayUp, radiiUp, dirsUp, skeletalPointsUp);
+    
+    mCoeffArray.clear();
+    std::vector<double> radii, dirs, skeletalPoints;
+    Parse(srepFileName, mCoeffArray, radii, dirs, skeletalPoints);
     
     int nRows = 0, nCols = 0;
     ParseHeader(headerFileName, &nRows, &nCols);
@@ -97,7 +104,7 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::Refine()
         return;
     }
     
-    vtkSrep *srep = new vtkSrep(nRows, nCols, radiiUp, dirsUp, skeletalPointsUp);
+    vtkSrep *srep = new vtkSrep(nRows, nCols, radii, dirs, skeletalPoints);
     if(srep->IsEmpty())
     {
         std::cerr << "The s-rep model is empty." << std::endl;
@@ -106,16 +113,50 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::Refine()
         return;
     }
     
-    // 2. Invoke newuoa to optimize
-
-    // 3. Call back function that is required by newuoa
+    // total number of parameters that need to optimize
+    int paramDim = mCoeffArray.size();
+    double coeff[paramDim];
+    for(int i = 0; i < paramDim; ++i)
+    {
+        coeff[i] = mCoeffArray[i];
+    }
     
-   
+    mNumRows = nRows; mNumCols = nCols;
+    mSrep = srep;
+    
+    // make tuples of interpolation positions (u,v)
+    mInterpolatePositions.clear();
+    int interpolationLevel = 3;
+    double interval = double(1.0 / (1+interpolationLevel));
+    for(int i = 0; i < interpolationLevel + 1; ++i)
+    {
+        for(int j = 0; j < interpolationLevel + 1; ++j)
+        {
+            // no interpolation at corners
+            if((i==0 && j == 0) || (i==0 && j==1) || (i==1 && j==0) || (i==1 && j == 1))
+                continue;
+            std::pair<double, double> uv = make_pair(i * interval, j * interval);
+            mInterpolatePositions.insert(uv);
+        }
+    }
+    
+    // 2. Invoke newuoa to optimize
+    min_newuoa(paramDim, coeff, *this, stepSize, endCriterion, maxIter);
+    
+    // 3. Visualize the refined srep
+    srep->Refine(coeff);
+    vtkSmartPointer<vtkPolyData> refinedSrep = vtkSmartPointer<vtkPolyData>::New();
+    convertSpokes2PolyData(srep->GetAllSpokes(), refinedSrep);
+    // Hide other nodes.
+    HideNodesByClass("vtkMRMLModelNode");
+    Visualize(refinedSrep, "Refined", 0, 1, 0);
 }
 
-void vtkSlicerSkeletalRepresentationRefinerLogic::InterpolateSrep(int interpolationLevel, const std::string& srepFileName)
+void vtkSlicerSkeletalRepresentationRefinerLogic::InterpolateSrep(int interpolationLevel, std::string& srepFileName)
 {
-    srepFileName = "/playpen/ra_job/SlicerSkeletalRepresentation/SkeletalRepresentationVisualizer/Testing/test_data/hippo/up.vtp";
+    // Hide other nodes.
+    HideNodesByClass("vtkMRMLModelNode");
+    srepFileName = "/playpen/ra_job/SlicerSkeletalRepresentation/SkeletalRepresentationVisualizer/Testing/test_data/hippo/mod_up.vtp";
     const std::string downFileName = "/playpen/ra_job/SlicerSkeletalRepresentation/SkeletalRepresentationVisualizer/Testing/test_data/hippo/down.vtp";
     const std::string crestFileName = "/playpen/ra_job/SlicerSkeletalRepresentation/SkeletalRepresentationVisualizer/Testing/test_data/hippo/crest.vtp";
     const std::string headerFileName = "/playpen/ra_job/SlicerSkeletalRepresentation/SkeletalRepresentationVisualizer/Testing/test_data/hippo/header.xml";
@@ -166,7 +207,6 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::InterpolateSrep(int interpolat
                     dXdu21[3], dXdv21[3], 
                     dXdu22[3], dXdv22[3];
             
-            
             for(int i = 0; i < steps.size(); ++i)
             {
                 for(int j = 0; j < steps.size(); ++j)
@@ -206,14 +246,143 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::InterpolateSrep(int interpolat
     vtkSmartPointer<vtkPolyData> primarySpokes = vtkSmartPointer<vtkPolyData>::New();
     convertSpokes2PolyData(srep->GetAllSpokes(), primarySpokes);
     Visualize(primarySpokes, "Primary", 1, 0, 0);
-    
-    // 2. Invoke newuoa to optimize
-
-    // 3. Call back function that is required by newuoa
-    
-    
-    // 4. delete pointers
+        
+    // delete pointers
     delete srep;
+}
+
+void vtkSlicerSkeletalRepresentationRefinerLogic::SetWeights(double wtImageMatch, double wtNormal, double wtSrad)
+{
+    mWtImageMatch = wtImageMatch;
+    mWtNormalMatch = wtNormal;
+    mWtSrad = wtSrad;
+}
+
+double vtkSlicerSkeletalRepresentationRefinerLogic::operator ()(double *coeff)
+{
+    double cost = 0.0;
+    cost = EvaluateObjectiveFunction(coeff);
+    return cost;
+}
+
+double vtkSlicerSkeletalRepresentationRefinerLogic::EvaluateObjectiveFunction(double *coeff)
+{
+    if(mInterpolatePositions.empty())
+    {
+        std::cerr << "The interpolation pairs in the refinement are empty." << std::endl;
+        return -100000.0;
+    }
+    if(mSrep == NULL)
+    {
+        std::cerr << "The srep pointer in the refinement is NULL." << std::endl;
+        return -100000.0;
+    }
+    double imageDist = 0.0, normal = 0.0, srad = 0.0;
+    int paramDim = mCoeffArray.size();
+    int spokeNum = paramDim / 4;
+    vtkSlicerSkeletalRepresentationInterpolater interpolater;
+    
+    // 1. Compute image match from all spokes and those spokes affected by them
+    double totalDist = 0.0; // total distance square from implied boundary to real boundary of image
+    for(int i = 0; i < spokeNum; ++i)
+    {
+        int r = i / mNumCols;
+        int c = i % mNumCols;
+        vtkSpoke *thisSpoke = mSrep->GetSpoke(r, c);
+        
+        // compute distance for this spoke
+        
+        vtkSpoke *cornerSpokes[4];
+        for(auto it = mInterpolatePositions.begin(); it != mInterpolatePositions.end(); ++it)
+        {
+            double u = (*it).first;
+            double v = (*it).second;
+            
+            // For each spoke at the corner of the srep,
+            // its neighbors are all spokes in one quad
+            if(r == 0 && c == 0)
+            {
+                cornerSpokes[0] = thisSpoke;
+                cornerSpokes[0] = mSrep->GetSpoke(r+1, c);
+                cornerSpokes[0] = mSrep->GetSpoke(r+1, c+1);
+                cornerSpokes[0] = mSrep->GetSpoke(r, c+1);
+                vtkSpoke *interpolatedSpoke;
+                interpolater.Interpolate(u, v, cornerSpokes, interpolatedSpoke);
+                
+                // compute the ssd for this interpolated spoke
+            }
+            else if(r == 0 && c == mNumCols - 1)
+            {
+                
+            }
+            else if(r == mNumRows - 1 && c == 0)
+            {
+                
+            }
+            else if(r == mNumRows - 1 && c == mNumCols - 1)
+            {
+                
+            }
+            // For each spoke on the edge of the srep,
+            // its neighbors are all spokes in two quads
+            else if(r == 0)
+            {
+                
+            }
+            else if(r == mNumRows - 1)
+            {
+                
+            }
+            else if(c == 0)
+            {
+                
+            }
+            else if(c == mNumCols - 1)
+            {
+                
+            }
+            // for each spoke in the middle of the srep,
+            // obtain image distance and normal from all interpolated spoke in 4 quads around it
+            else
+            {
+                
+            }
+        }
+        
+    }
+    
+    if(mFirstCost)
+    {
+        // this log help to adjust the weights of three terms
+        std::cout << "ImageMatch:" << imageDist << ", normal:" << normal << ", srad:" << srad << std::endl;
+        mFirstCost = false;
+    }
+    return mWtImageMatch * imageDist + mWtNormalMatch * normal + mWtSrad * srad;
+}
+
+void vtkSlicerSkeletalRepresentationRefinerLogic::AntiAliasSignedDistanceMap(const std::string &meshFileName)
+{
+    // 1. convert poly data to image data
+    vtkPolyData2ImageData polyDataConverter;
+    vtkSmartPointer<vtkImageData> img = vtkSmartPointer<vtkImageData>::New();
+            
+    polyDataConverter.Convert(meshFileName, img);
+    
+    // 2. convert image data to signed distance map
+//    vtkImage2SignedDistanceMap imageConverter;
+//    vtkSmartPointer<vtkImageData> signedDistanceImage = vtkSmartPointer<vtkImageData>::New();
+//    imageConverter.Convert(img, signedDistanceImage);
+    
+//    // 3. anti-aliasing
+//    vtkAntiAlias aa;
+//    vtkSmartPointer<vtkImageData> antiAliasedImage = vtkSmartPointer<vtkImageData>::New();
+//    aa.Filter(signedDistanceImage, antiAliasedImage);
+    
+    vtkSmartPointer<vtkImageData> antiAliasedImage = vtkSmartPointer<vtkImageData>::New();
+    vtkApproximateSignedDistanceMap ssdGenerator;
+    ssdGenerator.Convert(img, antiAliasedImage);
+    // 4. output / save the result
+    mAntiAliasedImage->DeepCopy(antiAliasedImage);
 }
 
 void vtkSlicerSkeletalRepresentationRefinerLogic::computeDerivative(std::vector<double> skeletalPoints, int r, int c, int nRows, int nCols, double *dXdu, double *dXdv)
@@ -388,10 +557,12 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::Parse(const std::string &model
         int idxDir = i * 3; // Ux, Uy, Uz
         
         // coefficients (dirs + radii) for newuoa
+        // the coefficient for radii is the exponential value, initially 0
         coeffArray.push_back(spokeDirs->GetValue(idxDir+0));
         coeffArray.push_back(spokeDirs->GetValue(idxDir+1));
         coeffArray.push_back(spokeDirs->GetValue(idxDir+2));
-        coeffArray.push_back(spokeRadii->GetValue(i));
+        //coeffArray.push_back(spokeRadii->GetValue(i));
+        coeffArray.push_back(0);
         
         // data for spokes
         radii.push_back(spokeRadii->GetValue(i));
@@ -408,7 +579,7 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::Parse(const std::string &model
     }
 }
 
-void vtkSlicerSkeletalRepresentationRefinerLogic::ParseHeader(const std::__cxx11::string &headerFileName, int *nRows, int *nCols)
+void vtkSlicerSkeletalRepresentationRefinerLogic::ParseHeader(const std::string &headerFileName, int *nRows, int *nCols)
 {
     vtkSmartPointer<vtkXMLDataParser> parser = vtkSmartPointer<vtkXMLDataParser>::New();
     
@@ -440,6 +611,11 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::computeDiff(double *head, doub
     output[0] = factor * (head[0] - tail[0]);
     output[1] = factor * (head[1] - tail[1]);
     output[2] = factor * (head[2] - tail[2]);
+}
+
+void vtkSlicerSkeletalRepresentationRefinerLogic::computeDistance(vtkSpoke *theSpoke)
+{
+    
 }
 
 void vtkSlicerSkeletalRepresentationRefinerLogic::Visualize(vtkPolyData *model, const std::string &modelName, double r, double g, double b)
@@ -487,5 +663,25 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::Visualize(vtkPolyData *model, 
     modelNode->AddAndObserveDisplayNodeID(displayModelNode->GetID());
 
     scene->AddNode(modelNode);
+    
+}
+
+void vtkSlicerSkeletalRepresentationRefinerLogic::HideNodesByClass(const string &className)
+{
+    vtkSmartPointer<vtkCollection> modelNodes = this->GetMRMLScene()->GetNodesByClass(className.c_str());
+    modelNodes->InitTraversal();
+    for(int i = 0; i < modelNodes->GetNumberOfItems(); i++)
+    {
+        vtkSmartPointer<vtkMRMLModelNode> thisModelNode = vtkMRMLModelNode::SafeDownCast(modelNodes->GetNextItemAsObject());
+        vtkSmartPointer<vtkMRMLModelDisplayNode> displayNode;
+        displayNode = thisModelNode->GetModelDisplayNode();
+        if(displayNode == NULL)
+        {
+            continue;
+        }
+
+        displayNode->SetVisibility(0);
+
+    }
     
 }
