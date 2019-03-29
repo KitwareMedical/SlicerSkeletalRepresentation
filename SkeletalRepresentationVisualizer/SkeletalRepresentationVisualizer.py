@@ -535,7 +535,8 @@ class SkeletalRepresentationVisualizerTest(ScriptedLoadableModuleTest):
         """Run as few or as many tests as needed here.
         """
         self.setUp()
-        self.test_SkeletalRepresentationVisualizer1()
+        # TODO: create a test which exercises the logic
+        # self.test_SkeletalRepresentationVisualizer1()
 
     def test_SkeletalRepresentationVisualizer1(self):
         """ Ideally you should have several levels of tests.  At the lowest level
@@ -553,6 +554,12 @@ class SkeletalRepresentationVisualizerTest(ScriptedLoadableModuleTest):
         #
         # first, get some data
         #
+        import SampleData
+        SampleData.downloadFromURL(
+            nodeNames='FA',
+            fileNames='FA.nrrd',
+            uris='http://slicer.kitware.com/midas3/download?items=5767')
+        self.delayDisplay('Finished with download and loading')
         volumeNode = slicer.util.getNode(pattern="FA")
         logic = SkeletalRepresentationVisualizerLogic()
         self.assertIsNotNone(logic.hasImageData(volumeNode))
