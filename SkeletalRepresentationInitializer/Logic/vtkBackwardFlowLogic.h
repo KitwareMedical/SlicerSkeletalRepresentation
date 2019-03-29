@@ -4,8 +4,10 @@
 #ifndef __vtkBackwardFlowLogic_h
 #define __vtkBackwardFlowLogic_h
 
+#include "vtkObjectBase.h"
+
 class vtkPolyData;
-class vtkBackwardFlowLogic {
+class vtkBackwardFlowLogic : public vtkObjectBase{
 public:
     vtkBackwardFlowLogic(){}
     ~vtkBackwardFlowLogic(){}
