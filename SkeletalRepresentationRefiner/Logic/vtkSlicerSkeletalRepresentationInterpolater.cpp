@@ -27,27 +27,11 @@ void vtkSlicerSkeletalRepresentationInterpolater::Interpolate(double u, double v
                                                               vtkSpoke **cornerSpokes, vtkSpoke *interpolatedSpoke)
 {
     // 1. interpolate spoke length and direction
-//    int uBase = (int)floor(u);
-//    int vBase = (int)floor(v);
-    
-//    if(u != uBase) u = u - uBase;
-    
-//    if(v != vBase) v = v - vBase;
-    
-//    if(uBase == uMax - 1)
-//    {
-//        uBase = uBase - 1;
-//        u = 1;
-//    }
-    
-//    if(vBase == vMax - 1)
-//    {
-//        vBase = vBase - 1;
-//        v = 1;
-//    }
-        
     double lambda = 1.0;
     InterpolateQuad(cornerSpokes, u, v, lambda, interpolatedSpoke);
+    
+    double dir[3];
+    interpolatedSpoke->GetDirection(dir);
     
     // 2. interpolate skeletal point
     double pt[3];
@@ -411,8 +395,16 @@ void vtkSlicerSkeletalRepresentationInterpolater::compute2ndDerivative(double *s
 void vtkSlicerSkeletalRepresentationInterpolater::slerp(double *U1, double *U2, double u, double *output)
 {
     double u1Tu2 = U1[0] * U2[0] + U1[1] * U2[1] + U1[2] * U2[2];
+    if(u1Tu2 > 1.0)
+    {
+        u1Tu2 = 1.0;
+    }
+    else if(u1Tu2 < -1.0)
+    {
+        u1Tu2 = -1.0;
+    }
     double phi = acos(u1Tu2);
-
+    
     output[0] = ( sin((1-u)*phi)/sin(phi) )*U1[0] + ( sin(u*phi)/sin(phi) )*U2[0];
     output[1] = ( sin((1-u)*phi)/sin(phi) )*U1[1] + ( sin(u*phi)/sin(phi) )*U2[1];
     output[2] = ( sin((1-u)*phi)/sin(phi) )*U1[2] + ( sin(u*phi)/sin(phi) )*U2[2];

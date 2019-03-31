@@ -11,7 +11,7 @@ vtkApproximateSignedDistanceMap::vtkApproximateSignedDistanceMap()
     
 }
 
-void vtkApproximateSignedDistanceMap::Convert(vtkImageData *input, vtkSmartPointer<vtkImageData> output)
+void vtkApproximateSignedDistanceMap::Convert(vtkImageData *input, RealImage::Pointer outputITK)
 {
     std::cout << "Started to convert image to signed distance map..." << std::endl;
     using FilterType = itk::VTKImageToImageFilter< ImageType >;
@@ -32,19 +32,23 @@ void vtkApproximateSignedDistanceMap::Convert(vtkImageData *input, vtkSmartPoint
           approximateSignedDistanceMapImageFilter->SetInput(filter->GetOutput());
           approximateSignedDistanceMapImageFilter->SetInsideValue(255);
           approximateSignedDistanceMapImageFilter->SetOutsideValue(0);
+          approximateSignedDistanceMapImageFilter->Update();
         
+        RealImage::Pointer image = approximateSignedDistanceMapImageFilter->GetOutput();
+        
+        DeepCopy<RealImage>(image, outputITK);
         typedef itk::ImageFileWriter< RealImage > WriterType;
         WriterType::Pointer writer = WriterType::New();
         writer->SetFileName("/playpen/workspace/newuoa/testsdm.mhd");
-        writer->SetInput(approximateSignedDistanceMapImageFilter->GetOutput());
+        writer->SetInput(image);
         writer->Update();
         // Convert itk image back to vtk image data
-        using BackFilterType = itk::ImageToVTKImageFilter< RealImage >;
-        BackFilterType::Pointer backFilter = BackFilterType::New();
-        backFilter->SetInput(approximateSignedDistanceMapImageFilter->GetOutput());
-        backFilter->Update();
+//        using BackFilterType = itk::ImageToVTKImageFilter< RealImage >;
+//        BackFilterType::Pointer backFilter = BackFilterType::New();
+//        backFilter->SetInput(approximateSignedDistanceMapImageFilter->GetOutput());
+//        backFilter->Update();
         
-        output->DeepCopy(backFilter->GetOutput());
+//        output->DeepCopy(backFilter->GetOutput());
         std::cout << "Finished generating distance map." << std::endl;
         
     }

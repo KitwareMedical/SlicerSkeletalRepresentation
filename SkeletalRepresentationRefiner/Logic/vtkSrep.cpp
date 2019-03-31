@@ -70,6 +70,21 @@ std::vector<vtkSpoke *> &vtkSrep::GetAllSpokes()
     return spokes;
 }
 
+std::vector<double> &vtkSrep::GetAllSkeletalPoints()
+{
+    skeletalPts.clear();
+    
+    for(int i = 0; i< spokes.size(); ++i)
+    {
+        double pt[3];
+        spokes[i]->GetSkeletalPoint(pt);
+        skeletalPts.push_back(pt[0]);
+        skeletalPts.push_back(pt[1]);
+        skeletalPts.push_back(pt[2]);
+    }
+    return skeletalPts;
+}
+
 void vtkSrep::Refine(const double *coeff)
 {
     if(spokes.empty())
@@ -87,8 +102,41 @@ void vtkSrep::Refine(const double *coeff)
         vtkSpoke* thisSpoke = spokes[i];
         oldR = thisSpoke->GetRadius();
         newR = exp(coeff[idx+3]) * oldR;
-        
-        thisSpoke->SetDirection(newU);
+      
+        //thisSpoke->SetDirection(newU);
         thisSpoke->SetRadius(newR);
     }
+}
+
+void vtkSrep::AddSpokes(std::vector<double> &radii, std::vector<double> &dirs, std::vector<double> &skeletalPoints)
+{
+    for (int i = 0; i < radii.size(); ++i) {
+        int idTuple = i * 3;
+        vtkSpoke *s = new vtkSpoke(radii[i], skeletalPoints[idTuple], skeletalPoints[idTuple + 1], skeletalPoints[idTuple + 2],
+                dirs[idTuple], dirs[idTuple + 1], dirs[idTuple + 2]);
+        spokes.push_back(s);
+    }
+}
+
+void vtkSrep::DeepCopy(vtkSrep &src)
+{
+    this->nCols = src.GetNumCols();
+    this->nRows = src.GetNumRows();
+    
+    spokes.clear();
+    std::vector<vtkSpoke*> srcSpokes = src.GetAllSpokes();
+    for (int i = 0; i < srcSpokes.size(); ++i) {
+        vtkSpoke *tempSpoke = new vtkSpoke(*srcSpokes[i]);
+        spokes.push_back(tempSpoke);
+    }
+}
+
+int vtkSrep::GetNumRows() const
+{
+    return nRows;
+}
+
+int vtkSrep::GetNumCols() const
+{
+    return nCols;
 }

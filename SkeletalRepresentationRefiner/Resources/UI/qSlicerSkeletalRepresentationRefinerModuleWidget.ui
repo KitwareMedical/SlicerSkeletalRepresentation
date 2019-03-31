@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>525</width>
-    <height>335</height>
+    <height>419</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -88,7 +88,7 @@
            <double>10.000000000000000</double>
           </property>
           <property name="minimum" stdset="0">
-           <double>1.000000000000000</double>
+           <double>0.000000000000000</double>
           </property>
           <property name="maximum" stdset="0">
            <double>15.000000000000000</double>
@@ -104,13 +104,6 @@
        <widget class="QPushButton" name="btn_interp">
         <property name="text">
          <string>Interpolate</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QPushButton" name="btn_image">
-        <property name="text">
-         <string>Generate anti-aliased image</string>
         </property>
        </widget>
       </item>

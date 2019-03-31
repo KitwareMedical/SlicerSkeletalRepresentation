@@ -40,15 +40,28 @@ public:
     // Get the vector of spokes
     std::vector<vtkSpoke *> &GetAllSpokes();
     
+    // Get all skeletal points
+    std::vector<double> &GetAllSkeletalPoints();
+    
     // Update spoke lengths and dirs
     // The input array is from NEWUOA, formed in order of (ux, uy, uz, x_r)
     // where x_r is the logarithm of the ratio
     void Refine(const double *coeff);
     
+    // Add spokes. It's ok that spokes share skeletal points with existing spokes
+    void AddSpokes(std::vector<double> &radii, std::vector<double> &dirs, std::vector<double> &skeletalPoints);
+    
+    void DeepCopy(vtkSrep& src);
+    
+    int GetNumRows() const;
+    
+    int GetNumCols() const;
+    
 private:
     int nRows;
     int nCols;
     std::vector<vtkSpoke*> spokes;
+    std::vector<double> skeletalPts;
 };
 
 #endif // VTKSREP_H

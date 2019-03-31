@@ -1392,7 +1392,7 @@ L310:
         goto L530;
     }
     f = func(&x[1]);
-    fprintf(stdout, "Minimum so far:[%f]\n", fopt);
+    //fprintf(stdout, "Minimum so far:[%f]\n", fopt);
     if (nf <= npt) goto L70;
     if (knew == -1) goto L530;
     /* Use the quadratic model to predict the change in F due to the

@@ -49,6 +49,8 @@ public slots:
   void StartInterpolate();
   // generate anti-aliased image from surfacemesh
   void GenerateImage();
+  // transform srep into unit cube
+  void TransformSrep();
 
 protected:
   QScopedPointer<qSlicerSkeletalRepresentationRefinerModuleWidgetPrivate> d_ptr;

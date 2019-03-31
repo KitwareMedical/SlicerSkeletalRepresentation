@@ -38,6 +38,8 @@
 #include "vtkSlicerSkeletalRepresentationInterpolater.h"
 #include "vtkImageData.h"
 #include "vtkSmartPointer.h"
+#include "itkImage.h"
+#include "itkCovariantVector.h"
 
 class vtkPolyData;
 class vtkSpoke;
@@ -47,7 +49,9 @@ class VTK_SLICER_SKELETALREPRESENTATIONREFINER_MODULE_LOGIC_EXPORT vtkSlicerSkel
   public vtkSlicerModuleLogic
 {
 public:
-
+  typedef itk::Image<float, 3> RealImage;
+  typedef itk::Image<itk::CovariantVector<float, 3>, 3> VectorImage;
+    
   static vtkSlicerSkeletalRepresentationRefinerLogic *New();
   vtkTypeMacro(vtkSlicerSkeletalRepresentationRefinerLogic, vtkSlicerModuleLogic);
   void PrintSelf(ostream& os, vtkIndent indent);
@@ -59,7 +63,11 @@ public:
   void SetSrepFileName(const std::string &srepFilePath);
 
   // Start refinement
-  void Refine(double stepSize, double endCriterion, int maxIter);
+  // Input: stepSize is step in NEWUOA
+  // Input: endCriterion is tol in NEWUOA
+  // Input: maxIter is the max number of iteration of NEWUOA
+  // Input: interpolationLevel is the density when computing image match term
+  void Refine(double stepSize, double endCriterion, int maxIter, int interpolationLevel);
   
   // Interpolate srep
   void InterpolateSrep(int interpolationLevel, std::string& srepFileName);
@@ -79,6 +87,8 @@ public:
   // Input: vtk file that contains target surface mesh
   // Output: image file that can be used in refinement
   void AntiAliasSignedDistanceMap(const std::string &meshFileName);
+  
+  void TransformSrep(const std::string &headerFile);
 
 protected:
   vtkSlicerSkeletalRepresentationRefinerLogic();
@@ -101,27 +111,47 @@ private:
              std::vector<double> &radii, std::vector<double> &dirs, std::vector<double> &skeletalPoints);
   
   // parse the header of s-rep including the rows and cols in the s-rep
-  void ParseHeader(const std::string &headerFileName, int *nRows, int *nCols);
+  void ParseHeader(const std::string &headerFileName, int *nRows, int *nCols,
+                   std::string* upFileName, std::string* downFileName, std::string* crestFileName);
   
   // compute the difference between two vectors, factor can be used to compute center-difference
-  void computeDiff(double *head, double *tail, double factor, double *output);
+  void ComputeDiff(double *head, double *tail, double factor, double *output);
   
   // compute distance from implied boundary in signed distance map
-  void computeDistance(vtkSpoke *theSpoke);
+  double ComputeDistance(vtkSpoke *theSpoke, double *normalMatch);
   
   // derivative of skeletal point
-  void computeDerivative(std::vector<double> skeletalPoints, int r, int c, int nRows, int nCols, double *dXdu, double *dXdv);
+  void ComputeDerivative(std::vector<double> skeletalPoints, int r, int c, int nRows, int nCols, double *dXdu, double *dXdv);
   
-  void convertSpokes2PolyData(std::vector<vtkSpoke*> input, vtkPolyData* output);
+  void ConvertSpokes2PolyData(std::vector<vtkSpoke*> input, vtkPolyData* output);
+  
+  void TransSpokes2PolyData(std::vector<vtkSpoke *>input, vtkPolyData *output);
 
   // visualize model in MRMLScene
   void Visualize(vtkPolyData* model, const std::string &modelName, double r, double g, double b);
   
   void HideNodesByClass(const std::string &className);
   
-
+  // transform model cs to unit cube cs then to image cs
+  // Output should be formed as 4x4 matrix
+  void TransformSrep2ImageCS(vtkSrep *input, double output[][4]);
+  
+  // e.g. Refine up spokes saved in upFileName
+  void RefinePartOfSpokes(const std::string& srepFileName, double stepSize, double endCriterion, int maxIter);
+  
+  // compute total distance of left top spoke to the quad
+  double TotalDistOfLeftTopSpoke(vtkSrep* input, double u, double v, int r, int c, double *normalMatch);
+  
+  // compute total distance of right top spoke to the quad
+  double TotalDistOfRightTopSpoke(vtkSrep* input, double u, double v, int r, int c, double *normalMatch);
+  
+  // compute total distance of left bottom spoke to the quad
+  double TotalDistOfLeftBotSpoke(vtkSrep* input, double u, double v, int r, int c, double *normalMatch);
+  
+  // compute total distance of Right bottom spoke to the quad
+  double TotalDistOfRightBotSpoke(vtkSrep* input, double u, double v, int r, int c, double *normalMatch);
 private:
-  std::string mImageFilePath;
+  std::string mTargetMeshFilePath;
   std::string mSrepFilePath;
   // weights in optimization algorithm
   double mWtImageMatch;
@@ -135,9 +165,13 @@ private:
   int mNumRows;
   int mNumCols;
   vtkSrep* mSrep;
+  // when apply this transformation: [x, y, z, 1] * mTransformationMat
+  double mTransformationMat[4][4]; // homogeneous matrix transfrom from srep to unit cube cs.
   std::vector<double> mCoeffArray;
-  std::set<std::pair<double, double> > mInterpolatePositions;
-  vtkSmartPointer<vtkImageData> mAntiAliasedImage = vtkSmartPointer<vtkImageData>::New();
+  std::vector<std::pair<double, double> > mInterpolatePositions;
+  //vtkSmartPointer<vtkImageData> mAntiAliasedImage = vtkSmartPointer<vtkImageData>::New();
+  RealImage::Pointer mAntiAliasedImage = RealImage::New();
+  VectorImage::Pointer mGradDistImage = VectorImage::New();
 private:
 
   vtkSlicerSkeletalRepresentationRefinerLogic(const vtkSlicerSkeletalRepresentationRefinerLogic&); // Not implemented

@@ -15,6 +15,8 @@
 
 ==============================================================================*/
 #include "vtkSpoke.h"
+#include <math.h>
+#include <vtkMath.h>
 vtkSpoke::vtkSpoke(){}
 
 vtkSpoke::vtkSpoke(double radius, double px, double py, double pz, double ux, double uy, double uz)
@@ -23,9 +25,28 @@ vtkSpoke::vtkSpoke(double radius, double px, double py, double pz, double ux, do
     mPx = px;
     mPy = py;
     mPz = pz;
-    mUx = ux;
-    mUy = uy;
-    mUz = uz;
+    
+    double r = sqrt(ux * ux + uy * uy + uz * uz);
+    mUx = ux / r;
+    mUy = uy / r;
+    mUz = uz / r;
+}
+
+vtkSpoke::vtkSpoke(const vtkSpoke &other)
+{
+    double u[3], p[3], r;
+    other.GetDirection(u);
+    other.GetSkeletalPoint(p);
+    r = other.GetRadius();
+    
+    mR = r;
+    mPx = p[0];
+    mPy = p[1];
+    mPz = p[2];
+    
+    mUx = u[0];
+    mUy = u[1];
+    mUz = u[2];
 }
 
 vtkSpoke &vtkSpoke::operator=(const vtkSpoke &other)
@@ -60,6 +81,7 @@ void vtkSpoke::SetSkeletalPoint(double px, double py, double pz)
 
 void vtkSpoke::SetDirection(double *u)
 {
+    vtkMath::Normalize(u);
     mUx = u[0];
     mUy = u[1];
     mUz = u[2];
@@ -70,6 +92,8 @@ void vtkSpoke::GetDirection(double *output) const
     output[0] = this->mUx;
     output[1] = this->mUy;
     output[2] = this->mUz;
+    
+    vtkMath::Normalize(output);
 }
 
 double vtkSpoke::GetRadius() const

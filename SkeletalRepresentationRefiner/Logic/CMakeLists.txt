@@ -19,12 +19,10 @@ set(${KIT}_SRCS
   newuoa.h
   vtkPolyData2ImageData.cpp
   vtkPolyData2ImageData.h
-  vtkImage2SignedDistanceMap.h
-  vtkImage2SignedDistanceMap.cpp
-  vtkAntiAlias.h
-  vtkAntiAlias.cpp
   vtkApproximateSignedDistanceMap.h
   vtkApproximateSignedDistanceMap.cpp
+  vtkGradientDistanceFilter.cpp
+  vtkGradientDistanceFilter.h
   )
 
 set(${KIT}_TARGET_LIBRARIES

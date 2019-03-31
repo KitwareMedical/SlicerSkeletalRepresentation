@@ -108,10 +108,6 @@ void vtkPolyData2ImageData::Convert(const std::string &inputFileName, vtkSmartPo
     {
         dim[i] = static_cast<int>(1 / spacing[i]);
     }
-    // DEBUG
-    std::cout << "dim[0]: " << dim[0] << std::endl;
-    std::cout << "dim[1]: " << dim[1] << std::endl;
-    std::cout << "dim[2]: " << dim[2] << std::endl;
     whiteImage->SetDimensions(dim);
     whiteImage->SetExtent(0, dim[0] - 1, 0, dim[1] - 1, 0, dim[2] - 1);
 

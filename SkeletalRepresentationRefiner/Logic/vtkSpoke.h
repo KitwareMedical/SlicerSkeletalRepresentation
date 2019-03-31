@@ -22,6 +22,10 @@ class vtkSpoke
 public:
     vtkSpoke();
     vtkSpoke(double radius, double px, double py, double pz, double ux, double uy, double uz);
+    
+    // copy constructor implements deep copy
+    vtkSpoke(const vtkSpoke& src);
+    
     // deep copy in assignment 
     vtkSpoke& operator=(const vtkSpoke& other);
     
@@ -37,6 +41,7 @@ public:
     
     void GetSkeletalPoint(double *output) const;
     
+    // Addition between two spokes
     void Add(vtkSpoke* another, double* output) const;
     
     void GetBoundaryPoint(double *output) const;
