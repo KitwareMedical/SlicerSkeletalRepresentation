@@ -40,9 +40,11 @@
 #include <vtkDataArray.h>
 #include <vtkDoubleArray.h>
 #include <vtkImageData.h>
+#include <vtksys/SystemTools.hxx>
 #include <vtkPolyDataReader.h>
 #include <vtkPolyDataWriter.h>
 #include <vtkXMLPolyDataReader.h>
+#include <vtkXMLPolyDataWriter.h>
 #include <vtkXMLDataParser.h>
 #include "vtkSlicerSkeletalRepresentationInterpolater.h"
 #include "vtkSrep.h"
@@ -55,6 +57,7 @@
 // STD includes
 #include <cassert>
 const double voxelSpacing = 0.005;
+const std::string newFilePrefix = "/refined_";
 //----------------------------------------------------------------------------
 vtkStandardNewMacro(vtkSlicerSkeletalRepresentationRefinerLogic);
 
@@ -82,6 +85,11 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::SetImageFileName(const std::st
 void vtkSlicerSkeletalRepresentationRefinerLogic::SetSrepFileName(const std::string &srepFilePath)
 {
     mSrepFilePath = srepFilePath;
+}
+
+void vtkSlicerSkeletalRepresentationRefinerLogic::SetOutputPath(const string &outputPath)
+{
+    mOutputPath = outputPath;
 }
 
 int iterNum = 0;
@@ -113,10 +121,11 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::Refine(double stepSize, double
     // make tuples of interpolation positions (u,v)
     mInterpolatePositions.clear();
     double tol = 1e-6;
-    double interval = double(1.0 / (1+interpolationLevel));
-    for(int i = 0; i <= interpolationLevel + 1; ++i)
+    int shares = pow(2, interpolationLevel);
+    double interval = double(1.0 / shares);
+    for(int i = 0; i <= shares; ++i)
     {
-        for(int j = 0; j <= interpolationLevel + 1; ++j)
+        for(int j = 0; j <= shares; ++j)
         {
             double u = i * interval;
             double v = j * interval;
@@ -133,8 +142,8 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::Refine(double stepSize, double
     RefinePartOfSpokes(up, stepSize, endCriterion, maxIter);
     
     // Refine down spokes
+    RefinePartOfSpokes(down, stepSize, endCriterion, maxIter);
     
-    // Refine crest spokes
 }
 
 void vtkSlicerSkeletalRepresentationRefinerLogic::InterpolateSrep(int interpolationLevel, std::string& srepFileName)
@@ -168,10 +177,11 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::InterpolateSrep(int interpolat
     // collect neighboring spokes around corners
     vtkSlicerSkeletalRepresentationInterpolater interpolater;
     
-    double interval = 1.0/ (double)(interpolationLevel + 1);
+    int shares = pow(2, interpolationLevel);
+    double interval = (double)(1.0/ shares);
     std::vector<double> steps;
     steps.push_back(0.0);
-    for(int i = 1; i <= interpolationLevel; ++i)
+    for(int i = 1; i <= shares; ++i)
     {
         steps.push_back(i * interval);
     }
@@ -248,7 +258,8 @@ double vtkSlicerSkeletalRepresentationRefinerLogic::operator ()(double *coeff)
 }
 double vtkSlicerSkeletalRepresentationRefinerLogic::EvaluateObjectiveFunction(double *coeff)
 {
-    std::cout << "Current iteration: " << iterNum++ << std::endl;
+    // TODO: SHOULD add progress bar here. 
+    //std::cout << "Current iteration: " << iterNum++ << std::endl;
     
     if(mSrep == NULL)
     {
@@ -342,6 +353,7 @@ double vtkSlicerSkeletalRepresentationRefinerLogic::EvaluateObjectiveFunction(do
     }
     
     // 2. compute srad penalty
+    srad = ComputeRSradPenalty(tempSrep);
     
     if(mFirstCost)
     {
@@ -451,13 +463,13 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::ComputeDerivative(std::vector<
     {
         // last row
         // backward difference
-        head[0] = skeletalPoints[(id-nCols)*3];
-        head[1] = skeletalPoints[(id-nCols)*3+1];
-        head[2] = skeletalPoints[(id-nCols)*3+2];
+        tail[0] = skeletalPoints[(id-nCols)*3];
+        tail[1] = skeletalPoints[(id-nCols)*3+1];
+        tail[2] = skeletalPoints[(id-nCols)*3+2];
         
-        tail[0] = skeletalPoints[(id)*3];
-        tail[1] = skeletalPoints[(id)*3+1];
-        tail[2] = skeletalPoints[(id)*3+2];
+        head[0] = skeletalPoints[(id)*3];
+        head[1] = skeletalPoints[(id)*3+1];
+        head[2] = skeletalPoints[(id)*3+2];
         factor = 1.0;
     }
     else
@@ -490,13 +502,13 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::ComputeDerivative(std::vector<
     {
         // last col
         // backward difference
-        head[0] = skeletalPoints[(id-1)*3];
-        head[1] = skeletalPoints[(id-1)*3+1];
-        head[2] = skeletalPoints[(id-1)*3+2];
+        tail[0] = skeletalPoints[(id-1)*3];
+        tail[1] = skeletalPoints[(id-1)*3+1];
+        tail[2] = skeletalPoints[(id-1)*3+2];
         
-        tail[0] = skeletalPoints[(id)*3];
-        tail[1] = skeletalPoints[(id)*3+1];
-        tail[2] = skeletalPoints[(id)*3+2];
+        head[0] = skeletalPoints[(id)*3];
+        head[1] = skeletalPoints[(id)*3+1];
+        head[2] = skeletalPoints[(id)*3+2];
         factor = 1.0;
     }
     else
@@ -666,27 +678,99 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::ParseHeader(const std::string 
     {
         vtkXMLDataElement *root = parser->GetRootElement(); 
         int numElements = root->GetNumberOfNestedElements();;
-        if(numElements > 8)
+        for(int i = 0; i < numElements; ++i)
         {
-            vtkXMLDataElement *eRow = root->GetNestedElement(0);
-            char *pEnd;
             int r, c;
-            r = strtol(eRow->GetCharacterData(), &pEnd, 10);
-            *nRows = r;
+            char *pEnd; 
+            vtkXMLDataElement *e = root->GetNestedElement(i);
+            std::string estimatePath;
+            estimatePath = vtksys::SystemTools::GetFilenamePath(headerFileName) + "/";
+            std::vector<std::string> components;
+            components.push_back(estimatePath);
             
-            vtkXMLDataElement *eCol = root->GetNestedElement(1);
-            c = strtol(eCol->GetCharacterData(), &pEnd, 10);
-            *nCols = c;
+            char* eName = e->GetName();
+            if(strcmp(eName, "nRows") == 0)
+            {
+                r = strtol(e->GetCharacterData(), &pEnd, 10);
+                *nRows = r;
+            }
+            else if(strcmp(eName, "nCols") == 0)
+            {
+                c = strtol(e->GetCharacterData(), &pEnd, 10);
+                *nCols = c;
+            }
+            else if(strcmp(eName, "upSpoke") == 0)
+            {
+                *upFileName = e->GetCharacterData();
+                // some file paths are relative path, others are absolute path
+                if(!vtksys::SystemTools::FileIsFullPath(*upFileName))
+                {
+                    components.push_back(*upFileName);
+                    *upFileName = vtksys::SystemTools::JoinPath(components);
+                    
+                }
+            }
+            else if(strcmp(eName, "downSpoke")==0)
+            {
+                *downFileName = e->GetCharacterData();
+                if(!vtksys::SystemTools::FileIsFullPath(*downFileName))
+                {
+                    components.push_back(*downFileName);
+                    *downFileName = vtksys::SystemTools::JoinPath(components);
+                }
+            }
+            else if(strcmp(eName, "crestSpoke") == 0)
+            {
+                *crestFileName = e->GetCharacterData();
+                if(!vtksys::SystemTools::FileIsFullPath(*crestFileName))
+                {
+                    components.push_back(*crestFileName);
+                    *crestFileName = vtksys::SystemTools::JoinPath(components);
+                }
+            }
             
-            vtkXMLDataElement *eUp = root->GetNestedElement(6);
-            *upFileName = eUp->GetCharacterData();
-            
-            vtkXMLDataElement *eDown = root->GetNestedElement(7);
-            *downFileName = eDown->GetCharacterData();
-            
-            vtkXMLDataElement *eCrest = root->GetNestedElement(8);
-            *crestFileName = eCrest->GetCharacterData();
         }
+    }
+    
+}
+
+void vtkSlicerSkeletalRepresentationRefinerLogic::UpdateHeader(const string &headerFileName, const string &outputFilePath)
+{
+    vtkSmartPointer<vtkXMLDataParser> parser = vtkSmartPointer<vtkXMLDataParser>::New();
+    
+    parser->SetFileName(headerFileName.c_str());
+    parser->SetIgnoreCharacterData(0);
+    
+    if( parser->Parse() == 1)
+    {
+        vtkXMLDataElement *root = parser->GetRootElement(); 
+        int numElements = root->GetNumberOfNestedElements();;
+        std::string newFileName;
+        
+        for(int i = 0; i < numElements; ++i)
+        {
+            int r, c;
+            char *pEnd; 
+            vtkXMLDataElement *e = root->GetNestedElement(i);
+            std::string estimatePath;
+            estimatePath = vtksys::SystemTools::GetFilenamePath(headerFileName) + "/";
+            std::vector<std::string> components;
+            components.push_back(estimatePath);
+            
+            char* eName = e->GetName();
+            if(strcmp(eName, "upSpoke") == 0 || strcmp(eName, "downSpoke")==0)
+            {
+                std::string oldFile(e->GetCharacterData());
+                // some file paths are relative path, others are absolute path
+                oldFile = vtksys::SystemTools::GetFilenameName(oldFile);
+                newFileName = outputFilePath + newFilePrefix + oldFile;
+                e->SetCharacterData(newFileName.c_str(), newFileName.length());
+            }
+            
+        }
+        std::string oldHeader = vtksys::SystemTools::GetFilenameName(headerFileName);
+        oldHeader = outputFilePath + newFilePrefix + oldHeader;
+        
     }
 }
 
@@ -937,6 +1021,10 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::RefinePartOfSpokes(const strin
     // 2. Invoke newuoa to optimize
     min_newuoa(paramDim, coeff, *this, stepSize, endCriterion, maxIter);
     
+    // Re-evaluate the cost
+    mFirstCost = true;
+    EvaluateObjectiveFunction(coeff);
+    
     // 3. Visualize the refined srep
     srep->Refine(coeff);
     vtkSmartPointer<vtkPolyData> refinedSrep = vtkSmartPointer<vtkPolyData>::New();
@@ -944,6 +1032,14 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::RefinePartOfSpokes(const strin
     // Hide other nodes.
     //HideNodesByClass("vtkMRMLModelNode");
     Visualize(refinedSrep, "Refined", 0, 1, 0);
+    
+    // write to vtp file
+    std::string outputFile(mOutputPath);
+    std::string fileName = vtksys::SystemTools::GetFilenameName(srepFileName);
+    outputFile = outputFile + newFilePrefix + fileName;
+    vtkSmartPointer<vtkXMLPolyDataWriter> writer = vtkSmartPointer<vtkXMLPolyDataWriter>::New();
+    writer->SetFileName(outputFile.c_str());
+    writer->SetInputData(refinedSrep);
     
     if(mSrep != NULL)
     {
@@ -1111,4 +1207,281 @@ double vtkSlicerSkeletalRepresentationRefinerLogic::TotalDistOfRightBotSpoke(vtk
     // compute the ssd for this interpolated spoke
     imageDist += ComputeDistance(&interpolatedSpoke, normalMatch);
     return imageDist;
+}
+
+double vtkSlicerSkeletalRepresentationRefinerLogic::ComputeRSradPenalty(vtkSrep *input)
+{
+    double penalty = 0.0;
+    // Interpolate
+    if(input->IsEmpty())
+    {
+        std::cerr << "The s-rep model is empty in computing rSrad." << std::endl;
+        return 0.0;
+    }
+    // 1.1 interpolate and visualize for verification
+    // collect neighboring spokes around corners
+    vtkSlicerSkeletalRepresentationInterpolater interpolater;
+    int nRows = input->GetNumRows();
+    int nCols = input->GetNumCols();
+    
+    std::vector<vtkSpoke*> interpolatedSpokes;
+    std::vector<vtkSpoke*> primarySpokes;
+    for(int r = 0; r < nRows; ++r)
+    {
+        for(int c = 0; c < nCols; ++c)
+        {
+            vtkSpoke* thisSpoke = input->GetSpoke(r, c);
+            
+            std::vector<vtkSpoke*> neighborU, neighborV;
+            if(r == 0 && c == 0)
+            {
+                // top left corner
+                FindTopLeftNeigbors(r, c, input, neighborU, neighborV);
+                thisSpoke->SetNeighborU(neighborU, true);
+                thisSpoke->SetNeighborV(neighborV, true);
+            }
+            else if(r == 0 && c == nCols - 1)
+            {
+                // top right corner
+                FindTopRightNeigbors(r, c, input, neighborU, neighborV);
+                thisSpoke->SetNeighborU(neighborU, true);
+                thisSpoke->SetNeighborV(neighborV, false);
+            }
+            else if(r == 0)
+            {
+                // top edge
+                FindTopRightNeigbors(r, c, input, neighborU, neighborV);
+                FindTopLeftNeigbors(r, c, input, neighborU, neighborV);
+                neighborU.pop_back();
+                thisSpoke->SetNeighborU(neighborU, true);
+                thisSpoke->SetNeighborV(neighborV, false);
+            }
+            else if(r == nRows - 1 && c == 0)
+            {
+                // left bot corner
+                FindBotLeftNeigbors(r, c, input, neighborU, neighborV);
+                thisSpoke->SetNeighborU(neighborU, false);
+                thisSpoke->SetNeighborV(neighborV, true);
+            }
+            else if(r == nRows - 1 && c == nCols -1)
+            {
+                // right bot corner
+                FindBotRightNeigbors(r, c, input, neighborU, neighborV);
+                thisSpoke->SetNeighborU(neighborU, false);
+                thisSpoke->SetNeighborV(neighborV, false);
+            }
+            else if(r == nRows - 1)
+            {
+                // bot edge
+                FindBotRightNeigbors(r, c, input, neighborU, neighborV);
+                FindBotLeftNeigbors(r, c, input, neighborU, neighborV);
+                neighborU.pop_back();
+                thisSpoke->SetNeighborU(neighborU, false);
+                thisSpoke->SetNeighborV(neighborV, false);
+            }
+            else if(c == 0)
+            {
+                // left edge
+                FindBotLeftNeigbors(r, c, input, neighborU, neighborV);
+                FindTopLeftNeigbors(r, c, input, neighborU, neighborV);
+                neighborV.pop_back();
+                thisSpoke->SetNeighborU(neighborU, false);
+                thisSpoke->SetNeighborV(neighborV, true);
+            }
+            else if(c == nCols - 1)
+            {
+                // right edge
+                FindBotRightNeigbors(r, c, input, neighborU, neighborV);
+                FindTopRightNeigbors(r, c, input, neighborU, neighborV);
+                neighborV.pop_back();
+                thisSpoke->SetNeighborU(neighborU, false);
+                thisSpoke->SetNeighborV(neighborV, false);
+            }
+            else {
+                // interior
+                FindBotRightNeigbors(r, c, input, neighborU, neighborV);
+                FindTopLeftNeigbors(r, c, input, neighborU, neighborV);
+                thisSpoke->SetNeighborU(neighborU, false);
+                thisSpoke->SetNeighborV(neighborV, false);
+            }
+            
+            primarySpokes.push_back(thisSpoke);
+        }
+        
+    }
+    
+    //compute the penalty
+    double step = mInterpolatePositions[0].second;
+    for(int i = 0; i < primarySpokes.size(); ++i)
+    {
+        double thisPenalty = primarySpokes[i]->GetRSradPenalty(step);
+        penalty += thisPenalty;
+    }
+    return penalty;
+}
+
+void vtkSlicerSkeletalRepresentationRefinerLogic::FindTopLeftNeigbors(int r, int c,
+                                                               vtkSrep* input,
+                                                               std::vector<vtkSpoke *> &neighborU,
+                                                               std::vector<vtkSpoke *> &neighborV)
+{
+    vtkSlicerSkeletalRepresentationInterpolater interpolater;
+    int nRows = input->GetNumRows();
+    int nCols = input->GetNumCols();
+    vtkSpoke *cornerSpokes[4];
+    
+    double  dXdu11[3], dXdv11[3], 
+            dXdu12[3], dXdv12[3], 
+            dXdu21[3], dXdv21[3], 
+            dXdu22[3], dXdv22[3];
+    cornerSpokes[0] = input->GetSpoke(r, c);
+    cornerSpokes[1] = input->GetSpoke(r+1, c);
+    cornerSpokes[2] = input->GetSpoke(r+1, c+1);
+    cornerSpokes[3] = input->GetSpoke(r, c+ 1);
+    std::vector<double> skeletalPts = input->GetAllSkeletalPoints();
+    ComputeDerivative(skeletalPts, r, c, nRows, nCols, dXdu11, dXdv11);
+    ComputeDerivative(skeletalPts, r+1, c, nRows, nCols, dXdu21, dXdv21);
+    ComputeDerivative(skeletalPts, r, c+1, nRows, nCols, dXdu12, dXdv12);
+    ComputeDerivative(skeletalPts, r+1, c+1, nRows, nCols, dXdu22, dXdv22);
+    
+    interpolater.SetCornerDxdu(dXdu11,
+                               dXdu21,
+                               dXdu22,
+                               dXdu12);
+    interpolater.SetCornerDxdv(dXdv11,
+                               dXdv21,
+                               dXdv22,
+                               dXdv12);
+    
+    vtkSpoke* in1 = new vtkSpoke;
+    vtkSpoke* in2 = new vtkSpoke;
+    double stepV = mInterpolatePositions[0].second;
+    double stepU = stepV;
+    interpolater.Interpolate(stepU, 0, cornerSpokes, in1);
+    neighborU.push_back(in1);
+    interpolater.Interpolate(0, stepV, cornerSpokes, in2);
+    neighborV.push_back(in2);
+}
+
+void vtkSlicerSkeletalRepresentationRefinerLogic::FindTopRightNeigbors(int r, int c, vtkSrep *input, std::vector<vtkSpoke *> &neighborU, std::vector<vtkSpoke *> &neighborV)
+{
+    vtkSlicerSkeletalRepresentationInterpolater interpolater;
+    int nRows = input->GetNumRows();
+    int nCols = input->GetNumCols();
+    vtkSpoke *cornerSpokes[4];
+    std::vector<double> skeletalPts = input->GetAllSkeletalPoints();
+    double  dXdu11[3], dXdv11[3], 
+            dXdu12[3], dXdv12[3], 
+            dXdu21[3], dXdv21[3], 
+            dXdu22[3], dXdv22[3];
+    cornerSpokes[0] = input->GetSpoke(r, c- 1);
+    cornerSpokes[1] = input->GetSpoke(r+1, c-1);
+    cornerSpokes[2] = input->GetSpoke(r+1, c);
+    cornerSpokes[3] = input->GetSpoke(r, c);
+    ComputeDerivative(skeletalPts, r, c-1, nRows, nCols, dXdu11, dXdv11);
+    ComputeDerivative(skeletalPts, r+1, c-1, nRows, nCols, dXdu21, dXdv21);
+    ComputeDerivative(skeletalPts, r+1, c, nRows, nCols, dXdu12, dXdv12);
+    ComputeDerivative(skeletalPts, r, c, nRows, nCols, dXdu22, dXdv22);
+    
+    interpolater.SetCornerDxdu(dXdu11,
+                               dXdu21,
+                               dXdu22,
+                               dXdu12);
+    interpolater.SetCornerDxdv(dXdv11,
+                               dXdv21,
+                               dXdv22,
+                               dXdv12);
+    
+    vtkSpoke* in1 = new vtkSpoke;
+    vtkSpoke* in2 = new vtkSpoke;
+    double stepV = mInterpolatePositions[0].second;
+    double stepU = stepV;
+    interpolater.Interpolate(stepU, 1, cornerSpokes, in1);
+    neighborU.push_back(in1);
+    interpolater.Interpolate(0, 1-stepV, cornerSpokes, in2);
+    neighborV.push_back(in2);
+}
+
+void vtkSlicerSkeletalRepresentationRefinerLogic::FindBotLeftNeigbors(int r, int c, 
+                                                                      vtkSrep *input, 
+                                                                      std::vector<vtkSpoke *> &neighborU, 
+                                                                      std::vector<vtkSpoke *> &neighborV)
+{
+    vtkSlicerSkeletalRepresentationInterpolater interpolater;
+    int nRows = input->GetNumRows();
+    int nCols = input->GetNumCols();
+    vtkSpoke *cornerSpokes[4];
+    std::vector<double> skeletalPts = input->GetAllSkeletalPoints();
+    double  dXdu11[3], dXdv11[3], 
+            dXdu12[3], dXdv12[3], 
+            dXdu21[3], dXdv21[3], 
+            dXdu22[3], dXdv22[3];
+    cornerSpokes[0] = input->GetSpoke(r-1, c);
+    cornerSpokes[1] = input->GetSpoke(r, c);
+    cornerSpokes[2] = input->GetSpoke(r, c+1);
+    cornerSpokes[3] = input->GetSpoke(r-1, c+1);
+    ComputeDerivative(skeletalPts, r-1, c, nRows, nCols, dXdu11, dXdv11);
+    ComputeDerivative(skeletalPts, r, c, nRows, nCols, dXdu21, dXdv21);
+    ComputeDerivative(skeletalPts, r, c+1, nRows, nCols, dXdu12, dXdv12);
+    ComputeDerivative(skeletalPts, r-1, c+1, nRows, nCols, dXdu22, dXdv22);
+    
+    interpolater.SetCornerDxdu(dXdu11,
+                               dXdu21,
+                               dXdu22,
+                               dXdu12);
+    interpolater.SetCornerDxdv(dXdv11,
+                               dXdv21,
+                               dXdv22,
+                               dXdv12);
+    
+    vtkSpoke* in1 = new vtkSpoke;
+    vtkSpoke* in2 = new vtkSpoke;
+    double stepV = mInterpolatePositions[0].second;
+    double stepU = stepV;
+    interpolater.Interpolate(1-stepU, 0, cornerSpokes, in1);
+    neighborU.push_back(in1);
+    interpolater.Interpolate(0, stepV, cornerSpokes, in2);
+    neighborV.push_back(in2);
+}
+
+void vtkSlicerSkeletalRepresentationRefinerLogic::FindBotRightNeigbors(int r, int c, 
+                                                                       vtkSrep *input,
+                                                                       std::vector<vtkSpoke *> &neighborU,
+                                                                       std::vector<vtkSpoke *> &neighborV)
+{
+    vtkSlicerSkeletalRepresentationInterpolater interpolater;
+    int nRows = input->GetNumRows();
+    int nCols = input->GetNumCols();
+    vtkSpoke *cornerSpokes[4];
+    std::vector<double> skeletalPts = input->GetAllSkeletalPoints();
+    double  dXdu11[3], dXdv11[3], 
+            dXdu12[3], dXdv12[3], 
+            dXdu21[3], dXdv21[3], 
+            dXdu22[3], dXdv22[3];
+    cornerSpokes[0] = input->GetSpoke(r-1, c-1);
+    cornerSpokes[1] = input->GetSpoke(r, c-1);
+    cornerSpokes[2] = input->GetSpoke(r, c);
+    cornerSpokes[3] = input->GetSpoke(r-1, c);
+    ComputeDerivative(skeletalPts, r-1, c-1, nRows, nCols, dXdu11, dXdv11);
+    ComputeDerivative(skeletalPts, r, c-1, nRows, nCols, dXdu21, dXdv21);
+    ComputeDerivative(skeletalPts, r, c, nRows, nCols, dXdu12, dXdv12);
+    ComputeDerivative(skeletalPts, r-1, c, nRows, nCols, dXdu22, dXdv22);
+    
+    interpolater.SetCornerDxdu(dXdu11,
+                               dXdu21,
+                               dXdu22,
+                               dXdu12);
+    interpolater.SetCornerDxdv(dXdv11,
+                               dXdv21,
+                               dXdv22,
+                               dXdv12);
+    
+    vtkSpoke* in1 = new vtkSpoke;
+    vtkSpoke* in2 = new vtkSpoke;
+    double stepV = mInterpolatePositions[0].second;
+    double stepU = stepV;
+    interpolater.Interpolate(1-stepU, 1, cornerSpokes, in1);
+    neighborU.push_back(in1);
+    interpolater.Interpolate(1, 1-stepV, cornerSpokes, in2);
+    neighborV.push_back(in2);
 }

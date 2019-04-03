@@ -61,6 +61,9 @@ public:
 
   // Select srep file
   void SetSrepFileName(const std::string &srepFilePath);
+  
+  // Select output path
+  void SetOutputPath(const std::string &outputPath);
 
   // Start refinement
   // Input: stepSize is step in NEWUOA
@@ -114,6 +117,9 @@ private:
   void ParseHeader(const std::string &headerFileName, int *nRows, int *nCols,
                    std::string* upFileName, std::string* downFileName, std::string* crestFileName);
   
+  // update header file after refinement
+  void UpdateHeader(const std::string &headerFileName, const std::string &outputFileName);
+  
   // compute the difference between two vectors, factor can be used to compute center-difference
   void ComputeDiff(double *head, double *tail, double factor, double *output);
   
@@ -150,9 +156,33 @@ private:
   
   // compute total distance of Right bottom spoke to the quad
   double TotalDistOfRightBotSpoke(vtkSrep* input, double u, double v, int r, int c, double *normalMatch);
+  
+  // compute rSrad penalty
+  double ComputeRSradPenalty(vtkSrep* input);
+  
+  void FindTopLeftNeigbors(int r, int c,
+                           vtkSrep* input,
+                           std::vector<vtkSpoke *> &neighborU,
+                           std::vector<vtkSpoke *> &neighborV);
+  
+  void FindTopRightNeigbors(int r, int c,
+                           vtkSrep* input,
+                           std::vector<vtkSpoke *> &neighborU,
+                           std::vector<vtkSpoke *> &neighborV);
+  
+  void FindBotLeftNeigbors(int r, int c,
+                           vtkSrep* input,
+                           std::vector<vtkSpoke *> &neighborU,
+                           std::vector<vtkSpoke *> &neighborV);
+  
+  void FindBotRightNeigbors(int r, int c,
+                           vtkSrep* input,
+                           std::vector<vtkSpoke *> &neighborU,
+                           std::vector<vtkSpoke *> &neighborV);
 private:
   std::string mTargetMeshFilePath;
   std::string mSrepFilePath;
+  std::string mOutputPath;
   // weights in optimization algorithm
   double mWtImageMatch;
   double mWtNormalMatch;

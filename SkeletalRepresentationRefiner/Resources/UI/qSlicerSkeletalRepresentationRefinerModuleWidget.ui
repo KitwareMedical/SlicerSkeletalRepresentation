@@ -50,7 +50,7 @@
         <item>
          <widget class="QLabel" name="label_2">
           <property name="text">
-           <string>Input an s-rep file (*.m3d):</string>
+           <string>Input an s-rep file (*.xml):</string>
           </property>
          </widget>
         </item>
@@ -63,6 +63,31 @@
         </item>
         <item>
          <widget class="QPushButton" name="btn_browseSrep">
+          <property name="text">
+           <string>Browse</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout_4">
+        <item>
+         <widget class="QLabel" name="label_3">
+          <property name="text">
+           <string>Output refinement path:</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="lb_outputpath">
+          <property name="text">
+           <string/>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="btn_output">
           <property name="text">
            <string>Browse</string>
           </property>

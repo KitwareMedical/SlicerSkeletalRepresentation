@@ -43,6 +43,8 @@ public slots:
   void SelectImage();
   // select srep model
   void SelectSrep();
+  // select output path
+  void SelectOutputPath();
   // start refinement
   void StartRefinement();
   // interpolate

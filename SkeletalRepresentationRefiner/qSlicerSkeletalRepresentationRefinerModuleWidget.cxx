@@ -90,6 +90,14 @@ void qSlicerSkeletalRepresentationRefinerModuleWidget::SelectSrep()
     d->logic()->SetSrepFileName(fileName.toUtf8().constData());
 }
 
+void qSlicerSkeletalRepresentationRefinerModuleWidget::SelectOutputPath()
+{
+    Q_D(qSlicerSkeletalRepresentationRefinerModuleWidget);
+    QString fileName = QFileDialog::getOpenFileName(this, "Select refinement output folder");
+    d->lb_outputpath->setText(fileName.toUtf8().constData());
+    d->logic()->SetOutputPath(fileName.toUtf8().constData());
+}
+
 void qSlicerSkeletalRepresentationRefinerModuleWidget::StartRefinement()
 {
     Q_D(qSlicerSkeletalRepresentationRefinerModuleWidget);
@@ -135,6 +143,7 @@ void qSlicerSkeletalRepresentationRefinerModuleWidget::setup()
   this->Superclass::setup();
   QObject::connect(d->btn_browseImage, SIGNAL(clicked()), this, SLOT(SelectImage()));
   QObject::connect(d->btn_browseSrep, SIGNAL(clicked()), this, SLOT(SelectSrep()));
+  QObject::connect(d->btn_browseImage, SIGNAL(clicked()), this, SLOT(SelectOutputPath()));
   QObject::connect(d->btn_submit, SIGNAL(clicked()), this, SLOT(StartRefinement()));
   QObject::connect(d->btn_interp, SIGNAL(clicked()), this, SLOT(StartInterpolate()));
   //QObject::connect(d->btn_image, SIGNAL(clicked()), this, SLOT(GenerateImage()));

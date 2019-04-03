@@ -17,6 +17,8 @@
 #ifndef VTKSPOKE_H
 #define VTKSPOKE_H
 
+#include <vector>
+
 class vtkSpoke
 {
 public:
@@ -37,14 +39,36 @@ public:
     
     void GetDirection(double *output) const;
     
+    // S = rU
+    //void GetS(double *output) const;
+    
     double GetRadius() const;
     
     void GetSkeletalPoint(double *output) const;
     
-    // Addition between two spokes
+    // Addition between two spokes S1+S2
     void Add(vtkSpoke* another, double* output) const;
     
+    // S_this - S_another
+    // S = rU
+    void Diff(vtkSpoke* another, double* output) const;
+    
     void GetBoundaryPoint(double *output) const;
+    
+    // neighbors in u direction
+    // if this neighbor is forward, use neighbor - this as difference when computing finite diff
+    void SetNeighborU(const std::vector<vtkSpoke*> &neighbors, bool isForward);
+    
+    // neighbors in v direction
+    void SetNeighborV(const std::vector<vtkSpoke*> &neighbors, bool isForward);
+    
+    // input delta: step size in finite difference
+    // output rSrad penalty
+    double GetRSradPenalty(double delta);
+    
+private:
+    void ComputeDerivatives(std::vector<vtkSpoke*> neibors, bool isForward, double stepSize, // input
+                            double *dxdu, double *dSdu, double *drdu);
 private:
     double mR;
     double mPx;
@@ -53,6 +77,9 @@ private:
     double mUx;
     double mUy;
     double mUz;
+    bool mIsForwardU, mIsForwardV;
+    std::vector<vtkSpoke*> mNeighborsU;
+    std::vector<vtkSpoke*> mNeighborsV;
 };
 
 #endif // VTKSPOKE_H

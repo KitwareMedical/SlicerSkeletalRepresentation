@@ -103,7 +103,7 @@ void vtkSrep::Refine(const double *coeff)
         oldR = thisSpoke->GetRadius();
         newR = exp(coeff[idx+3]) * oldR;
       
-        //thisSpoke->SetDirection(newU);
+        thisSpoke->SetDirection(newU);
         thisSpoke->SetRadius(newR);
     }
 }
