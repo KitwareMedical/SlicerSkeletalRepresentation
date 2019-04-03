@@ -23,8 +23,6 @@ set(${KIT}_SRCS
   vtkApproximateSignedDistanceMap.cpp
   vtkGradientDistanceFilter.cpp
   vtkGradientDistanceFilter.h
-  vtkSradPenaltyComputer.h
-  vtkSradPenaltyComputer.cpp
   )
 
 set(${KIT}_TARGET_LIBRARIES
