@@ -144,6 +144,11 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::Refine(double stepSize, double
     // Refine down spokes
     RefinePartOfSpokes(down, stepSize, endCriterion, maxIter);
     
+    // Show crest spokes
+    
+    // Update header file
+    UpdateHeader(headerFileName, mOutputPath);
+    
 }
 
 void vtkSlicerSkeletalRepresentationRefinerLogic::InterpolateSrep(int interpolationLevel, std::string& srepFileName)
@@ -740,13 +745,13 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::UpdateHeader(const string &hea
     
     parser->SetFileName(headerFileName.c_str());
     parser->SetIgnoreCharacterData(0);
-    
     if( parser->Parse() == 1)
     {
         vtkXMLDataElement *root = parser->GetRootElement(); 
         int numElements = root->GetNumberOfNestedElements();;
-        std::string newFileName;
+        std::string newUpFileName, newDownFileName, newCrestFileName;
         
+        int nRows = 0, nCols = 0;
         for(int i = 0; i < numElements; ++i)
         {
             int r, c;
@@ -756,21 +761,65 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::UpdateHeader(const string &hea
             estimatePath = vtksys::SystemTools::GetFilenamePath(headerFileName) + "/";
             std::vector<std::string> components;
             components.push_back(estimatePath);
-            
             char* eName = e->GetName();
-            if(strcmp(eName, "upSpoke") == 0 || strcmp(eName, "downSpoke")==0)
+            if(strcmp(eName, "nRows") == 0)
+            {
+                r = strtol(e->GetCharacterData(), &pEnd, 10);
+                nRows = r;
+            }
+            else if(strcmp(eName, "nCols") == 0)
+            {
+                c = strtol(e->GetCharacterData(), &pEnd, 10);
+                nCols = c;
+            }
+            else if(strcmp(eName, "upSpoke") == 0)
             {
                 std::string oldFile(e->GetCharacterData());
                 // some file paths are relative path, others are absolute path
                 oldFile = vtksys::SystemTools::GetFilenameName(oldFile);
-                newFileName = outputFilePath + newFilePrefix + oldFile;
-                e->SetCharacterData(newFileName.c_str(), newFileName.length());
+                newUpFileName = outputFilePath + newFilePrefix + oldFile;
+            }
+            else if(strcmp(eName, "downSpoke")==0)
+            {
+                std::string oldFile(e->GetCharacterData());
+                // some file paths are relative path, others are absolute path
+                oldFile = vtksys::SystemTools::GetFilenameName(oldFile);
+                newDownFileName = outputFilePath + newFilePrefix + oldFile;
+            }
+            else if(strcmp(eName, "crestSpoke")==0)
+            {
+                std::string oldFile(e->GetCharacterData());
+                // some file paths are relative path, others are absolute path
+                oldFile = vtksys::SystemTools::GetFilenameName(oldFile);
+                newCrestFileName = outputFilePath + oldFile;
             }
             
         }
+        std::stringstream output;
+       
+        output<<"<s-rep>"<<std::endl;
+        output<<"  <nRows>"<<nRows<<"</nRows>"<<std::endl;
+        output<<"  <nCols>"<<nCols<<"</nCols>"<<std::endl;
+        output<<"  <meshType>Quad</meshType>"<< std::endl;
+        output<<"  <color>"<<std::endl;
+        output<<"    <red>0</red>"<<std::endl;
+        output<<"    <green>0.5</green>"<<std::endl;
+        output<<"    <blue>0</blue>"<<std::endl;
+        output<<"  </color>"<<std::endl;
+        output<<"  <isMean>False</isMean>"<<std::endl;
+        output<<"  <meanStatPath/>"<<std::endl;
+        output<<"  <upSpoke>"<< newUpFileName<<"</upSpoke>"<<std::endl;
+        output<<"  <downSpoke>"<< newDownFileName << "</downSpoke>"<<std::endl;
+        output<<"  <crestSpoke>"<< newCrestFileName << "</crestSpoke>"<<std::endl;
+        output<<"</s-rep>"<<std::endl;
+        
         std::string oldHeader = vtksys::SystemTools::GetFilenameName(headerFileName);
         oldHeader = outputFilePath + newFilePrefix + oldHeader;
-        
+        std::string header_file(oldHeader);
+        std::ofstream out_file;
+        out_file.open(header_file);
+        out_file << output.rdbuf();
+        out_file.close();
     }
 }
 
@@ -1040,7 +1089,7 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::RefinePartOfSpokes(const strin
     vtkSmartPointer<vtkXMLPolyDataWriter> writer = vtkSmartPointer<vtkXMLPolyDataWriter>::New();
     writer->SetFileName(outputFile.c_str());
     writer->SetInputData(refinedSrep);
-    
+    writer->Update();
     if(mSrep != NULL)
     {
         delete mSrep;
