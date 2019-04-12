@@ -131,6 +131,8 @@ private:
   
   void ConvertSpokes2PolyData(std::vector<vtkSpoke*> input, vtkPolyData* output);
   
+  void SaveSpokes2Vtp(std::vector<vtkSpoke*> input, const std::string &path);
+  
   void TransSpokes2PolyData(std::vector<vtkSpoke *>input, vtkPolyData *output);
 
   // visualize model in MRMLScene

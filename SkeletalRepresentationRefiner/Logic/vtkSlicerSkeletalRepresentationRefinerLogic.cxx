@@ -137,6 +137,8 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::Refine(double stepSize, double
             mInterpolatePositions.push_back(uv);
         }
     }
+    // Hide other nodes.
+    HideNodesByClass("vtkMRMLModelNode");
     
     // Refine up spokes
     RefinePartOfSpokes(up, stepSize, endCriterion, maxIter);
@@ -145,6 +147,21 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::Refine(double stepSize, double
     RefinePartOfSpokes(down, stepSize, endCriterion, maxIter);
     
     // Show crest spokes
+    std::vector<double> radii, dirs, skeletalPoints;
+    Parse(crest, mCoeffArray, radii, dirs, skeletalPoints);
+    
+    vtkSrep *crestS = new vtkSrep(mNumRows, mNumCols, radii, dirs, skeletalPoints);
+    if(crestS->IsEmpty())
+    {
+        std::cerr << "The s-rep model is empty." << std::endl;
+        delete crestS;
+        crestS = NULL;
+        return;
+    }
+    vtkSmartPointer<vtkPolyData> crestSrep = vtkSmartPointer<vtkPolyData>::New();
+    TransSpokes2PolyData(crestS->GetAllSpokes(), crestSrep);
+    
+    Visualize(crestSrep, "Crest", 1, 1, 0);
     
     // Update header file
     UpdateHeader(headerFileName, mOutputPath);
@@ -435,13 +452,13 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::TransformSrep(const std::strin
     
     TransformSrep2ImageCS(srep, mTransformationMat);
     
-    vtkSmartPointer<vtkPolyData> primarySpokes = vtkSmartPointer<vtkPolyData>::New();
-    ConvertSpokes2PolyData(srep->GetAllSpokes(), primarySpokes);
-    Visualize(primarySpokes, "Primary", 1, 0, 0);
+//    vtkSmartPointer<vtkPolyData> primarySpokes = vtkSmartPointer<vtkPolyData>::New();
+//    ConvertSpokes2PolyData(srep->GetAllSpokes(), primarySpokes);
+//    Visualize(primarySpokes, "Primary", 1, 0, 0);
     
-    vtkSmartPointer<vtkPolyData> transUpPrimary = vtkSmartPointer<vtkPolyData>::New();
-    TransSpokes2PolyData(srep->GetAllSpokes(), transUpPrimary);
-    Visualize(transUpPrimary, "Trans_Primary", 1, 0, 0);
+//    vtkSmartPointer<vtkPolyData> transUpPrimary = vtkSmartPointer<vtkPolyData>::New();
+//    TransSpokes2PolyData(srep->GetAllSpokes(), transUpPrimary);
+//    Visualize(transUpPrimary, "Transformed primary", 1, 0, 0);
     delete srep;
 }
 
@@ -536,13 +553,16 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::ConvertSpokes2PolyData(std::ve
 {
     vtkSmartPointer<vtkPoints> pts = vtkSmartPointer<vtkPoints>::New();
     vtkSmartPointer<vtkCellArray> arrows = vtkSmartPointer<vtkCellArray>::New();
-  
-    for(int i = 0; i < input.size(); ++i)
+    
+    int numSpokes = input.size();
+    for(int i = 0; i < numSpokes; ++i)
     {
         vtkSpoke* currSpoke = input[i];
-        double basePt[3], bdryPt[3];
+        double basePt[3], bdryPt[3], dir[3], radius;
         currSpoke->GetSkeletalPoint(basePt);
         currSpoke->GetBoundaryPoint(bdryPt);
+        radius = currSpoke->GetRadius();
+        currSpoke->GetDirection(dir);
         int id0 = (pts->InsertNextPoint(basePt[0], basePt[1], basePt[2]));
         int id1 = pts->InsertNextPoint(bdryPt[0], bdryPt[1], bdryPt[2]);
         
@@ -553,6 +573,45 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::ConvertSpokes2PolyData(std::ve
     }
     output->SetPoints(pts);
     output->SetLines(arrows);
+}
+
+void vtkSlicerSkeletalRepresentationRefinerLogic::SaveSpokes2Vtp(std::vector<vtkSpoke *> input, const string &path)
+{
+    vtkSmartPointer<vtkPoints> pts = vtkSmartPointer<vtkPoints>::New();
+    vtkSmartPointer<vtkDoubleArray> spokeDirection = vtkSmartPointer<vtkDoubleArray>::New();
+    vtkSmartPointer<vtkDoubleArray> spokeLengths = vtkSmartPointer<vtkDoubleArray>::New();
+    
+    int numSpokes = input.size();
+    spokeLengths->SetNumberOfComponents(1);
+    spokeLengths->SetName("spokeLength");
+    
+    spokeDirection->SetNumberOfComponents(3);
+    spokeDirection->SetName("spokeDirection");
+  
+    for(int i = 0; i < numSpokes; ++i)
+    {
+        vtkSpoke* currSpoke = input[i];
+        double basePt[3], dir[3], radius;
+        currSpoke->GetSkeletalPoint(basePt);
+        radius = currSpoke->GetRadius();
+        currSpoke->GetDirection(dir);
+        int id0 = pts->InsertNextPoint(basePt[0], basePt[1], basePt[2]);
+        
+        spokeDirection->InsertNextTuple(dir);
+        spokeLengths->InsertNextTuple1(radius);
+    }
+    vtkSmartPointer<vtkPolyData> output = vtkSmartPointer<vtkPolyData>::New();
+    output->SetPoints(pts);
+    
+    output->GetPointData()->AddArray(spokeDirection);
+    output->GetPointData()->SetActiveVectors("spokeDirection");
+    output->GetPointData()->AddArray(spokeLengths);
+    output->GetPointData()->SetActiveScalars("spokeLength");
+    
+    vtkSmartPointer<vtkXMLPolyDataWriter> writer = vtkSmartPointer<vtkXMLPolyDataWriter>::New();
+    writer->SetFileName(path.c_str());
+    writer->SetInputData(output);
+    writer->Update();
 }
 
 void vtkSlicerSkeletalRepresentationRefinerLogic::TransSpokes2PolyData(std::vector<vtkSpoke *>input, vtkPolyData *output)
@@ -751,6 +810,9 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::UpdateHeader(const string &hea
         int numElements = root->GetNumberOfNestedElements();;
         std::string newUpFileName, newDownFileName, newCrestFileName;
         
+        std::string estimatePath;
+        estimatePath = vtksys::SystemTools::GetFilenamePath(headerFileName) + "/";
+        
         int nRows = 0, nCols = 0;
         for(int i = 0; i < numElements; ++i)
         {
@@ -790,8 +852,7 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::UpdateHeader(const string &hea
             {
                 std::string oldFile(e->GetCharacterData());
                 // some file paths are relative path, others are absolute path
-                oldFile = vtksys::SystemTools::GetFilenameName(oldFile);
-                newCrestFileName = outputFilePath + oldFile;
+                newCrestFileName = estimatePath + oldFile;
             }
             
         }
@@ -1063,10 +1124,10 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::RefinePartOfSpokes(const strin
     mSrep = srep;
     vtkSmartPointer<vtkPolyData> origSrep = vtkSmartPointer<vtkPolyData>::New();
     ConvertSpokes2PolyData(srep->GetAllSpokes(), origSrep);
-    // Hide other nodes.
-    HideNodesByClass("vtkMRMLModelNode");
+    
     Visualize(origSrep, "Before refinement", 1, 0, 0);
  
+    mFirstCost = true;
     // 2. Invoke newuoa to optimize
     min_newuoa(paramDim, coeff, *this, stepSize, endCriterion, maxIter);
     
@@ -1078,18 +1139,13 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::RefinePartOfSpokes(const strin
     srep->Refine(coeff);
     vtkSmartPointer<vtkPolyData> refinedSrep = vtkSmartPointer<vtkPolyData>::New();
     ConvertSpokes2PolyData(srep->GetAllSpokes(), refinedSrep);
-    // Hide other nodes.
-    //HideNodesByClass("vtkMRMLModelNode");
-    Visualize(refinedSrep, "Refined", 0, 1, 0);
+    Visualize(refinedSrep, "Refined", 0, 1, 1);
     
     // write to vtp file
     std::string outputFile(mOutputPath);
     std::string fileName = vtksys::SystemTools::GetFilenameName(srepFileName);
     outputFile = outputFile + newFilePrefix + fileName;
-    vtkSmartPointer<vtkXMLPolyDataWriter> writer = vtkSmartPointer<vtkXMLPolyDataWriter>::New();
-    writer->SetFileName(outputFile.c_str());
-    writer->SetInputData(refinedSrep);
-    writer->Update();
+    SaveSpokes2Vtp(srep->GetAllSpokes(), outputFile);
     if(mSrep != NULL)
     {
         delete mSrep;
