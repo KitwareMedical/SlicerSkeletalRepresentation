@@ -187,6 +187,11 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::FlowSurfaceOneStep(const st
     
     vtkSmartPointer<vtkDoubleArray> H =
         vtkDoubleArray::SafeDownCast(curvature_filter->GetOutput()->GetPointData()->GetArray("Mean_Curvature"));
+    
+    curvature_filter->SetCurvatureTypeToGaussian();
+    curvature_filter->Update();
+    vtkSmartPointer<vtkDoubleArray> K = 
+            vtkDoubleArray::SafeDownCast(curvature_filter->GetOutput()->GetPointData()->GetArray("Gauss_Curvature"));
     if(H == NULL) {
         vtkErrorMacro("error in getting mean curvature");
         return -1;
@@ -200,19 +205,27 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::FlowSurfaceOneStep(const st
     // perform the flow
     vtkSmartPointer<vtkPoints> points = mesh->GetPoints();
 
+    // Gaussian map
     vtkSmartPointer<vtkPolyData> spherePolys =
             vtkSmartPointer<vtkPolyData>::New();
-    vtkSmartPointer<vtkPolyData> gaussSpherePolys =
-            vtkSmartPointer<vtkPolyData>::New();
     
-    //spherePolys = sphereSource->GetOutput();
     vtkSmartPointer<vtkPoints> spherePts = vtkSmartPointer<vtkPoints>::New();
+    // hyperbolic pts
+    vtkSmartPointer<vtkPolyData> hyperPolyData = vtkSmartPointer<vtkPolyData>::New();
+    vtkSmartPointer<vtkPoints> hyperPts = vtkSmartPointer<vtkPoints>::New();
+    vtkSmartPointer<vtkCellArray> hyperPolys = vtkSmartPointer<vtkCellArray>::New();
     for(int i = 0; i < points->GetNumberOfPoints(); ++i) {
         double p[3];
         points->GetPoint(i, p);
         double curr_N[3];
         N->GetTuple(i, curr_N);
         double curr_H = H->GetValue(i);
+        double curr_K = K->GetValue(i);
+        if(curr_K < 0)
+        {
+            int newId = hyperPts->InsertNextPoint(p);
+            GetNeighborCells(mesh, i, newId, hyperPolys, hyperPts);
+        }
 
         double ptSphere[3];
         ptSphere[0] = curr_N[0] * std::pow( original_volume , 1.0 / 3.0 ) / vtkMath::Pi() + center[0];
@@ -227,22 +240,32 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::FlowSurfaceOneStep(const st
     }
     points->Modified();
     spherePts->Modified();
-    spherePolys->SetPoints(spherePts);
+    hyperPts->Modified();
+    hyperPolys->Modified();
     
+    spherePolys->SetPoints(spherePts);
     spherePolys->SetPolys(mesh->GetPolys());
     spherePolys->Modified();
+    
+    hyperPolyData->SetPoints(hyperPts);
+    hyperPolyData->SetPolys(hyperPolys);
+    hyperPolyData->Modified();
+    
+    const std::string highlightName("hyperbolic_points");
     const std::string sphereName("gauss_sphere_map");
     const std::string modelName("curvature_flow_result");
     
     // firstly get other intermediate result invisible
     HideNodesByNameByClass(modelName.c_str(),"vtkMRMLModelNode");
     HideNodesByNameByClass(sphereName.c_str(),"vtkMRMLModelNode");
+    HideNodesByNameByClass(highlightName.c_str(),"vtkMRMLModelNode");
     HideNodesByNameByClass("best_fitting_ellipsoid_polydata", "vtkMRMLModelNode");
 
     // then add this new intermediate result
     AddModelNodeToScene(spherePolys, sphereName.c_str(), true, 1, 0,0);
     AddModelNodeToScene(mesh, modelName.c_str(), true);
-
+    AddModelNodeToScene(hyperPolyData, highlightName.c_str(), true, 0, 1, 1);
+    
     vtkSmartPointer<vtkPolyDataWriter> writer =
         vtkSmartPointer<vtkPolyDataWriter>::New();
     writer->SetInputData(mesh);
@@ -1796,5 +1819,51 @@ void vtkSlicerSkeletalRepresentationInitializerLogic::CalculateSpokeDirection(Po
     *x=((tip[0] - tail[0]) / spokeRadiu);
     *y=((tip[1] - tail[1]) / spokeRadiu);
     *z=((tip[2] - tail[2]) / spokeRadiu);
+    
+}
 
+void vtkSlicerSkeletalRepresentationInitializerLogic::GetNeighborCells(vtkPolyData *mesh, int ptId, int newId, vtkCellArray *output, vtkPoints* morePts)
+{
+    vtkSmartPointer<vtkIdList> cellIdList =
+            vtkSmartPointer<vtkIdList>::New();
+    mesh->GetPointCells(ptId, cellIdList);
+    for(vtkIdType i = 0; i < cellIdList->GetNumberOfIds(); i++)
+    {
+        
+        vtkCell* cell = mesh->GetCell(cellIdList->GetId(i));
+        //cout << "The cell has " << cell->GetNumberOfEdges() << " edges." << endl;
+        
+        //if the cell doesn't have any edges, it is a line
+        if(cell->GetNumberOfEdges() <= 0)
+        {
+            continue;
+        }
+        
+        for(int j = 0; j < cell->GetNumberOfEdges(); ++j)
+        {
+            vtkCell* edge = cell->GetEdge(j);
+            vtkIdList* pointIdList = edge->GetPointIds(); 
+            double pt0[3], pt1[3];
+            
+            mesh->GetPoint(pointIdList->GetId(0), pt0);
+            mesh->GetPoint(pointIdList->GetId(1), pt1);
+            
+            vtkIdType id2;
+            vtkSmartPointer<vtkLine> newEdge = vtkSmartPointer<vtkLine>::New();
+            if(pointIdList->GetId(0) == ptId)
+            {
+                id2 = morePts->InsertNextPoint(pt1);
+                newEdge->GetPointIds()->SetId(0, newId);
+                newEdge->GetPointIds()->SetId(1, id2);
+            }
+            else {
+                id2 = morePts->InsertNextPoint(pt0);
+                newEdge->GetPointIds()->SetId(1, newId);
+                newEdge->GetPointIds()->SetId(0, id2);
+            }
+            
+            output->InsertNextCell(newEdge);
+        }
+    }
+    
 }

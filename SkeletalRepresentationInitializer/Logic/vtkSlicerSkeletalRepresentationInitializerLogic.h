@@ -39,6 +39,7 @@
 #include "itkPointSet.h"
 class vtkPolyData;
 class vtkPoints;
+class vtkCellArray;
 
 /// \ingroup Slicer_QtModules_ExtensionTemplate
 class VTK_SLICER_SKELETALREPRESENTATIONINITIALIZER_MODULE_LOGIC_EXPORT vtkSlicerSkeletalRepresentationInitializerLogic :
@@ -111,6 +112,7 @@ private:
                        vtkPolyData* poly, const std::string& outputFileName);
   double CalculateSpokeLength(PointType tail, PointType tip);
   void CalculateSpokeDirection(PointType tail, PointType tip, double *x, double *y, double *z);
+  void GetNeighborCells(vtkPolyData* mesh, int ptId, int newId, vtkCellArray* output, vtkPoints* morePts);
 private:
 
   vtkSlicerSkeletalRepresentationInitializerLogic(const vtkSlicerSkeletalRepresentationInitializerLogic&); // Not implemented
