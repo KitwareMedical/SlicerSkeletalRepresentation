@@ -61,7 +61,7 @@ public:
   // flow one step only
   // input[dt]: delta t in each move
   // input[smooth_amount]: 0-2 double value for smooth filter
-  int FlowSurfaceOneStep(double dt, double smooth_amount);
+  int FlowSurfaceOneStep(const std::string &filename, double dt, double smooth_amount);
 
   // Select input mesh and render it in scene
   // input[filename]: whole path of vtk file

@@ -46,7 +46,7 @@
 #include <vtkParametricFunctionSource.h>
 #include <vtkImplicitPolyDataDistance.h>
 #include <vtkPolyDataNormals.h>
-
+#include <vtkSphereSource.h>	
 #include <vtkPoints.h>
 #include <vtkLine.h>
 #include <vtkQuad.h>
@@ -130,16 +130,10 @@ void vtkSlicerSkeletalRepresentationInitializerLogic
 // basic idea: When the user select a mesh file, make a copy of vtk file in the application path.
 // In each step of flow, read in that copy, flow it and save it the same place with same name.
 // TODO: cleanup the hard disk when the module exits
-int vtkSlicerSkeletalRepresentationInitializerLogic::FlowSurfaceOneStep(double dt, double smooth_amount)
+int vtkSlicerSkeletalRepresentationInitializerLogic::FlowSurfaceOneStep(const std::string &filename, double dt, double smooth_amount)
 {
-    std::cout << "flow one step : dt-" << dt << std::endl;
-    std::cout << "flow one step : smooth amount-" << smooth_amount << std::endl;
-
-    std::string tempFileName(this->GetApplicationLogic()->GetTemporaryPath());
-    tempFileName += "/temp_output.vtk";
-
     vtkSmartPointer<vtkPolyDataReader> reader = vtkSmartPointer<vtkPolyDataReader>::New();
-    reader->SetFileName(tempFileName.c_str());
+    reader->SetFileName(filename.c_str());
     reader->Update();
     vtkSmartPointer<vtkPolyData> mesh = reader->GetOutput();
     if(mesh == NULL)
@@ -182,6 +176,15 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::FlowSurfaceOneStep(double d
     curvature_filter->SetInputData(mesh);
     curvature_filter->Update();
 
+    // compute the center of surface mesh
+    vtkSmartPointer<vtkCenterOfMass> centerMassFilter =
+        vtkSmartPointer<vtkCenterOfMass>::New();
+    centerMassFilter->SetInputData(mesh);
+    centerMassFilter->SetUseScalarsAsWeights(false);
+    centerMassFilter->Update();
+    double center[3];
+    centerMassFilter->GetCenter(center);
+    
     vtkSmartPointer<vtkDoubleArray> H =
         vtkDoubleArray::SafeDownCast(curvature_filter->GetOutput()->GetPointData()->GetArray("Mean_Curvature"));
     if(H == NULL) {
@@ -197,6 +200,13 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::FlowSurfaceOneStep(double d
     // perform the flow
     vtkSmartPointer<vtkPoints> points = mesh->GetPoints();
 
+    vtkSmartPointer<vtkPolyData> spherePolys =
+            vtkSmartPointer<vtkPolyData>::New();
+    vtkSmartPointer<vtkPolyData> gaussSpherePolys =
+            vtkSmartPointer<vtkPolyData>::New();
+    
+    //spherePolys = sphereSource->GetOutput();
+    vtkSmartPointer<vtkPoints> spherePts = vtkSmartPointer<vtkPoints>::New();
     for(int i = 0; i < points->GetNumberOfPoints(); ++i) {
         double p[3];
         points->GetPoint(i, p);
@@ -204,49 +214,42 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::FlowSurfaceOneStep(double d
         N->GetTuple(i, curr_N);
         double curr_H = H->GetValue(i);
 
+        double ptSphere[3];
+        ptSphere[0] = curr_N[0] * std::pow( original_volume , 1.0 / 3.0 ) / vtkMath::Pi() + center[0];
+        ptSphere[1] = curr_N[1] * std::pow( original_volume , 1.0 / 3.0 ) / vtkMath::Pi() + center[1];
+        ptSphere[2] = curr_N[2] * std::pow( original_volume , 1.0 / 3.0 ) / vtkMath::Pi() + center[2];
+        spherePts->InsertNextPoint(ptSphere);
+        
         for(int idx = 0; idx < 3; ++idx) {
             p[idx] -= dt * curr_H * curr_N[idx];
         }
         points->SetPoint(i, p);
     }
     points->Modified();
-
-    mass_filter->SetInputData(mesh);
-    mass_filter->Update();
-    double curr_volume = mass_filter->GetVolume();
-    for(int i = 0; i < points->GetNumberOfPoints(); ++i) {
-        double p[3];
-        points->GetPoint(i, p);
-        for(int j = 0; j < 3; ++j) {
-            p[j] *= std::pow( original_volume / curr_volume , 1.0 / 3.0 );
-        }
-//        points->SetPoint(i, p);
-    }
-    points->Modified();
-
+    spherePts->Modified();
+    spherePolys->SetPoints(spherePts);
+    
+    spherePolys->SetPolys(mesh->GetPolys());
+    spherePolys->Modified();
+    const std::string sphereName("gauss_sphere_map");
+    const std::string modelName("curvature_flow_result");
+    
     // firstly get other intermediate result invisible
-    HideNodesByNameByClass("curvature_flow_result","vtkMRMLModelNode");
+    HideNodesByNameByClass(modelName.c_str(),"vtkMRMLModelNode");
+    HideNodesByNameByClass(sphereName.c_str(),"vtkMRMLModelNode");
     HideNodesByNameByClass("best_fitting_ellipsoid_polydata", "vtkMRMLModelNode");
 
     // then add this new intermediate result
-    const std::string modelName("curvature_flow_result");
+    AddModelNodeToScene(spherePolys, sphereName.c_str(), true, 1, 0,0);
     AddModelNodeToScene(mesh, modelName.c_str(), true);
 
     vtkSmartPointer<vtkPolyDataWriter> writer =
         vtkSmartPointer<vtkPolyDataWriter>::New();
     writer->SetInputData(mesh);
-    writer->SetFileName(tempFileName.c_str());
+    writer->SetFileName(filename.c_str());
     writer->Update();
 
-    // compute the fitting ellipsoid
-    vtkSmartPointer<vtkCenterOfMass> centerMassFilter =
-        vtkSmartPointer<vtkCenterOfMass>::New();
-    centerMassFilter->SetInputData(mesh);
-    centerMassFilter->SetUseScalarsAsWeights(false);
-    centerMassFilter->Update();
-    double center[3];
-    centerMassFilter->GetCenter(center);
-
+    
 //    ShowFittingEllipsoid(points, curr_volume, center);
     return 0;
 }

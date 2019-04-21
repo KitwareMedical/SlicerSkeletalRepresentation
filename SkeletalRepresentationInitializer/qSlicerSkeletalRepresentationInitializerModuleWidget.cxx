@@ -121,7 +121,7 @@ void qSlicerSkeletalRepresentationInitializerModuleWidget::flowOneStep()
     double dt = d->sl_dt->value();
     double smoothAmount = d->sl_smooth_amount->value();
 
-    d->logic()->FlowSurfaceOneStep(dt, smoothAmount);
+    d->logic()->FlowSurfaceOneStep(fileName, dt, smoothAmount);
 }
 void qSlicerSkeletalRepresentationInitializerModuleWidget::inklingFlow()
 {
