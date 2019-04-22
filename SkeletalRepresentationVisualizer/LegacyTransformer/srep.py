@@ -3,18 +3,18 @@ import numpy as np
 import vtk
 
 
-class spoke:
+class spoke(object):
     def __init__(self, ux, uy, uz, r):
         self.U = np.array([ux, uy, uz])
         self.r = r
 
 
-class hub:
+class hub(object):
     def __init__(self, x, y, z):
         self.P = np.array([x, y, z])
 
 
-class atom:
+class atom(object):
     def __init__(self, hub):
         self.hub = hub
 
@@ -34,7 +34,7 @@ class atom:
         return hasattr(self, 'crestSpoke')
 
 
-class figure:
+class figure(object):
     def __init__(self, numRows, numCols):
         self.numRows = numRows
         self.numCols = numCols
@@ -78,7 +78,7 @@ class figure:
         self.addAtom(row, col, newatom)
 
 
-class srep:
+class srep(object):
     def __init__(self):
         self.fig = None
 

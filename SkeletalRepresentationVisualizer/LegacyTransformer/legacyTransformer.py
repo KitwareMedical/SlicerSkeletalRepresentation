@@ -2,15 +2,16 @@
 # date: 2018.6.1 Happy Children's Day
 # this file transform legacy srep to new srep not only about the file format, but divide crest spoke and inner spokes
 from __future__ import print_function
+from __future__ import absolute_import
 from xml.etree.ElementTree import Element, SubElement
-from ElementTree_pretty import prettify
+from .ElementTree_pretty import prettify
 # import xml.etree.cElementTree as etree
 import vtk
-import srep
+from . import srep
 import os
 import sys
 
-class legacyTransformer:
+class legacyTransformer(object):
     def __init__(self):
         self.outputFile = None
 
