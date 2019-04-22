@@ -4,8 +4,9 @@ Created on Wed Feb 12 13:57:11 2014
 
 @author: jvicory
 """
+from __future__ import absolute_import
 
-import srep
+from . import srep
 import datetime
 
 def readSrepFromM3D(filename):
