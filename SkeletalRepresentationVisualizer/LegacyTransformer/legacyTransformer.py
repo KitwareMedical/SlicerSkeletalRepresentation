@@ -10,7 +10,7 @@ import srep
 import os
 import sys
 
-class legacyTransformer:
+class legacyTransformer(object):
     def __init__(self):
         self.outputFile = None
 
