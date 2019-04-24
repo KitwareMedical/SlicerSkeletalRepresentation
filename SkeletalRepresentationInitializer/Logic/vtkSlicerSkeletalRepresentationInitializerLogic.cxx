@@ -210,6 +210,12 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::FlowSurfaceOneStep(const st
             vtkSmartPointer<vtkPolyData>::New();
     
     vtkSmartPointer<vtkPoints> spherePts = vtkSmartPointer<vtkPoints>::New();
+    
+    // concave pts
+    vtkSmartPointer<vtkPolyData> concavePolyData = vtkSmartPointer<vtkPolyData>::New();
+    vtkSmartPointer<vtkPoints> concavePts = vtkSmartPointer<vtkPoints>::New();
+    vtkSmartPointer<vtkCellArray> concavePolys = vtkSmartPointer<vtkCellArray>::New();
+    
     // hyperbolic pts
     vtkSmartPointer<vtkPolyData> hyperPolyData = vtkSmartPointer<vtkPolyData>::New();
     vtkSmartPointer<vtkPoints> hyperPts = vtkSmartPointer<vtkPoints>::New();
@@ -225,6 +231,14 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::FlowSurfaceOneStep(const st
         {
             int newId = hyperPts->InsertNextPoint(p);
             GetNeighborCells(mesh, i, newId, hyperPolys, hyperPts);
+        }
+        else {
+            // see the explanation on vtkCurvatures signs
+            if(curr_H < 0)
+            {
+                int newId = concavePts->InsertNextPoint(p);
+                GetNeighborCells(mesh, i, newId, concavePolys, concavePts);
+            }
         }
 
         double ptSphere[3];
@@ -243,6 +257,12 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::FlowSurfaceOneStep(const st
     hyperPts->Modified();
     hyperPolys->Modified();
     
+    concavePts->Modified();
+    concavePolys->Modified();
+    concavePolyData->SetPoints(concavePts);
+    concavePolyData->SetPolys(concavePolys);
+    concavePolyData->Modified();
+    
     spherePolys->SetPoints(spherePts);
     spherePolys->SetPolys(mesh->GetPolys());
     spherePolys->Modified();
@@ -251,20 +271,23 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::FlowSurfaceOneStep(const st
     hyperPolyData->SetPolys(hyperPolys);
     hyperPolyData->Modified();
     
-    const std::string highlightName("hyperbolic_points");
+    const std::string hyperbolicRegionName("hyperbolic_points");
+    const std::string concaveRegionName("concave_points");
     const std::string sphereName("gauss_sphere_map");
     const std::string modelName("curvature_flow_result");
     
     // firstly get other intermediate result invisible
     HideNodesByNameByClass(modelName.c_str(),"vtkMRMLModelNode");
     HideNodesByNameByClass(sphereName.c_str(),"vtkMRMLModelNode");
-    HideNodesByNameByClass(highlightName.c_str(),"vtkMRMLModelNode");
+    HideNodesByNameByClass(hyperbolicRegionName.c_str(),"vtkMRMLModelNode");
+    HideNodesByNameByClass(concaveRegionName.c_str(),"vtkMRMLModelNode");
     HideNodesByNameByClass("best_fitting_ellipsoid_polydata", "vtkMRMLModelNode");
 
     // then add this new intermediate result
     AddModelNodeToScene(spherePolys, sphereName.c_str(), true, 1, 0,0);
     AddModelNodeToScene(mesh, modelName.c_str(), true);
-    AddModelNodeToScene(hyperPolyData, highlightName.c_str(), true, 0, 1, 1);
+    AddModelNodeToScene(hyperPolyData, hyperbolicRegionName.c_str(), true, 1, 0, 1);
+    AddModelNodeToScene(concavePolyData, concaveRegionName.c_str(), true, 0,0,1);
     
     vtkSmartPointer<vtkPolyDataWriter> writer =
         vtkSmartPointer<vtkPolyDataWriter>::New();

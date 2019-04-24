@@ -92,6 +92,9 @@ public:
   void AntiAliasSignedDistanceMap(const std::string &meshFileName);
   
   void TransformSrep(const std::string &headerFile);
+  
+  // show wired frame of implied boundary
+  void ShowImpliedBoundary(int interpolationLevel, std::string& srepFileName);
 
 protected:
   vtkSlicerSkeletalRepresentationRefinerLogic();
@@ -143,6 +146,9 @@ private:
   // transform model cs to unit cube cs then to image cs
   // Output should be formed as 4x4 matrix
   void TransformSrep2ImageCS(vtkSrep *input, double output[][4]);
+  
+  // patch spokes on top to form implied boundary
+  void PatchSpokes(std::vector<vtkSpoke*> input, vtkPolyData *output);
   
   // e.g. Refine up spokes saved in upFileName
   void RefinePartOfSpokes(const std::string& srepFileName, double stepSize, double endCriterion, int maxIter);

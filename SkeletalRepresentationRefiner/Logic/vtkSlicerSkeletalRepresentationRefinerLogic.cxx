@@ -462,6 +462,103 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::TransformSrep(const std::strin
     delete srep;
 }
 
+void vtkSlicerSkeletalRepresentationRefinerLogic::ShowImpliedBoundary(int interpolationLevel, string &srepFileName)
+{
+    // Hide other nodes.
+    HideNodesByClass("vtkMRMLModelNode");
+    
+    // 1. Parse the model into a parameter array that needs to be optimized
+    int nRows = 0, nCols = 0;
+    std::string up, down, crest;
+    ParseHeader(srepFileName, &nRows, &nCols, &up, &down, &crest);
+    
+    std::vector<double> coeffArrayUp, radiiUp, dirsUp, skeletalPointsUp;
+    Parse(up, coeffArrayUp, radiiUp, dirsUp, skeletalPointsUp);
+        
+    if(nRows == 0 || nCols == 0)
+    {
+        std::cerr << "The s-rep model is empty." << std::endl;
+        return;
+    }
+    
+    vtkSrep *srep = new vtkSrep(nRows, nCols, radiiUp, dirsUp, skeletalPointsUp);
+    if(srep->IsEmpty())
+    {
+        std::cerr << "The s-rep model is empty." << std::endl;
+        delete srep;
+        srep = NULL;
+        return;
+    }
+    // 1.1 interpolate and visualize for verification
+    // collect neighboring spokes around corners
+    vtkSlicerSkeletalRepresentationInterpolater interpolater;
+    
+    int shares = pow(2, interpolationLevel);
+    double interval = (double)(1.0/ shares);
+    std::vector<double> steps;
+    
+    for(int i = 0; i <= shares; ++i)
+    {
+        steps.push_back(i * interval);
+    }
+    
+    std::vector<vtkSpoke*> interpolatedSpokes;
+    for(int r = 0; r < nRows-1; ++r)
+    {
+        for(int c = 0; c < nCols-1; ++c)
+        {
+            vtkSpoke *cornerSpokes[4];
+            
+            double  dXdu11[3], dXdv11[3], 
+                    dXdu12[3], dXdv12[3], 
+                    dXdu21[3], dXdv21[3], 
+                    dXdu22[3], dXdv22[3];
+            for(int i = 0; i < steps.size(); ++i)
+            {
+                for(int j = 0; j < steps.size(); ++j)
+                {
+                    cornerSpokes[0] = srep->GetSpoke(r,c);
+                    cornerSpokes[1] = srep->GetSpoke(r+1, c);
+                    cornerSpokes[2] = srep->GetSpoke(r+1, c+1);
+                    cornerSpokes[3] = srep->GetSpoke(r, c+ 1);
+                    
+                    ComputeDerivative(skeletalPointsUp, r, c, nRows, nCols, dXdu11, dXdv11);
+                    ComputeDerivative(skeletalPointsUp, r+1, c, nRows, nCols, dXdu21, dXdv21);
+                    ComputeDerivative(skeletalPointsUp, r, c+1, nRows, nCols, dXdu12, dXdv12);
+                    ComputeDerivative(skeletalPointsUp, r+1, c+1, nRows, nCols, dXdu22, dXdv22);
+                    
+                    interpolater.SetCornerDxdu(dXdu11,
+                                               dXdu21,
+                                               dXdu22,
+                                               dXdu12);
+                    interpolater.SetCornerDxdv(dXdv11,
+                                               dXdv21,
+                                               dXdv22,
+                                               dXdv12);
+                    
+                    vtkSpoke* in1 = new vtkSpoke;
+                    interpolater.Interpolate(double(steps[i]), double(steps[j]), cornerSpokes, in1);
+                    interpolatedSpokes.push_back(in1);
+                }
+            }
+        }
+    }
+    
+    // interpolated spokes inside a quad are quadDim x quadDim 
+    int quadDim = shares + 1;
+    
+    vtkSmartPointer<vtkPolyData> impliedBoundaryPatches = vtkSmartPointer<vtkPolyData>::New();
+    PatchSpokes(interpolatedSpokes, impliedBoundaryPatches);
+    Visualize(impliedBoundaryPatches, "Implied boundary", 0, 0.5, 1);
+    
+    vtkSmartPointer<vtkPolyData> primarySpokes = vtkSmartPointer<vtkPolyData>::New();
+    ConvertSpokes2PolyData(srep->GetAllSpokes(), primarySpokes);
+    Visualize(primarySpokes, "Primary", 1, 0, 0);
+        
+    // delete pointers
+    delete srep;
+}
+
 void vtkSlicerSkeletalRepresentationRefinerLogic::ComputeDerivative(std::vector<double> skeletalPoints, int r, int c, int nRows, int nCols, double *dXdu, double *dXdv)
 {
     // 0-based index of elements if arranged in array
@@ -1096,6 +1193,18 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::TransformSrep2ImageCS(vtkSrep 
     mat4x4[1][0] = 0; mat4x4[1][2] = 0; mat4x4[1][3] = 0;
     mat4x4[2][0] = 0; mat4x4[2][1] = 0; mat4x4[2][3] = 0;
     mat4x4[3][3] = 1; // the bottom-right corner has to be 1 to multiply with another transform matrix
+}
+
+void vtkSlicerSkeletalRepresentationRefinerLogic::PatchSpokes(std::vector<vtkSpoke *> input, vtkPolyData *output)
+{
+    vtkSmartPointer<vtkPolyData> surfPolyData = vtkSmartPointer<vtkPolyData>::New();
+    vtkSmartPointer<vtkPoints> surfPts = vtkSmartPointer<vtkPoints>::New();
+    for (int i = 0; i < input.size(); ++i) {
+        double pt[3];
+        input[i]->GetBoundaryPoint(pt);
+        surfPts->InsertNextPoint(pt);
+    }
+    surfPolyData->SetPoints(surfPts);
 }
 
 void vtkSlicerSkeletalRepresentationRefinerLogic::RefinePartOfSpokes(const string &srepFileName, double stepSize, double endCriterion, int maxIter)

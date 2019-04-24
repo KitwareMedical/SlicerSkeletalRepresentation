@@ -53,6 +53,9 @@ public slots:
   void GenerateImage();
   // transform srep into unit cube
   void TransformSrep();
+  
+  // show initial implied boundary
+  void showImpliedBoundary();
 
 protected:
   QScopedPointer<qSlicerSkeletalRepresentationRefinerModuleWidgetPrivate> d_ptr;

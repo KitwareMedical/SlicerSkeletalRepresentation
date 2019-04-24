@@ -49,7 +49,7 @@ public slots:
     void pullUpFittingEllipsoid();
     // connect the button flow with laplacian curvature
     void inklingFlow();
-
+    
     // connect the button backward flow
     void backwardFlow();
 

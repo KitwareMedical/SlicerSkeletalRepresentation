@@ -132,6 +132,13 @@
         </property>
        </widget>
       </item>
+      <item>
+       <widget class="QPushButton" name="btn_initial_bdry">
+        <property name="text">
+         <string>Show initial implied boundary</string>
+        </property>
+       </widget>
+      </item>
      </layout>
     </widget>
    </item>

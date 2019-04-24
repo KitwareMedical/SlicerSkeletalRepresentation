@@ -135,6 +135,14 @@ void qSlicerSkeletalRepresentationRefinerModuleWidget::TransformSrep()
     d->logic()->TransformSrep(headerFile);
 }
 
+void qSlicerSkeletalRepresentationRefinerModuleWidget::showImpliedBoundary()
+{
+    Q_D(qSlicerSkeletalRepresentationRefinerModuleWidget);
+    int interpolationLevel = int(d->sl_interp->value());
+    std::string srepFileName = d->lb_srepPath->text().toUtf8().constData();
+    d->logic()->ShowImpliedBoundary(interpolationLevel, srepFileName);
+}
+
 //-----------------------------------------------------------------------------
 void qSlicerSkeletalRepresentationRefinerModuleWidget::setup()
 {
@@ -146,6 +154,8 @@ void qSlicerSkeletalRepresentationRefinerModuleWidget::setup()
   QObject::connect(d->btn_output, SIGNAL(clicked()), this, SLOT(SelectOutputPath()));
   QObject::connect(d->btn_submit, SIGNAL(clicked()), this, SLOT(StartRefinement()));
   QObject::connect(d->btn_interp, SIGNAL(clicked()), this, SLOT(StartInterpolate()));
+  QObject::connect(d->btn_initial_bdry, SIGNAL(clicked()), this, SLOT(showImpliedBoundary()));
+  
   //QObject::connect(d->btn_image, SIGNAL(clicked()), this, SLOT(GenerateImage()));
   //QObject::connect(d->btn_transform, SIGNAL(clicked()), this, SLOT(TransformSrep()));
 }

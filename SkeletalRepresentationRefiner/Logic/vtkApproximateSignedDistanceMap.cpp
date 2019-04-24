@@ -37,18 +37,12 @@ void vtkApproximateSignedDistanceMap::Convert(vtkImageData *input, RealImage::Po
         RealImage::Pointer image = approximateSignedDistanceMapImageFilter->GetOutput();
         
         DeepCopy<RealImage>(image, outputITK);
-        typedef itk::ImageFileWriter< RealImage > WriterType;
-        WriterType::Pointer writer = WriterType::New();
-        writer->SetFileName("/playpen/workspace/newuoa/testsdm.mhd");
-        writer->SetInput(image);
-        writer->Update();
-        // Convert itk image back to vtk image data
-//        using BackFilterType = itk::ImageToVTKImageFilter< RealImage >;
-//        BackFilterType::Pointer backFilter = BackFilterType::New();
-//        backFilter->SetInput(approximateSignedDistanceMapImageFilter->GetOutput());
-//        backFilter->Update();
-        
-//        output->DeepCopy(backFilter->GetOutput());
+//        typedef itk::ImageFileWriter< RealImage > WriterType;
+//        WriterType::Pointer writer = WriterType::New();
+//        writer->SetFileName(tempFileName);
+//        writer->SetInput(image);
+//        writer->Update();
+ 
         std::cout << "Finished generating distance map." << std::endl;
         
     }
