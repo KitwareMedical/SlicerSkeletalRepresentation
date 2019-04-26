@@ -17,10 +17,8 @@
 
 // SkeletalRepresentationInitializer Logic includes
 #include "vtkSlicerSkeletalRepresentationInitializerLogic.h"
+#include "vtkBackwardFlowLogic.h"
 
-#include "vtkSmartPointer.h"
-#include "vtkPolyDataReader.h"
-#include "vtkPolyData.h"
 // MRML includes
 #include <vtkMRMLScene.h>
 #include <vtkMRMLModelNode.h>
@@ -32,31 +30,30 @@
 #include "vtkSlicerMarkupsLogic.h"
 
 // VTK includes
-#include <vtkIntArray.h>
-#include <vtkMath.h>
-#include <vtkNew.h>
-#include <vtkDoubleArray.h>
 #include <vtkCenterOfMass.h>
-#include <vtkObjectFactory.h>
 #include <vtkCurvatures.h>
-#include <vtkVector.h>
-#include <vtkWindowedSincPolyDataFilter.h>
-#include <vtkSmoothPolyDataFilter.h>
-#include <vtkParametricEllipsoid.h>
-#include <vtkParametricFunctionSource.h>
-#include <vtkImplicitPolyDataDistance.h>
-#include <vtkPolyDataNormals.h>
-
-#include <vtkPoints.h>
-#include <vtkLine.h>
-#include <vtkQuad.h>
-#include <vtkPolyData.h>
-#include <vtkPointData.h>
 #include <vtkDataArray.h>
 #include <vtkDoubleArray.h>
+#include <vtkImplicitPolyDataDistance.h>
+#include <vtkIntArray.h>
+#include <vtkLine.h>
+#include <vtkMassProperties.h>
+#include <vtkMath.h>
+#include <vtkNew.h>
+#include <vtkObjectFactory.h>
+#include <vtkParametricEllipsoid.h>
+#include <vtkParametricFunctionSource.h>
+#include <vtkPointData.h>
+#include <vtkPoints.h>
+#include <vtkPolyData.h>
+#include <vtkPolyDataNormals.h>
 #include <vtkPolyDataReader.h>
 #include <vtkPolyDataWriter.h>
-#include <vtkMassProperties.h>
+#include <vtkQuad.h>
+#include <vtkSmartPointer.h>
+#include <vtkSmoothPolyDataFilter.h>
+#include <vtkVector.h>
+#include <vtkWindowedSincPolyDataFilter.h>
 
 // Eigen includes
 #include <Eigen/Dense>
@@ -68,10 +65,6 @@
 
 // vtk system tools
 #include <vtksys/SystemTools.hxx>
-
-#include "vtkBackwardFlowLogic.h"
-#include "qSlicerApplication.h"
-#include <QString>
 
 #define MAX_FILE_NAME  256
 //----------------------------------------------------------------------------

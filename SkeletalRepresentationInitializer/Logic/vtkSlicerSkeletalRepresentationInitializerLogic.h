@@ -25,22 +25,22 @@
 #define __vtkSlicerSkeletalRepresentationInitializerLogic_h
 
 // Slicer includes
-#include "vtkSlicerModuleLogic.h"
+#include <vtkSlicerModuleLogic.h>
 
-// MRML includes
+// SkeletalRepresentationInitializer Logic includes
+#include "vtkSlicerSkeletalRepresentationInitializerModuleLogicExport.h"
+#include <itkThinPlateSplineExtended.h>
+
+// ITK includes
+#include <itkPointSet.h>
+
+// VTK includes
+class vtkPolyData;
+class vtkPoints;
 
 // STD includes
 #include <cstdlib>
 
-#include "vtkSlicerSkeletalRepresentationInitializerModuleLogicExport.h"
-
-// itk lib
-#include "itkThinPlateSplineExtended.h"
-#include "itkPointSet.h"
-class vtkPolyData;
-class vtkPoints;
-
-/// \ingroup Slicer_QtModules_ExtensionTemplate
 class VTK_SLICER_SKELETALREPRESENTATIONINITIALIZER_MODULE_LOGIC_EXPORT vtkSlicerSkeletalRepresentationInitializerLogic :
   public vtkSlicerModuleLogic
 {

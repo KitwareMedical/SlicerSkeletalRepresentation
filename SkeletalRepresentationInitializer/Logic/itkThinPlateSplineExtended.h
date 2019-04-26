@@ -5,6 +5,8 @@
 #ifndef __itkThinPlateSplineExtended_H__
 #define __itkThinPlateSplineExtended_H__
 
+
+// ITK includes
 #include "itkThinPlateSplineKernelTransform.h"
 
 

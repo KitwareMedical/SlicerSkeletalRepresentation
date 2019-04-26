@@ -4,10 +4,13 @@
 #ifndef __vtkForwardFlowLogic_h
 #define __vtkForwardFlowLogic_h
 
-#include "vtkObjectBase.h"
-
+// MRML includes
 class vtkMRMLScene;
+
+// VTK includes
+#include <vtkObjectBase.h>
 class vtkPolyData;
+
 class vtkForwardFlowLogic : public vtkObjectBase{
 public:
     vtkForwardFlowLogic(){}
