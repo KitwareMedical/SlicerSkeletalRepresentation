@@ -4,6 +4,9 @@
 #ifndef __vtkForwardFlowLogic_h
 #define __vtkForwardFlowLogic_h
 
+// SkeletalRepresentationInitializer Logic includes
+#include "vtkSlicerSkeletalRepresentationInitializerModuleLogicExport.h"
+
 // MRML includes
 class vtkMRMLScene;
 
@@ -11,7 +14,8 @@ class vtkMRMLScene;
 #include <vtkObjectBase.h>
 class vtkPolyData;
 
-class vtkForwardFlowLogic : public vtkObjectBase{
+class VTK_SLICER_SKELETALREPRESENTATIONINITIALIZER_MODULE_LOGIC_EXPORT vtkForwardFlowLogic : public vtkObjectBase
+{
 public:
     vtkForwardFlowLogic(){}
     ~vtkForwardFlowLogic(){}
