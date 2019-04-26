@@ -18,9 +18,10 @@
 #ifndef __qSlicerSkeletalRepresentationInitializerModuleWidget_h
 #define __qSlicerSkeletalRepresentationInitializerModuleWidget_h
 
-// SlicerQt includes
-#include "qSlicerAbstractModuleWidget.h"
+// Slicer includes
+#include <qSlicerAbstractModuleWidget.h>
 
+// SkeletalRepresentationInitializer includes
 #include "qSlicerSkeletalRepresentationInitializerModuleExport.h"
 
 class qSlicerSkeletalRepresentationInitializerModuleWidgetPrivate;

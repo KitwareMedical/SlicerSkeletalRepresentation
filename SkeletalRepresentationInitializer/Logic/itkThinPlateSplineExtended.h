@@ -5,10 +5,14 @@
 #ifndef __itkThinPlateSplineExtended_H__
 #define __itkThinPlateSplineExtended_H__
 
+// SkeletalRepresentationInitializer Logic includes
+#include "vtkSlicerSkeletalRepresentationInitializerModuleLogicExport.h"
+
+// ITK includes
 #include "itkThinPlateSplineKernelTransform.h"
 
 
-class itkThinPlateSplineExtended :
+class VTK_SLICER_SKELETALREPRESENTATIONINITIALIZER_MODULE_LOGIC_EXPORT itkThinPlateSplineExtended :
 		public itk::ThinPlateSplineKernelTransform<double, 3> {
 public:
 	/** Standard class typedefs. */

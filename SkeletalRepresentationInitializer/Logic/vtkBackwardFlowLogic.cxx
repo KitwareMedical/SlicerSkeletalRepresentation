@@ -1,17 +1,23 @@
 // This class provides logic of backward flow
 // author: Zhiyuan Liu
 // Date: Sept. 4, 2018
+
+// SkeletalRepresentationInitializer Logic includes
 #include "vtkBackwardFlowLogic.h"
+#include "itkThinPlateSplineExtended.h"
+
+// ITK includes
+#include <itkPointSet.h>
+
+// VTK includes
+#include <vtkMath.h>
+#include <vtkPolyDataReader.h>
+#include <vtkPolyData.h>
+#include <vtkSmartPointer.h>
+
+// STD includes
 #include <iostream>
 #include <string>
-
-#include "itkThinPlateSplineExtended.h"
-#include "itkPointSet.h"
-
-#include "vtkSmartPointer.h"
-#include "vtkPolyDataReader.h"
-#include "vtkPolyData.h"
-#include "vtkMath.h"
 
 void vtkBackwardFlowLogic::runApplyTPS()
 {

@@ -4,10 +4,15 @@
 #ifndef __vtkBackwardFlowLogic_h
 #define __vtkBackwardFlowLogic_h
 
-#include "vtkObjectBase.h"
+// SkeletalRepresentationInitializer Logic includes
+#include "vtkSlicerSkeletalRepresentationInitializerModuleLogicExport.h"
 
+// VTK includes
+#include <vtkObjectBase.h>
 class vtkPolyData;
-class vtkBackwardFlowLogic : public vtkObjectBase{
+
+class VTK_SLICER_SKELETALREPRESENTATIONINITIALIZER_MODULE_LOGIC_EXPORT vtkBackwardFlowLogic : public vtkObjectBase
+{
 public:
     vtkBackwardFlowLogic(){}
     ~vtkBackwardFlowLogic(){}
