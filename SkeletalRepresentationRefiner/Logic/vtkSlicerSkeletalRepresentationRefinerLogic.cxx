@@ -614,7 +614,6 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::ConvertSpokes2PolyData(std::ve
         double basePt[3], bdryPt[3], dir[3], radius;
         currSpoke->GetSkeletalPoint(basePt);
         currSpoke->GetBoundaryPoint(bdryPt);
-        radius = currSpoke->GetRadius();
         currSpoke->GetDirection(dir);
         int id0 = (pts->InsertNextPoint(basePt[0], basePt[1], basePt[2]));
         int id1 = pts->InsertNextPoint(bdryPt[0], bdryPt[1], bdryPt[2]);
@@ -649,7 +648,7 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::SaveSpokes2Vtp(std::vector<vtk
         currSpoke->GetSkeletalPoint(basePt);
         radius = currSpoke->GetRadius();
         currSpoke->GetDirection(dir);
-        int id0 = pts->InsertNextPoint(basePt[0], basePt[1], basePt[2]);
+        /*int id0 = */pts->InsertNextPoint(basePt[0], basePt[1], basePt[2]);
         
         spokeDirection->InsertNextTuple(dir);
         spokeLengths->InsertNextTuple1(radius);
@@ -788,7 +787,6 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::Parse(const std::string &model
     
     for(int i = 0; i < numOfSpokes; ++i)
     {
-        int idx = i * 4; // Ux, Uy, Uz,r
         int idxDir = i * 3; // Ux, Uy, Uz
         
         // coefficients (dirs + radii) for newuoa
@@ -1339,7 +1337,7 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::ConnectImpliedBoundaryPts(int 
     srep = NULL;
 }
 
-void vtkSlicerSkeletalRepresentationRefinerLogic::ConnectCrestRegion(int interpolationLevel,
+void vtkSlicerSkeletalRepresentationRefinerLogic::ConnectCrestRegion(int vtkNotUsed(interpolationLevel),
                                                                      int nRows, int nCols, 
                                                                      const string &srepFileName, double crestShift
                                                                      , std::vector<vtkSpoke*>& upSpokes, std::vector<vtkSpoke*>& downSpokes)

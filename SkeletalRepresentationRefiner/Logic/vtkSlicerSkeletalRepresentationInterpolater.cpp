@@ -382,7 +382,7 @@ void vtkSlicerSkeletalRepresentationInterpolater::SetCornerDxdv(double *v11, dou
 void vtkSlicerSkeletalRepresentationInterpolater::compute2ndDerivative(double *startU, double *endU, double *targetU, double d, double *output)
 {
     double del = 1e-5;
-    double Upv1[3], Upv2[3], Upv3[3], Upv4[3], Upv5[3];
+    double Upv1[3], Upv2[3], /*Upv3[3],*/ Upv4[3], Upv5[3];
     slerp(startU, endU, d+2*del, Upv1);
     slerp(startU, endU, d+del, Upv2);
     //slerp(startU, endU, d, Upv3);
