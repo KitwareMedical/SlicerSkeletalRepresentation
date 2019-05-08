@@ -118,6 +118,22 @@ void vtkSrep::AddSpokes(std::vector<double> &radii, std::vector<double> &dirs, s
     }
 }
 
+void vtkSrep::ShiftSpokes(double shift)
+{
+    if(spokes.empty()) return;
+    
+    for (int i = 0; i < spokes.size(); ++i) {
+        vtkSpoke *s = spokes[i];
+        double dir[3], pt[3];
+        s->GetDirection(dir);
+        s->GetSkeletalPoint(pt);
+        pt[0] = pt[0] + shift * dir[0];
+        pt[1] = pt[1] + shift * dir[1];
+        pt[2] = pt[2] + shift * dir[2];
+        s->SetSkeletalPoint(pt[0], pt[1], pt[2]);
+    }
+}
+
 void vtkSrep::DeepCopy(vtkSrep &src)
 {
     this->nCols = src.GetNumCols();

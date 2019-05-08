@@ -81,6 +81,9 @@ class legacyTransformer:
         crestSpokeXMLElement = SubElement(root, 'crestSpoke')
         crestSpokeXMLElement.text = os.path.join(outputCrest)
 
+        crestShiftXMLElement = SubElement(root, 'crestShift')
+        crestShiftXMLElement.text = str(epsilon)
+
         file_handle = open(outPrefix + '/header.xml','w')
         file_handle.write(prettify(root))
         file_handle.close()

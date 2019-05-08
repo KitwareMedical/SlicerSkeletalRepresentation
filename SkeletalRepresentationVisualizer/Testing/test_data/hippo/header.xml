@@ -13,4 +13,5 @@
   <upSpoke>up.vtp</upSpoke>
   <downSpoke>down.vtp</downSpoke>
   <crestSpoke>crest.vtp</crestSpoke>
+  <crestShift>0.02</crestShift>
 </s-rep>

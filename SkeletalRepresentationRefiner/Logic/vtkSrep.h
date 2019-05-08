@@ -20,6 +20,13 @@
 #include <vector>
 
 class vtkSpoke;
+
+/**
+ * @brief The vtkSrep class
+ * Srep is a collection of spokes and provides utilities to conveniently compute quantities needed.
+ * E.g., convert from vectors of direction, skeletal points and radii into spokes
+ * OR shift spokes along their own directions.
+ */
 class vtkSrep
 {
 public:
@@ -50,6 +57,9 @@ public:
     
     // Add spokes. It's ok that spokes share skeletal points with existing spokes
     void AddSpokes(std::vector<double> &radii, std::vector<double> &dirs, std::vector<double> &skeletalPoints);
+    
+    // Shift spokes along the spoke direction. Useful in transformation between legacy and new format sreps
+    void ShiftSpokes(double shift);
     
     void DeepCopy(vtkSrep& src);
     

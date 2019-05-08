@@ -42,6 +42,8 @@
 #include "itkCovariantVector.h"
 
 class vtkPolyData;
+class vtkPoints;
+class vtkCellArray;
 class vtkSpoke;
 class vtkSrep;
 /// \ingroup Slicer_QtModules_ExtensionTemplate
@@ -51,6 +53,7 @@ class VTK_SLICER_SKELETALREPRESENTATIONREFINER_MODULE_LOGIC_EXPORT vtkSlicerSkel
 public:
   typedef itk::Image<float, 3> RealImage;
   typedef itk::Image<itk::CovariantVector<float, 3>, 3> VectorImage;
+  typedef std::pair<double, double> pairs;
     
   static vtkSlicerSkeletalRepresentationRefinerLogic *New();
   vtkTypeMacro(vtkSlicerSkeletalRepresentationRefinerLogic, vtkSlicerModuleLogic);
@@ -91,10 +94,11 @@ public:
   // Output: image file that can be used in refinement
   void AntiAliasSignedDistanceMap(const std::string &meshFileName);
   
+  // Compute transformation matrix from srep to image coordinate system, namely, unit cube cs.
   void TransformSrep(const std::string &headerFile);
   
   // show wired frame of implied boundary
-  void ShowImpliedBoundary(int interpolationLevel, std::string& srepFileName);
+  void ShowImpliedBoundary(int interpolationLevel, const std::string& srepFileName);
 
 protected:
   vtkSlicerSkeletalRepresentationRefinerLogic();
@@ -117,11 +121,11 @@ private:
              std::vector<double> &radii, std::vector<double> &dirs, std::vector<double> &skeletalPoints);
   
   // parse the header of s-rep including the rows and cols in the s-rep
-  void ParseHeader(const std::string &headerFileName, int *nRows, int *nCols,
+  void ParseHeader(const std::string &headerFileName, int *nRows, int *nCols, double *shift, 
                    std::string* upFileName, std::string* downFileName, std::string* crestFileName);
   
   // update header file after refinement
-  void UpdateHeader(const std::string &headerFileName, const std::string &outputFileName);
+  void UpdateHeader(const std::string &headerFileName, const std::string &outputFileName, std::string *newHeaderFileName);
   
   // compute the difference between two vectors, factor can be used to compute center-difference
   void ComputeDiff(double *head, double *tail, double factor, double *output);
@@ -138,8 +142,12 @@ private:
   
   void TransSpokes2PolyData(std::vector<vtkSpoke *>input, vtkPolyData *output);
 
+  // show points as fiducial markups
+  void VisualizePoints(vtkPoints* input);
+  
   // visualize model in MRMLScene
-  void Visualize(vtkPolyData* model, const std::string &modelName, double r, double g, double b);
+  void Visualize(vtkPolyData* model, const std::string &modelName, 
+                 double r, double g, double b, bool isVisible = true);
   
   void HideNodesByClass(const std::string &className);
   
@@ -147,8 +155,19 @@ private:
   // Output should be formed as 4x4 matrix
   void TransformSrep2ImageCS(vtkSrep *input, double output[][4]);
   
-  // patch spokes on top to form implied boundary
-  void PatchSpokes(std::vector<vtkSpoke*> input, vtkPolyData *output);
+  // Get all interpolated as well as primary spokes including top, bottom and down
+  void ConnectImpliedBoundaryPts(int interpolationLevel, int nRows, int nCols, const std::string &srepFileName,
+                                 vtkPoints *pts, vtkCellArray *quads,
+                                 vtkPoints *foldCurvePts, vtkCellArray *foldCurveCell,
+                                 std::vector<vtkSpoke*>& interpolated, std::vector<vtkSpoke*>& primary);
+  
+  // connect crest position
+  void ConnectCrestRegion(int interpolationLevel, int nRows, int nCols, 
+                          const std::string &srepFileName, 
+                          double crestShift, std::vector<vtkSpoke*>& upSpokes, std::vector<vtkSpoke*>& downSpokes);
+  
+  // connect fold curve macro
+  void ConnectFoldCurve(const std::vector<vtkSpoke *>& edgeSpokes, vtkPoints *foldCurvePts, vtkCellArray *foldCurveCell);
   
   // e.g. Refine up spokes saved in upFileName
   void RefinePartOfSpokes(const std::string& srepFileName, double stepSize, double endCriterion, int maxIter);
@@ -167,7 +186,7 @@ private:
   
   // compute rSrad penalty
   double ComputeRSradPenalty(vtkSrep* input);
-  
+
   void FindTopLeftNeigbors(int r, int c,
                            vtkSrep* input,
                            std::vector<vtkSpoke *> &neighborU,

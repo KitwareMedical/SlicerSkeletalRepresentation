@@ -19,6 +19,11 @@
 
 #include <vector>
 
+/**
+ * @brief The vtkSpoke class
+ * Each spoke consists of skeletal point, radius and direction.
+ * The boundary point implied by a spoke is computed every time according to those three components above.
+ */
 class vtkSpoke
 {
 public:
