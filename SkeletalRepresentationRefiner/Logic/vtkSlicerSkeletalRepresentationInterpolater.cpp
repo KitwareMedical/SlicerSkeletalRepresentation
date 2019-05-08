@@ -15,8 +15,10 @@
 
 ==============================================================================*/
 #include "vtkSlicerSkeletalRepresentationInterpolater.h"
-#include <math.h>
 #include "vtkSpoke.h"
+
+// STD includes
+#include <cmath>
 
 vtkSlicerSkeletalRepresentationInterpolater::vtkSlicerSkeletalRepresentationInterpolater()
 {
@@ -71,13 +73,13 @@ void vtkSlicerSkeletalRepresentationInterpolater::InterpolateQuad(vtkSpoke **cor
     double halfDist = lambda/2;
 
     double interpolatedU[3]; double interpolatedR;
-    if(abs(u - halfDist ) <= tolerance && abs(v - halfDist) <= tolerance)
+    if(std::abs(u - halfDist ) <= tolerance && std::abs(v - halfDist) <= tolerance)
     {
         // if the target spoke locates in the center of this quad, return center spoke
         interpolatedSpoke->SetDirection(uCenter);
         interpolatedSpoke->SetRadius(rCenter);
     }
-    else if(abs(u) < tolerance && abs(v) < tolerance)
+    else if(std::abs(u) < tolerance && std::abs(v) < tolerance)
     {
         // left top corner
         Sp11->GetDirection(interpolatedU);
@@ -85,7 +87,7 @@ void vtkSlicerSkeletalRepresentationInterpolater::InterpolateQuad(vtkSpoke **cor
         interpolatedSpoke->SetDirection(interpolatedU);
         interpolatedSpoke->SetRadius(interpolatedR);
     }
-    else if(abs(u-lambda) < tolerance && abs(v) < tolerance)
+    else if(std::abs(u-lambda) < tolerance && std::abs(v) < tolerance)
     {
         // left bottom corner
         Sp21->GetDirection(interpolatedU);
@@ -93,7 +95,7 @@ void vtkSlicerSkeletalRepresentationInterpolater::InterpolateQuad(vtkSpoke **cor
         interpolatedSpoke->SetDirection(interpolatedU);
         interpolatedSpoke->SetRadius(interpolatedR);
     }
-    else if(abs(v-lambda) < tolerance && abs(u) < tolerance)
+    else if(std::abs(v-lambda) < tolerance && std::abs(u) < tolerance)
     {
         // right top corner
         Sp12->GetDirection(interpolatedU);
@@ -101,7 +103,7 @@ void vtkSlicerSkeletalRepresentationInterpolater::InterpolateQuad(vtkSpoke **cor
         interpolatedSpoke->SetDirection(interpolatedU);
         interpolatedSpoke->SetRadius(interpolatedR);
     }
-    else if(abs(v-lambda) < tolerance && abs(u-lambda) < tolerance)
+    else if(std::abs(v-lambda) < tolerance && std::abs(u-lambda) < tolerance)
     {
         // right bottom corner
         Sp22->GetDirection(interpolatedU);
@@ -109,7 +111,7 @@ void vtkSlicerSkeletalRepresentationInterpolater::InterpolateQuad(vtkSpoke **cor
         interpolatedSpoke->SetDirection(interpolatedU);
         interpolatedSpoke->SetRadius(interpolatedR);
     }
-    else if(abs(u - halfDist) <= tolerance && abs(v) < tolerance)
+    else if(std::abs(u - halfDist) <= tolerance && std::abs(v) < tolerance)
     {
         // on the left edge
         leftMiddle.GetDirection(interpolatedU);
@@ -117,7 +119,7 @@ void vtkSlicerSkeletalRepresentationInterpolater::InterpolateQuad(vtkSpoke **cor
         interpolatedSpoke->SetDirection(interpolatedU);
         interpolatedSpoke->SetRadius(interpolatedR);
     }
-    else if(abs(u) < tolerance && abs(v - halfDist) < tolerance)
+    else if(std::abs(u) < tolerance && std::abs(v - halfDist) < tolerance)
     {
         // on the top edge
         topMiddle.GetDirection(interpolatedU);
@@ -125,7 +127,7 @@ void vtkSlicerSkeletalRepresentationInterpolater::InterpolateQuad(vtkSpoke **cor
         interpolatedSpoke->SetDirection(interpolatedU);
         interpolatedSpoke->SetRadius(interpolatedR);
     }
-    else if(abs(u - halfDist) < tolerance && abs(v-lambda) < tolerance)
+    else if(std::abs(u - halfDist) < tolerance && std::abs(v-lambda) < tolerance)
     {
         // right edge
         rightMiddle.GetDirection(interpolatedU);
@@ -133,7 +135,7 @@ void vtkSlicerSkeletalRepresentationInterpolater::InterpolateQuad(vtkSpoke **cor
         interpolatedSpoke->SetDirection(interpolatedU);
         interpolatedSpoke->SetRadius(interpolatedR);
     }
-    else if(abs(u-lambda) < tolerance && abs(v-halfDist) < tolerance)
+    else if(std::abs(u-lambda) < tolerance && std::abs(v-halfDist) < tolerance)
     {
         // bot edge
         botMiddle.GetDirection(interpolatedU);
@@ -187,7 +189,7 @@ void vtkSlicerSkeletalRepresentationInterpolater::InterpolateQuad(vtkSpoke **cor
 
         }
         // fall on the vertical axis, interpolate it in a degenerate quad: line segment
-        else if(abs(v-halfDist) < tolerance)
+        else if(std::abs(v-halfDist) < tolerance)
         {
             newCorner[0] = &topMiddle;
             newCorner[1] = &botMiddle;
@@ -196,7 +198,7 @@ void vtkSlicerSkeletalRepresentationInterpolater::InterpolateQuad(vtkSpoke **cor
             InterpolateSegment(newCorner, u, 1, interpolatedSpoke);
         }
         // fall on the horizontal axis
-        else if(abs(u-halfDist) < tolerance)
+        else if(std::abs(u-halfDist) < tolerance)
         {
             newCorner[0] = &leftMiddle;
             newCorner[1] = &rightMiddle;
@@ -215,7 +217,7 @@ void vtkSlicerSkeletalRepresentationInterpolater::InterpolateSegment(vtkSpoke **
     vtkSpoke middleSpoke;
     InterpolateMiddleSpoke(start, end, lambda, &middleSpoke);
     double halfDist = lambda/2;
-    if(abs(dist-halfDist) < tolerance)
+    if(std::abs(dist-halfDist) < tolerance)
     {
         *interpolatedSpoke = middleSpoke;
     }
