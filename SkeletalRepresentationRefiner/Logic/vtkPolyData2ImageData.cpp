@@ -45,7 +45,7 @@ void vtkPolyData2ImageData::Convert(const std::string &inputFileName, vtkSmartPo
     ratioZX = range[2] / range[0];
     ratioZY = range[2] / range[1];
 
-    double newBounds[6];
+    double newBounds[6] = {0.};
     // put the longest axis to [0,1], scale other coordinates accordingly
     if(range[0] >= range[1] && range[0] >= range[2])
     {
