@@ -36,12 +36,8 @@ void vtkGradientDistanceFilter::Filter(RealImage::Pointer input, VectorImage::Po
         gradientFilter->Update();
         VectorImage::Pointer gradImage = gradientFilter->GetOutput();
         DeepCopy(gradImage, output);
-        std::cout << "The two images are same:" << CompareImages(gradImage, output) << std::endl;
-//        itk::ImageFileWriter< VectorImage >::Pointer gradWriter = itk::ImageFileWriter< VectorImage >::New();
-//        gradWriter->SetInput(gradientFilter->GetOutput());
-//        gradWriter->SetFileName("/playpen/ra_job/SlicerSkeletalRepresentation-build/normals.vtk");
-//        gradWriter->Update();
-        
+        //std::cout << "The two images are same:" << CompareImages(gradImage, output) << std::endl;
+
     } catch (itk::ExceptionObject & excep) {
         std::cerr << "Exception caught !" << std::endl;
         std::cerr << excep << std::endl;

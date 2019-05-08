@@ -410,16 +410,6 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::AntiAliasSignedDistanceMap(con
     // this conversion already put the image into the unit-cube
     polyDataConverter.Convert(meshFileName, img);
     
-    // 2. convert image data to signed distance map
-//    vtkImage2SignedDistanceMap imageConverter;
-//    vtkSmartPointer<vtkImageData> signedDistanceImage = vtkSmartPointer<vtkImageData>::New();
-//    imageConverter.Convert(img, signedDistanceImage);
-    
-//    // 3. anti-aliasing
-//    vtkAntiAlias aa;
-//    vtkSmartPointer<vtkImageData> antiAliasedImage = vtkSmartPointer<vtkImageData>::New();
-//    aa.Filter(signedDistanceImage, antiAliasedImage);
-    
     vtkSmartPointer<vtkImageData> antiAliasedImage = vtkSmartPointer<vtkImageData>::New();
     
     vtkApproximateSignedDistanceMap ssdGenerator;
