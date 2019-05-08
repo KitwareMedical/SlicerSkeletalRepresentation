@@ -41,12 +41,12 @@ vtkSrep::~vtkSrep()
 {
     for(int i = 0; i < spokes.size(); ++i)
     {
-        if(spokes[i] == NULL)
+        if(spokes[i] == nullptr)
         {
             continue;
         }
         delete spokes[i];
-        spokes[i] = NULL;
+        spokes[i] = nullptr;
     }
 }
 
@@ -54,7 +54,7 @@ vtkSpoke *vtkSrep::GetSpoke(int r, int c) const
 {
     if(spokes.empty())
     {
-        return NULL;
+        return nullptr;
     }
     int id = r * nCols + c;
     return spokes[id];

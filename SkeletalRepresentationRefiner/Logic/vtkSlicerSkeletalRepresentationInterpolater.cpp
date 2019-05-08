@@ -191,8 +191,8 @@ void vtkSlicerSkeletalRepresentationInterpolater::InterpolateQuad(vtkSpoke **cor
         {
             newCorner[0] = &topMiddle;
             newCorner[1] = &botMiddle;
-            newCorner[2] = NULL;
-            newCorner[3] = NULL;
+            newCorner[2] = nullptr;
+            newCorner[3] = nullptr;
             InterpolateSegment(newCorner, u, 1, interpolatedSpoke);
         }
         // fall on the horizontal axis
@@ -200,8 +200,8 @@ void vtkSlicerSkeletalRepresentationInterpolater::InterpolateQuad(vtkSpoke **cor
         {
             newCorner[0] = &leftMiddle;
             newCorner[1] = &rightMiddle;
-            newCorner[2] = NULL;
-            newCorner[3] = NULL;
+            newCorner[2] = nullptr;
+            newCorner[3] = nullptr;
             InterpolateSegment(newCorner, v, 1, interpolatedSpoke);
         }
     }
