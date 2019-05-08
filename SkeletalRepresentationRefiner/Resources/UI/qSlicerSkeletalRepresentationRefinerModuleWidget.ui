@@ -73,7 +73,7 @@
       <item>
        <layout class="QHBoxLayout" name="horizontalLayout_4">
         <item>
-         <widget class="QLabel" name="label_3">
+         <widget class="QLabel" name="label_4">
           <property name="text">
            <string>Output refinement path:</string>
           </property>
@@ -98,7 +98,7 @@
       <item>
        <layout class="QHBoxLayout" name="horizontalLayout_3">
         <item>
-         <widget class="QLabel" name="label">
+         <widget class="QLabel" name="label_3">
           <property name="text">
            <string>Interpolation level:</string>
           </property>
@@ -149,9 +149,9 @@
      </property>
      <layout class="QVBoxLayout" name="verticalLayout_param">
       <item>
-       <layout class="QHBoxLayout" name="horizontalLayout">
+       <layout class="QHBoxLayout" name="horizontalLayout_5">
         <item>
-         <widget class="QLabel" name="label">
+         <widget class="QLabel" name="label_5">
           <property name="text">
            <string>Step size:</string>
           </property>
@@ -179,9 +179,9 @@
        </layout>
       </item>
       <item>
-       <layout class="QHBoxLayout" name="horizontalLayout">
+       <layout class="QHBoxLayout" name="horizontalLayout_6">
         <item>
-         <widget class="QLabel" name="label">
+         <widget class="QLabel" name="label_6">
           <property name="text">
            <string>Tolerance:</string>
           </property>
@@ -209,9 +209,9 @@
        </layout>
       </item>
       <item>
-       <layout class="QHBoxLayout" name="horizontalLayout">
+       <layout class="QHBoxLayout" name="horizontalLayout_7">
         <item>
-         <widget class="QLabel" name="label">
+         <widget class="QLabel" name="label_7">
           <property name="text">
            <string>Max #iter:</string>
           </property>
@@ -239,9 +239,9 @@
        </layout>
       </item>
       <item>
-       <layout class="QHBoxLayout" name="horizontalLayout">
+       <layout class="QHBoxLayout" name="horizontalLayout_8">
         <item>
-         <widget class="QLabel" name="label">
+         <widget class="QLabel" name="label_8">
           <property name="text">
            <string>Image match weight:</string>
           </property>
@@ -269,9 +269,9 @@
        </layout>
       </item>
       <item>
-       <layout class="QHBoxLayout" name="horizontalLayout">
+       <layout class="QHBoxLayout" name="horizontalLayout_9">
         <item>
-         <widget class="QLabel" name="label">
+         <widget class="QLabel" name="label_9">
           <property name="text">
            <string>Normal match weight:</string>
           </property>
@@ -299,9 +299,9 @@
        </layout>
       </item>
       <item>
-       <layout class="QHBoxLayout" name="horizontalLayout">
+       <layout class="QHBoxLayout" name="horizontalLayout_10">
         <item>
-         <widget class="QLabel" name="label">
+         <widget class="QLabel" name="label_10">
           <property name="text">
            <string>Regularity weight:</string>
           </property>
