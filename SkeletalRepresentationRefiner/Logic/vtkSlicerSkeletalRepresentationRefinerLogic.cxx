@@ -234,9 +234,9 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::InterpolateSrep(int interpolat
                     dXdu21[3], dXdv21[3], 
                     dXdu22[3], dXdv22[3];
             
-            for(int i = 0; i < steps.size(); ++i)
+            for(size_t i = 0; i < steps.size(); ++i)
             {
-                for(int j = 0; j < steps.size(); ++j)
+                for(size_t j = 0; j < steps.size(); ++j)
                 {
                     cornerSpokes[0] = srep->GetSpoke(r,c);
                     cornerSpokes[1] = srep->GetSpoke(r+1, c);
@@ -611,7 +611,7 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::ConvertSpokes2PolyData(std::ve
     for(int i = 0; i < numSpokes; ++i)
     {
         vtkSpoke* currSpoke = input[i];
-        double basePt[3], bdryPt[3], dir[3], radius;
+        double basePt[3], bdryPt[3], dir[3];
         currSpoke->GetSkeletalPoint(basePt);
         currSpoke->GetBoundaryPoint(bdryPt);
         currSpoke->GetDirection(dir);
@@ -672,7 +672,7 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::TransSpokes2PolyData(std::vect
     vtkSmartPointer<vtkPoints> pts = vtkSmartPointer<vtkPoints>::New();
     vtkSmartPointer<vtkCellArray> arrows = vtkSmartPointer<vtkCellArray>::New();
   
-    for(int i = 0; i < input.size(); ++i)
+    for(size_t i = 0; i < input.size(); ++i)
     {
         vtkSpoke* currSpoke = input[i];
         double basePt[3], bdryPt[3];
@@ -1127,7 +1127,7 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::TransformSrep2ImageCS(vtkSrep 
     std::vector<vtkSpoke *> spokes = input->GetAllSpokes();
     vtkSmartPointer<vtkPoints> boundaryPts = 
             vtkSmartPointer<vtkPoints>::New();
-    for(int i = 0; i < spokes.size(); ++i)
+    for(size_t i = 0; i < spokes.size(); ++i)
     {
         double pt[3];
         spokes[i]->GetBoundaryPoint(pt);
@@ -1215,7 +1215,7 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::ConnectImpliedBoundaryPts(int 
         return;
     }
     std::vector<vtkSpoke *> pSpokes = srep->GetAllSpokes();
-    for (int i = 0; i < pSpokes.size(); ++i) {
+    for (size_t i = 0; i < pSpokes.size(); ++i) {
         vtkSpoke *s = new vtkSpoke(*pSpokes[i]);
         primary.push_back(s);
     }
@@ -1264,9 +1264,9 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::ConnectImpliedBoundaryPts(int 
             
             std::vector<vtkSpoke *> innerQuadSpokes;
             std::vector<vtkSpoke *> topEdgeSpokes, botEdgeSpokes, leftEdgeSpokes, rightEdgeSpokes;
-            for(int i = 0; i < steps.size(); ++i)
+            for(size_t i = 0; i < steps.size(); ++i)
             {
-                for(int j = 0; j < steps.size(); ++j)
+                for(size_t j = 0; j < steps.size(); ++j)
                 {
                     vtkSpoke* in1 = new vtkSpoke;
                     interpolater.Interpolate(double(steps[i]), double(steps[j]), cornerSpokes, in1);
@@ -1358,7 +1358,7 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::ConnectCrestRegion(int vtkNotU
     
     // 1. circumferencial connection
     vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
-    for (int i = 0; i < crestSpokes.size(); ++i) {
+    for (size_t i = 0; i < crestSpokes.size(); ++i) {
         double pt[3];
         crestSpokes[i]->GetBoundaryPoint(pt);
         points->InsertNextPoint(pt);
@@ -1386,7 +1386,7 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::ConnectCrestRegion(int vtkNotU
     //Append the two meshes 
     vtkSmartPointer<vtkAppendPolyData> appendFilter =
       vtkSmartPointer<vtkAppendPolyData>::New();
-    for (int i = 0; i < crestSpokes.size(); ++i) {
+    for (int i = 0; i < static_cast<int>(crestSpokes.size()); ++i) {
         double ptCrest[3], ptUp[3], ptDown[3];
         crestSpokes[i]->GetBoundaryPoint(ptCrest);
         
@@ -1452,7 +1452,7 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::ConnectFoldCurve(const std::ve
     {
         return;
     }
-    for (int i = 0; i < edgeSpokes.size()-1; ++i) {
+    for (size_t i = 0; i < edgeSpokes.size()-1; ++i) {
         double pt0[3], pt1[3];
         edgeSpokes[i]->GetSkeletalPoint(pt0);
         edgeSpokes[i+1]->GetSkeletalPoint(pt1);
@@ -1785,7 +1785,7 @@ double vtkSlicerSkeletalRepresentationRefinerLogic::ComputeRSradPenalty(vtkSrep 
     
     //compute the penalty
     double step = mInterpolatePositions[0].second;
-    for(int i = 0; i < primarySpokes.size(); ++i)
+    for(size_t i = 0; i < primarySpokes.size(); ++i)
     {
         double thisPenalty = primarySpokes[i]->GetRSradPenalty(step);
         penalty += thisPenalty;

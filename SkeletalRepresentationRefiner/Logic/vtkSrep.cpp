@@ -19,6 +19,9 @@
 #include <math.h>
 #include "vtkSpoke.h"
 
+// STD includes
+#include <cstddef>
+
 vtkSrep::vtkSrep()
 {
 
@@ -39,7 +42,7 @@ vtkSrep::vtkSrep(int r, int c,  std::vector<double> &radii, std::vector<double> 
 
 vtkSrep::~vtkSrep()
 {
-    for(int i = 0; i < spokes.size(); ++i)
+    for(size_t i = 0; i < spokes.size(); ++i)
     {
         if(spokes[i] == nullptr)
         {
@@ -74,7 +77,7 @@ std::vector<double> &vtkSrep::GetAllSkeletalPoints()
 {
     skeletalPts.clear();
 
-    for(int i = 0; i< spokes.size(); ++i)
+    for(size_t i = 0; i< spokes.size(); ++i)
     {
         double pt[3];
         spokes[i]->GetSkeletalPoint(pt);
@@ -91,9 +94,9 @@ void vtkSrep::Refine(const double *coeff)
     {
         return;
     }
-    for(int i = 0; i < spokes.size(); ++i)
+    for(size_t i = 0; i < spokes.size(); ++i)
     {
-        int idx = i * 4;
+        size_t idx = i * 4;
         double newU[3], newR, oldR;
         newU[0] = coeff[idx];
         newU[1] = coeff[idx+1];
@@ -110,8 +113,8 @@ void vtkSrep::Refine(const double *coeff)
 
 void vtkSrep::AddSpokes(std::vector<double> &radii, std::vector<double> &dirs, std::vector<double> &skeletalPoints)
 {
-    for (int i = 0; i < radii.size(); ++i) {
-        int idTuple = i * 3;
+    for (size_t i = 0; i < radii.size(); ++i) {
+        size_t idTuple = i * 3;
         vtkSpoke *s = new vtkSpoke(radii[i], skeletalPoints[idTuple], skeletalPoints[idTuple + 1], skeletalPoints[idTuple + 2],
                 dirs[idTuple], dirs[idTuple + 1], dirs[idTuple + 2]);
         spokes.push_back(s);
@@ -122,7 +125,7 @@ void vtkSrep::ShiftSpokes(double shift)
 {
     if(spokes.empty()) return;
 
-    for (int i = 0; i < spokes.size(); ++i) {
+    for (size_t i = 0; i < spokes.size(); ++i) {
         vtkSpoke *s = spokes[i];
         double dir[3], pt[3];
         s->GetDirection(dir);
@@ -141,7 +144,7 @@ void vtkSrep::DeepCopy(vtkSrep &src)
 
     spokes.clear();
     std::vector<vtkSpoke*> srcSpokes = src.GetAllSpokes();
-    for (int i = 0; i < srcSpokes.size(); ++i) {
+    for (size_t i = 0; i < srcSpokes.size(); ++i) {
         vtkSpoke *tempSpoke = new vtkSpoke(*srcSpokes[i]);
         spokes.push_back(tempSpoke);
     }

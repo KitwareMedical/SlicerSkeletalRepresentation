@@ -11,11 +11,13 @@ bool vtkGradientDistanceFilter::CompareImages(VectorImage::Pointer input, Vector
     VectorImage::RegionType region = input->GetLargestPossibleRegion();
 
     VectorImage::SizeType imageSize = region.GetSize();
-    for(int i = 0; i < imageSize[0]; ++i)
+    for(VectorImage::SizeValueType i = 0; i < imageSize[0]; ++i)
     {
-        for (int j = 0; j < imageSize[1]; ++j) {
-            for (int k = 0; k < imageSize[2]; ++k) {
-                VectorImage::IndexType index = {{i,j,k}};
+        for (VectorImage::SizeValueType j = 0; j < imageSize[1]; ++j) {
+            for (VectorImage::SizeValueType k = 0; k < imageSize[2]; ++k) {
+                VectorImage::IndexType index = {{static_cast<VectorImage::IndexValueType>(i),
+                                                 static_cast<VectorImage::IndexValueType>(j),
+                                                 static_cast<VectorImage::IndexValueType>(k)}};
                 VectorImage::PixelType pixel = input->GetPixel(index);
                 VectorImage::PixelType pixel2 = output->GetPixel(index);
                 if(pixel[0] != pixel2[0] || pixel[1] != pixel2[1] || pixel[2] != pixel2[2])
@@ -54,11 +56,13 @@ void vtkGradientDistanceFilter::DeepCopy(VectorImage::Pointer input, VectorImage
     output->Allocate();
 
     VectorImage::SizeType imageSize = region.GetSize();
-    for(int i = 0; i < imageSize[0]; ++i)
+    for(VectorImage::SizeValueType i = 0; i < imageSize[0]; ++i)
     {
-        for (int j = 0; j < imageSize[1]; ++j) {
-            for (int k = 0; k < imageSize[2]; ++k) {
-                VectorImage::IndexType index = {{i,j,k}};
+        for (VectorImage::SizeValueType j = 0; j < imageSize[1]; ++j) {
+            for (VectorImage::SizeValueType k = 0; k < imageSize[2]; ++k) {
+                VectorImage::IndexType index = {{static_cast<VectorImage::IndexValueType>(i),
+                                                 static_cast<VectorImage::IndexValueType>(j),
+                                                 static_cast<VectorImage::IndexValueType>(k)}};
                 VectorImage::PixelType pixel = input->GetPixel(index);
                 output->SetPixel(index, pixel);
             }

@@ -152,7 +152,7 @@ void vtkSpoke::GetBoundaryPoint(double *output) const
 void vtkSpoke::SetNeighborU(const std::vector<vtkSpoke *> &neighbors, bool isForward)
 {
     mNeighborsU.clear();
-    for (int i = 0; i < neighbors.size(); ++i) {
+    for (size_t i = 0; i < neighbors.size(); ++i) {
         mNeighborsU.push_back(neighbors[i]);
     }
     mIsForwardU = isForward;
@@ -161,7 +161,7 @@ void vtkSpoke::SetNeighborU(const std::vector<vtkSpoke *> &neighbors, bool isFor
 void vtkSpoke::SetNeighborV(const std::vector<vtkSpoke *> &neighbors, bool isForward)
 {
     mNeighborsV.clear();
-    for (int i = 0; i < neighbors.size(); ++i) {
+    for (size_t i = 0; i < neighbors.size(); ++i) {
         mNeighborsV.push_back(neighbors[i]);
     }
     mIsForwardV = isForward;
