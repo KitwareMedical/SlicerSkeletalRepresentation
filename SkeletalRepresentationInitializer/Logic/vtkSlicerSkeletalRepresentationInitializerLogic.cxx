@@ -45,6 +45,7 @@
 #include <vtkParametricEllipsoid.h>
 #include <vtkParametricFunctionSource.h>
 #include <vtkImplicitPolyDataDistance.h>
+#include <vtkXMLPolyDataWriter.h>
 #include <vtkPolyDataNormals.h>
 #include <vtkSphereSource.h>	
 #include <vtkPoints.h>
@@ -324,6 +325,9 @@ void vtkSlicerSkeletalRepresentationInitializerLogic::SetInputFileName(const std
     writer->Update();
 }
 
+#define ROWS  5
+#define COLS 5
+
 // flow surface to the end: either it's ellipsoidal enough or reach max_iter
 int vtkSlicerSkeletalRepresentationInitializerLogic::FlowSurfaceMesh(const std::string &filename, double dt, double smooth_amount, int max_iter, int freq_output)
 {
@@ -335,7 +339,7 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::FlowSurfaceMesh(const std::
     vtkSmartPointer<vtkPolyData> mesh =
         vtkSmartPointer<vtkPolyData>::New();
     mesh = reader->GetOutput();
-
+    
     vtkSmartPointer<vtkMassProperties> mass_filter =
         vtkSmartPointer<vtkMassProperties>::New();
     mass_filter->SetInputData(mesh);
@@ -461,7 +465,7 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::FlowSurfaceMesh(const std::
     ShowFittingEllipsoid(mesh, rx, ry, rz);
 
 
-    GenerateSrepForEllipsoid(mesh, 5, 5, forwardCount);
+    GenerateSrepForEllipsoid(mesh, ROWS, COLS, forwardCount);
     return 1;
 }
 
@@ -1568,6 +1572,11 @@ void vtkSlicerSkeletalRepresentationInitializerLogic::BackwardFlow(int totalNum)
     DisplayResultSrep();
 }
 
+void vtkSlicerSkeletalRepresentationInitializerLogic::SetOutputPath(const std::string &outputPath)
+{
+    mOutputPath = outputPath;
+}
+
 int vtkSlicerSkeletalRepresentationInitializerLogic::ApplyTps(int totalNum)
 {
 
@@ -1740,7 +1749,58 @@ void vtkSlicerSkeletalRepresentationInitializerLogic::DisplayResultSrep()
     AddModelNodeToScene(crestSpoke_poly, "crest spokes for initial object", true, 1, 0, 0);
     AddModelNodeToScene(meshPoly, "skeletal mesh for initial object", true, 0, 0, 0);
     AddModelNodeToScene(curvePoly, "fold curve for initial object", true, 1, 1, 0);
+    
+    // add spokeLength and spokeDirection to polyData
+    vtkSmartPointer<vtkPolyData> vtpUpSpoke = vtkSmartPointer<vtkPolyData>::New();
+    vtkSmartPointer<vtkPolyData> vtpDownSpoke = vtkSmartPointer<vtkPolyData>::New();
+    vtkSmartPointer<vtkPolyData> vtpCrestSpoke = vtkSmartPointer<vtkPolyData>::New();
+    CompletePolyData(upSpoke_poly, vtpUpSpoke);
+    CompletePolyData(downSpoke_poly, vtpDownSpoke);
+    CompletePolyData(crestSpoke_poly, vtpCrestSpoke);
+    // save to files
+    std::string outputUpFileName, outputDownFileName, outputCrestFileName;
+    outputUpFileName = mOutputPath + "/up.vtp"; 
+    outputDownFileName = mOutputPath + "/down.vtp"; 
+    outputCrestFileName = mOutputPath + "/crest.vtp"; 
+    
+    vtkSmartPointer<vtkXMLPolyDataWriter> vtpWriter = vtkSmartPointer<vtkXMLPolyDataWriter>::New();
+    vtpWriter->SetDataModeToAscii();
+    vtpWriter->SetFileName(outputUpFileName.c_str());
+    vtpWriter->SetInputData(vtpUpSpoke);
+    vtpWriter->Update();
+    
+    vtpWriter->SetFileName(outputDownFileName.c_str());
+    vtpWriter->SetInputData(vtpDownSpoke);
+    vtpWriter->Update();
+    
+    vtpWriter->SetFileName(outputCrestFileName.c_str());
+    vtpWriter->SetInputData(vtpCrestSpoke);
+    vtpWriter->Update();          
 
+    // compose header file
+    std::stringstream output;
+   
+    output<<"<s-rep>"<<std::endl;
+    output<<"  <nRows>"<<ROWS<<"</nRows>"<<std::endl;
+    output<<"  <nCols>"<<COLS<<"</nCols>"<<std::endl;
+    output<<"  <meshType>Quad</meshType>"<< std::endl;
+    output<<"  <color>"<<std::endl;
+    output<<"    <red>0</red>"<<std::endl;
+    output<<"    <green>0.5</green>"<<std::endl;
+    output<<"    <blue>0</blue>"<<std::endl;
+    output<<"  </color>"<<std::endl;
+    output<<"  <isMean>False</isMean>"<<std::endl;
+    output<<"  <meanStatPath/>"<<std::endl;
+    output<<"  <upSpoke>"<< outputUpFileName<<"</upSpoke>"<<std::endl;
+    output<<"  <downSpoke>"<< outputDownFileName << "</downSpoke>"<<std::endl;
+    output<<"  <crestSpoke>"<< outputCrestFileName << "</crestSpoke>"<<std::endl;
+    output<<"</s-rep>"<<std::endl;
+    
+    std::string header_file = mOutputPath + "/header.xml"; ;
+    std::ofstream out_file;
+    out_file.open(header_file);
+    out_file << output.rdbuf();
+    out_file.close();
 }
 void vtkSlicerSkeletalRepresentationInitializerLogic::TransformNOutput(itkThinPlateSplineExtended::Pointer tps, vtkPolyData* spokes, const std::string& outputFileName)
 {
@@ -1889,4 +1949,66 @@ void vtkSlicerSkeletalRepresentationInitializerLogic::GetNeighborCells(vtkPolyDa
         }
     }
     
+}
+
+void vtkSlicerSkeletalRepresentationInitializerLogic::CompletePolyData(vtkPolyData *poly, vtkPolyData *output)
+{
+    poly->GetLines()->InitTraversal();
+    vtkSmartPointer<vtkIdList> idList = vtkSmartPointer<vtkIdList>::New();
+    vtkSmartPointer<vtkDoubleArray> spokeDirection = vtkSmartPointer<vtkDoubleArray>::New();
+    vtkSmartPointer<vtkDoubleArray> spokeLengths = vtkSmartPointer<vtkDoubleArray>::New();
+    
+    spokeLengths->SetNumberOfComponents(1);
+    spokeLengths->SetName("spokeLength");
+    
+    spokeDirection->SetNumberOfComponents(3);
+    spokeDirection->SetName("spokeDirection");
+    vtkSmartPointer<vtkPoints> skeletalPts = vtkSmartPointer<vtkPoints>::New();
+    vtkSmartPointer<vtkCellArray> quads = vtkSmartPointer<vtkCellArray>::New();
+    
+    while(poly->GetLines()->GetNextCell(idList))
+    {
+        if(idList->GetNumberOfIds() != 2)
+        {
+            continue;
+        }
+        double basePt[3], bdryPt[3], spoke[3];
+        poly->GetPoint(idList->GetId(0), basePt);
+        poly->GetPoint(idList->GetId(1), bdryPt);
+        spoke[0] = bdryPt[0] - basePt[0];
+        spoke[1] = bdryPt[1] - basePt[1];
+        spoke[2] = bdryPt[2] - basePt[2];
+        
+        double r = vtkMath::Normalize(spoke);
+        spokeLengths->InsertNextTuple1(r);
+        spokeDirection->InsertNextTuple(spoke);
+        
+        skeletalPts->InsertNextPoint(basePt);
+    }
+    
+    output->SetPoints(skeletalPts);
+    
+    output->GetPointData()->AddArray(spokeDirection);
+    output->GetPointData()->SetActiveVectors("spokeDirection");
+    output->GetPointData()->AddArray(spokeLengths);
+    output->GetPointData()->SetActiveScalars("spokeLength");
+    
+    // connection of skeletal points
+    for(int i = 0; i < ROWS - 1; ++i)
+    {
+        for(int j = 0; j < COLS-1; ++j)
+        {
+            int id0 = i * COLS + j;
+            int id1 = id0 + 1;
+            int id2 = id0 + COLS;
+            int id3 = id2 + 1;
+            vtkSmartPointer<vtkQuad> quad = vtkSmartPointer<vtkQuad>::New();
+            quad->GetPointIds()->SetId(0, id0);
+            quad->GetPointIds()->SetId(1, id2);
+            quad->GetPointIds()->SetId(2, id3);
+            quad->GetPointIds()->SetId(3, id1);
+            quads->InsertNextCell(quad);
+        }
+    }
+    output->SetPolys(quads);
 }
