@@ -1756,7 +1756,7 @@ void vtkSlicerSkeletalRepresentationInitializerLogic::DisplayResultSrep()
     vtkSmartPointer<vtkPolyData> vtpCrestSpoke = vtkSmartPointer<vtkPolyData>::New();
     CompletePolyData(upSpoke_poly, vtpUpSpoke);
     CompletePolyData(downSpoke_poly, vtpDownSpoke);
-    CompletePolyData(crestSpoke_poly, vtpCrestSpoke);
+    CompletePolyData(crestSpoke_poly, vtpCrestSpoke, true);
     // save to files
     std::string outputUpFileName, outputDownFileName, outputCrestFileName;
     outputUpFileName = mOutputPath + "/up.vtp"; 
@@ -1951,7 +1951,7 @@ void vtkSlicerSkeletalRepresentationInitializerLogic::GetNeighborCells(vtkPolyDa
     
 }
 
-void vtkSlicerSkeletalRepresentationInitializerLogic::CompletePolyData(vtkPolyData *poly, vtkPolyData *output)
+void vtkSlicerSkeletalRepresentationInitializerLogic::CompletePolyData(vtkPolyData *poly, vtkPolyData *output, bool isCrest)
 {
     poly->GetLines()->InitTraversal();
     vtkSmartPointer<vtkIdList> idList = vtkSmartPointer<vtkIdList>::New();
@@ -1964,7 +1964,6 @@ void vtkSlicerSkeletalRepresentationInitializerLogic::CompletePolyData(vtkPolyDa
     spokeDirection->SetNumberOfComponents(3);
     spokeDirection->SetName("spokeDirection");
     vtkSmartPointer<vtkPoints> skeletalPts = vtkSmartPointer<vtkPoints>::New();
-    vtkSmartPointer<vtkCellArray> quads = vtkSmartPointer<vtkCellArray>::New();
     
     while(poly->GetLines()->GetNextCell(idList))
     {
@@ -1994,21 +1993,74 @@ void vtkSlicerSkeletalRepresentationInitializerLogic::CompletePolyData(vtkPolyDa
     output->GetPointData()->SetActiveScalars("spokeLength");
     
     // connection of skeletal points
-    for(int i = 0; i < ROWS - 1; ++i)
+    if(isCrest)
     {
-        for(int j = 0; j < COLS-1; ++j)
+        vtkSmartPointer<vtkCellArray> curve = vtkSmartPointer<vtkCellArray>::New();
+        for(int i = 0; i < skeletalPts->GetNumberOfPoints() - 1; ++i)
         {
-            int id0 = i * COLS + j;
-            int id1 = id0 + 1;
-            int id2 = id0 + COLS;
-            int id3 = id2 + 1;
-            vtkSmartPointer<vtkQuad> quad = vtkSmartPointer<vtkQuad>::New();
-            quad->GetPointIds()->SetId(0, id0);
-            quad->GetPointIds()->SetId(1, id2);
-            quad->GetPointIds()->SetId(2, id3);
-            quad->GetPointIds()->SetId(3, id1);
-            quads->InsertNextCell(quad);
+            if(i < COLS-1)
+            {
+                // Horizontal connection for top row
+                vtkSmartPointer<vtkLine> line = vtkSmartPointer<vtkLine>::New();
+                line->GetPointIds()->SetId(0, i);
+                line->GetPointIds()->SetId(1, i+1);
+                curve->InsertNextCell(line);
+            }
+            else if(i > COLS + 2 * (ROWS-2)-1){
+                // Backward horizontal connection for bot row
+                vtkSmartPointer<vtkLine> line = vtkSmartPointer<vtkLine>::New();
+                line->GetPointIds()->SetId(0, i+1);
+                line->GetPointIds()->SetId(1, i);
+                curve->InsertNextCell(line);
+            }
+            else if((i - COLS) % 2 == 0){
+                // vertical connection for left side points
+                vtkSmartPointer<vtkLine> line1 = vtkSmartPointer<vtkLine>::New();
+                line1->GetPointIds()->SetId(0, i+2);
+                line1->GetPointIds()->SetId(1, i);
+                curve->InsertNextCell(line1);
+            }
+            else if(i > COLS-1 && (i - COLS - 1) % 2 == 0){
+                // vertical connection for right side points
+                vtkSmartPointer<vtkLine> line2 = vtkSmartPointer<vtkLine>::New();
+                line2->GetPointIds()->SetId(0, i);
+                line2->GetPointIds()->SetId(1, i - 2);
+                curve->InsertNextCell(line2);
+            }
+            
         }
+        vtkSmartPointer<vtkLine> lineEnd = vtkSmartPointer<vtkLine>::New();
+        lineEnd->GetPointIds()->SetId(0, COLS);
+        lineEnd->GetPointIds()->SetId(1, 0);
+        
+        curve->InsertNextCell(lineEnd);
+        lineEnd->GetPointIds()->SetId(0, skeletalPts->GetNumberOfPoints() - 1);
+        lineEnd->GetPointIds()->SetId(1, skeletalPts->GetNumberOfPoints() - 1 - COLS);
+        
+        curve->InsertNextCell(lineEnd);
+        output->SetLines(curve);
     }
-    output->SetPolys(quads);
+    else {
+        vtkSmartPointer<vtkCellArray> quads = vtkSmartPointer<vtkCellArray>::New();
+        
+        for(int i = 0; i < ROWS - 1; ++i)
+        {
+            for(int j = 0; j < COLS-1; ++j)
+            {
+                int id0 = i * COLS + j;
+                int id1 = id0 + 1;
+                int id2 = id0 + COLS;
+                int id3 = id2 + 1;
+                vtkSmartPointer<vtkQuad> quad = vtkSmartPointer<vtkQuad>::New();
+                quad->GetPointIds()->SetId(0, id0);
+                quad->GetPointIds()->SetId(1, id2);
+                quad->GetPointIds()->SetId(2, id3);
+                quad->GetPointIds()->SetId(3, id1);
+                quads->InsertNextCell(quad);
+            }
+        }
+        output->SetPolys(quads);
+    }
+    
+    
 }

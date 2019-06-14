@@ -116,7 +116,7 @@ private:
   double CalculateSpokeLength(PointType tail, PointType tip);
   void CalculateSpokeDirection(PointType tail, PointType tip, double *x, double *y, double *z);
   void GetNeighborCells(vtkPolyData* mesh, int ptId, int newId, vtkCellArray* output, vtkPoints* morePts);
-  void CompletePolyData(vtkPolyData *poly, vtkPolyData *output);
+  void CompletePolyData(vtkPolyData *poly, vtkPolyData *output, bool isCrest = false);
 private:
 
   vtkSlicerSkeletalRepresentationInitializerLogic(const vtkSlicerSkeletalRepresentationInitializerLogic&); // Not implemented
