@@ -140,7 +140,7 @@ void qSlicerSkeletalRepresentationRefinerModuleWidget::showImpliedBoundary()
     Q_D(qSlicerSkeletalRepresentationRefinerModuleWidget);
     int interpolationLevel = int(d->sl_interp->value());
     std::string srepFileName = d->lb_srepPath->text().toUtf8().constData();
-    d->logic()->ShowImpliedBoundary(interpolationLevel, srepFileName);
+    d->logic()->ShowImpliedBoundary(interpolationLevel, srepFileName, "Initial ");
 }
 
 //-----------------------------------------------------------------------------

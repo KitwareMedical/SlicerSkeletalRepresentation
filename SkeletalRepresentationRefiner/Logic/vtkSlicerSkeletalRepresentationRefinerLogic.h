@@ -98,7 +98,7 @@ public:
   void TransformSrep(const std::string &headerFile);
   
   // show wired frame of implied boundary
-  void ShowImpliedBoundary(int interpolationLevel, const std::string& srepFileName);
+  void ShowImpliedBoundary(int interpolationLevel, const std::string& srepFileName, const std::string& modelPrefix);
 
 protected:
   vtkSlicerSkeletalRepresentationRefinerLogic();

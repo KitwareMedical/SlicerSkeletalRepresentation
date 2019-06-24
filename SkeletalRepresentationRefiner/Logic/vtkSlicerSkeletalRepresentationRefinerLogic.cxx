@@ -89,6 +89,14 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::PrintSelf(ostream& os, vtkInde
 void vtkSlicerSkeletalRepresentationRefinerLogic::SetImageFileName(const std::string &imageFilePath)
 {
     mTargetMeshFilePath = imageFilePath;
+    
+    // visualize the input surface mesh
+    vtkSmartPointer<vtkPolyDataReader> reader = vtkSmartPointer<vtkPolyDataReader>::New();
+    reader->SetFileName(imageFilePath.c_str());
+    reader->Update();
+    
+    vtkSmartPointer<vtkPolyData> surface = reader->GetOutput();
+    Visualize(surface, "Input surface mesh", 0, 0, 0);
 }
 
 void vtkSlicerSkeletalRepresentationRefinerLogic::SetSrepFileName(const std::string &srepFilePath)
@@ -182,7 +190,7 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::Refine(double stepSize, double
     std::string newHeaderFileName;
     UpdateHeader(headerFileName, mOutputPath, &newHeaderFileName);
     
-    ShowImpliedBoundary(interpolationLevel, newHeaderFileName);
+    ShowImpliedBoundary(interpolationLevel, newHeaderFileName, "Refined ");
 }
 
 void vtkSlicerSkeletalRepresentationRefinerLogic::InterpolateSrep(int interpolationLevel, std::string& srepFileName)
@@ -471,7 +479,9 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::TransformSrep(const std::strin
     delete srep;
 }
 
-void vtkSlicerSkeletalRepresentationRefinerLogic::ShowImpliedBoundary(int interpolationLevel, const string &srepFileName)
+void vtkSlicerSkeletalRepresentationRefinerLogic::ShowImpliedBoundary(int interpolationLevel,
+                                                                      const string &srepFileName,
+                                                                      const std::string& modelPrefix)
 {
     // Hide other nodes.
     HideNodesByClass("vtkMRMLModelNode");
@@ -508,15 +518,15 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::ShowImpliedBoundary(int interp
     
     wireFrame->SetPoints(pts);
     wireFrame->SetPolys(quads);
-    Visualize(wireFrame, "Wire frame", 0, 1, 1);
+    Visualize(wireFrame, modelPrefix + "Wire frame", 0, 1, 1);
     
     foldCurve->SetPoints(foldCurvePts);
     foldCurve->SetPolys(foldCurveCell);
-    Visualize(foldCurve, "Fold curve", 0, 1, 0, false);
+    Visualize(foldCurve, modelPrefix + "Fold curve", 0, 1, 0, false);
     
     vtkSmartPointer<vtkPolyData> polySpokes = vtkSmartPointer<vtkPolyData>::New();
     ConvertSpokes2PolyData(interpolatedSpokes, polySpokes);
-    Visualize(polySpokes, "Primary spokes", 1, 0,0, false);
+    Visualize(polySpokes, modelPrefix + "Primary spokes", 1, 0,0, false);
     
 }
 
