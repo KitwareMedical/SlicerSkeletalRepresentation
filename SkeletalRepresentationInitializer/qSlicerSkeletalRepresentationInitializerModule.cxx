@@ -68,14 +68,14 @@ QString qSlicerSkeletalRepresentationInitializerModule::helpText() const
 //-----------------------------------------------------------------------------
 QString qSlicerSkeletalRepresentationInitializerModule::acknowledgementText() const
 {
-    return "This file was originally developed by Zhiyuan Liu, and currently maintained by the SlicerSALT team.";
+    return "This file was originally developed by Zhiyuan Liu and Junpyo Hong, and currently maintained by the SlicerSALT team.";
 }
 
 //-----------------------------------------------------------------------------
 QStringList qSlicerSkeletalRepresentationInitializerModule::contributors() const
 {
   QStringList moduleContributors;
-  moduleContributors << QString("Zhiyuan Liu, Pablo Hernandez-Cerdan");
+  moduleContributors << QString("Zhiyuan Liu, Pablo Hernandez-Cerdan, Megan Stuart, Jiyao Wang");
   return moduleContributors;
 }
 

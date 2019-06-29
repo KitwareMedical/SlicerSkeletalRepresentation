@@ -303,7 +303,7 @@
         <item>
          <widget class="QLabel" name="label">
           <property name="text">
-           <string>Regularity weight:</string>
+           <string>Geometric illegality weight:</string>
           </property>
          </widget>
         </item>

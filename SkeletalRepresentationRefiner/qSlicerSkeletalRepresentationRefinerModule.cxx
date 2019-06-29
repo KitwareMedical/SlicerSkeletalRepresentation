@@ -75,7 +75,7 @@ QString qSlicerSkeletalRepresentationRefinerModule::acknowledgementText() const
 QStringList qSlicerSkeletalRepresentationRefinerModule::contributors() const
 {
   QStringList moduleContributors;
-  moduleContributors << QString("Zhiyuan Liu, Pablo Hernandez-Cerdan");
+  moduleContributors << QString("Zhiyuan Liu, Pablo Hernandez-Cerdan, Megan Stuart, Jiyao Wang");
   return moduleContributors;
 }
 
