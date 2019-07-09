@@ -285,7 +285,7 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::FlowSurfaceOneStep(const st
     HideNodesByNameByClass("best_fitting_ellipsoid_polydata", "vtkMRMLModelNode");
 
     // then add this new intermediate result
-    AddModelNodeToScene(spherePolys, sphereName.c_str(), true, 1, 0,0);
+    //AddModelNodeToScene(spherePolys, sphereName.c_str(), true, 1, 0,0);
     AddModelNodeToScene(mesh, modelName.c_str(), true);
     AddModelNodeToScene(hyperPolyData, hyperbolicRegionName.c_str(), true, 1, 0, 1);
     AddModelNodeToScene(concavePolyData, concaveRegionName.c_str(), true, 0,0,1);
