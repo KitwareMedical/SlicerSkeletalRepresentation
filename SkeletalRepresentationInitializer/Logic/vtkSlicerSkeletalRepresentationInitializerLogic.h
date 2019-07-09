@@ -37,6 +37,7 @@
 // VTK includes
 class vtkPolyData;
 class vtkPoints;
+class vtkCellArray;
 
 // STD includes
 #include <cstdlib>
@@ -61,7 +62,7 @@ public:
   // flow one step only
   // input[dt]: delta t in each move
   // input[smooth_amount]: 0-2 double value for smooth filter
-  int FlowSurfaceOneStep(double dt, double smooth_amount);
+  int FlowSurfaceOneStep(const std::string &filename, double dt, double smooth_amount);
 
   // Select input mesh and render it in scene
   // input[filename]: whole path of vtk file
@@ -111,6 +112,7 @@ private:
                        vtkPolyData* poly, const std::string& outputFileName);
   double CalculateSpokeLength(PointType tail, PointType tip);
   void CalculateSpokeDirection(PointType tail, PointType tip, double *x, double *y, double *z);
+  void GetNeighborCells(vtkPolyData* mesh, int ptId, int newId, vtkCellArray* output, vtkPoints* morePts);
 private:
 
   vtkSlicerSkeletalRepresentationInitializerLogic(const vtkSlicerSkeletalRepresentationInitializerLogic&); // Not implemented

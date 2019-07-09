@@ -1,0 +1,377 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>qSlicerSkeletalRepresentationRefinerModuleWidget</class>
+ <widget class="qSlicerWidget" name="qSlicerSkeletalRepresentationRefinerModuleWidget">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>525</width>
+    <height>419</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Form</string>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <item>
+    <widget class="ctkCollapsibleButton" name="CTKCollapsibleButton" native="true">
+     <property name="text" stdset="0">
+      <string>Input</string>
+     </property>
+     <layout class="QVBoxLayout" name="verticalLayout_3">
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout">
+        <item>
+         <widget class="QLabel" name="lb_inputImage">
+          <property name="text">
+           <string>Input a surface mesh (*.vtk):</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="lb_imagePath">
+          <property name="text">
+           <string/>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="btn_browseImage">
+          <property name="text">
+           <string>Browse</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout_2">
+        <item>
+         <widget class="QLabel" name="label_2">
+          <property name="text">
+           <string>Input an s-rep file (*.xml):</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="lb_srepPath">
+          <property name="text">
+           <string/>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="btn_browseSrep">
+          <property name="text">
+           <string>Browse</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout_4">
+        <item>
+         <widget class="QLabel" name="label_4">
+          <property name="text">
+           <string>Output refinement path:</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="lb_outputpath">
+          <property name="text">
+           <string/>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="btn_output">
+          <property name="text">
+           <string>Browse</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout_3">
+        <item>
+         <widget class="QLabel" name="label_3">
+          <property name="text">
+           <string>Interpolation level:</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="qMRMLSliderWidget" name="sl_interp" native="true">
+          <property name="decimals" stdset="0">
+           <number>0</number>
+          </property>
+          <property name="pageStep" stdset="0">
+           <double>10.000000000000000</double>
+          </property>
+          <property name="minimum" stdset="0">
+           <double>0.000000000000000</double>
+          </property>
+          <property name="maximum" stdset="0">
+           <double>15.000000000000000</double>
+          </property>
+          <property name="value" stdset="0">
+           <double>3.000000000000000</double>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <widget class="QPushButton" name="btn_interp">
+        <property name="text">
+         <string>Interpolate</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="btn_initial_bdry">
+        <property name="text">
+         <string>Show initial implied boundary</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="ctkCollapsibleButton" name="CTKCollapsibleButton_param" native="true">
+     <property name="text" stdset="0">
+      <string>Parameters</string>
+     </property>
+     <layout class="QVBoxLayout" name="verticalLayout_param">
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout_5">
+        <item>
+         <widget class="QLabel" name="label_5">
+          <property name="text">
+           <string>Step size:</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="qMRMLSliderWidget" name="sl_stepSize" native="true">
+          <property name="decimals" stdset="0">
+           <number>3</number>
+          </property>
+          <property name="pageStep" stdset="0">
+           <double>0.010000000000000</double>
+          </property>
+          <property name="minimum" stdset="0">
+           <double>0.001000000000000</double>
+          </property>
+          <property name="maximum" stdset="0">
+           <double>15.000000000000000</double>
+          </property>
+          <property name="value" stdset="0">
+           <double>0.010000000000000</double>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout_6">
+        <item>
+         <widget class="QLabel" name="label_6">
+          <property name="text">
+           <string>Tolerance:</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="qMRMLSliderWidget" name="sl_tol" native="true">
+          <property name="decimals" stdset="0">
+           <number>4</number>
+          </property>
+          <property name="pageStep" stdset="0">
+           <double>0.010000000000000</double>
+          </property>
+          <property name="minimum" stdset="0">
+           <double>0.000100000000000</double>
+          </property>
+          <property name="maximum" stdset="0">
+           <double>15.000000000000000</double>
+          </property>
+          <property name="value" stdset="0">
+           <double>0.001000000000000</double>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout_7">
+        <item>
+         <widget class="QLabel" name="label_7">
+          <property name="text">
+           <string>Max #iter:</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="qMRMLSliderWidget" name="sl_maxIter" native="true">
+          <property name="decimals" stdset="0">
+           <number>0</number>
+          </property>
+          <property name="pageStep" stdset="0">
+           <double>10.000000000000000</double>
+          </property>
+          <property name="minimum" stdset="0">
+           <double>200.000000000000000</double>
+          </property>
+          <property name="maximum" stdset="0">
+           <double>10000.000000000000000</double>
+          </property>
+          <property name="value" stdset="0">
+           <double>2000.000000000000000</double>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout_8">
+        <item>
+         <widget class="QLabel" name="label_8">
+          <property name="text">
+           <string>Image match weight:</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="qMRMLSliderWidget" name="sl_wtImageMatch" native="true">
+          <property name="decimals" stdset="0">
+           <number>4</number>
+          </property>
+          <property name="pageStep" stdset="0">
+           <double>0.001000000000000</double>
+          </property>
+          <property name="minimum" stdset="0">
+           <double>0.000100000000000</double>
+          </property>
+          <property name="maximum" stdset="0">
+           <double>1000.000000000000000</double>
+          </property>
+          <property name="value" stdset="0">
+           <double>0.004000000000000</double>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout_9">
+        <item>
+         <widget class="QLabel" name="label_9">
+          <property name="text">
+           <string>Normal match weight:</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="qMRMLSliderWidget" name="sl_wtNormal" native="true">
+          <property name="decimals" stdset="0">
+           <number>4</number>
+          </property>
+          <property name="pageStep" stdset="0">
+           <double>0.010000000000000</double>
+          </property>
+          <property name="minimum" stdset="0">
+           <double>0.000100000000000</double>
+          </property>
+          <property name="maximum" stdset="0">
+           <double>1000.000000000000000</double>
+          </property>
+          <property name="value" stdset="0">
+           <double>20.000000000000000</double>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout_10">
+        <item>
+         <widget class="QLabel" name="label_10">
+          <property name="text">
+           <string>Regularity weight:</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="qMRMLSliderWidget" name="sl_wtSrad" native="true">
+          <property name="decimals" stdset="0">
+           <number>4</number>
+          </property>
+          <property name="pageStep" stdset="0">
+           <double>0.010000000000000</double>
+          </property>
+          <property name="minimum" stdset="0">
+           <double>0.000100000000000</double>
+          </property>
+          <property name="maximum" stdset="0">
+           <double>1000.000000000000000</double>
+          </property>
+          <property name="value" stdset="0">
+           <double>50.000000000000000</double>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QPushButton" name="btn_submit">
+     <property name="text">
+      <string>Start refinement</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <spacer name="verticalSpacer">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>0</width>
+       <height>0</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+  </layout>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>qMRMLSliderWidget</class>
+   <extends>QWidget</extends>
+   <header>qMRMLSliderWidget.h</header>
+  </customwidget>
+  <customwidget>
+   <class>qSlicerWidget</class>
+   <extends>QWidget</extends>
+   <header>qSlicerWidget.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>ctkCollapsibleButton</class>
+   <extends>QWidget</extends>
+   <header>ctkCollapsibleButton.h</header>
+   <container>1</container>
+  </customwidget>
+ </customwidgets>
+ <resources/>
+ <connections/>
+</ui>

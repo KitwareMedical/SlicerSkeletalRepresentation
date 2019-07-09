@@ -17,7 +17,6 @@
 
 // SkeletalRepresentationInitializer Logic includes
 #include "vtkSlicerSkeletalRepresentationInitializerLogic.h"
-#include "vtkBackwardFlowLogic.h"
 
 // MRML includes
 #include <vtkMRMLScene.h>
@@ -50,7 +49,6 @@
 #include <vtkPolyDataReader.h>
 #include <vtkPolyDataWriter.h>
 #include <vtkQuad.h>
-#include <vtkSmartPointer.h>
 #include <vtkSmoothPolyDataFilter.h>
 #include <vtkVector.h>
 #include <vtkWindowedSincPolyDataFilter.h>
@@ -124,16 +122,10 @@ void vtkSlicerSkeletalRepresentationInitializerLogic
 // basic idea: When the user select a mesh file, make a copy of vtk file in the application path.
 // In each step of flow, read in that copy, flow it and save it the same place with same name.
 // TODO: cleanup the hard disk when the module exits
-int vtkSlicerSkeletalRepresentationInitializerLogic::FlowSurfaceOneStep(double dt, double smooth_amount)
+int vtkSlicerSkeletalRepresentationInitializerLogic::FlowSurfaceOneStep(const std::string &filename, double dt, double smooth_amount)
 {
-    std::cout << "flow one step : dt-" << dt << std::endl;
-    std::cout << "flow one step : smooth amount-" << smooth_amount << std::endl;
-
-    std::string tempFileName(this->GetApplicationLogic()->GetTemporaryPath());
-    tempFileName += "/temp_output.vtk";
-
     vtkSmartPointer<vtkPolyDataReader> reader = vtkSmartPointer<vtkPolyDataReader>::New();
-    reader->SetFileName(tempFileName.c_str());
+    reader->SetFileName(filename.c_str());
     reader->Update();
     vtkSmartPointer<vtkPolyData> mesh = reader->GetOutput();
     if(mesh == NULL)
@@ -176,8 +168,22 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::FlowSurfaceOneStep(double d
     curvature_filter->SetInputData(mesh);
     curvature_filter->Update();
 
+    // compute the center of surface mesh
+    vtkSmartPointer<vtkCenterOfMass> centerMassFilter =
+        vtkSmartPointer<vtkCenterOfMass>::New();
+    centerMassFilter->SetInputData(mesh);
+    centerMassFilter->SetUseScalarsAsWeights(false);
+    centerMassFilter->Update();
+    double center[3];
+    centerMassFilter->GetCenter(center);
+
     vtkSmartPointer<vtkDoubleArray> H =
         vtkDoubleArray::SafeDownCast(curvature_filter->GetOutput()->GetPointData()->GetArray("Mean_Curvature"));
+    
+    curvature_filter->SetCurvatureTypeToGaussian();
+    curvature_filter->Update();
+    vtkSmartPointer<vtkDoubleArray> K = 
+            vtkDoubleArray::SafeDownCast(curvature_filter->GetOutput()->GetPointData()->GetArray("Gauss_Curvature"));
     if(H == NULL) {
         vtkErrorMacro("error in getting mean curvature");
         return -1;
@@ -191,12 +197,47 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::FlowSurfaceOneStep(double d
     // perform the flow
     vtkSmartPointer<vtkPoints> points = mesh->GetPoints();
 
+    // Gaussian map
+    vtkSmartPointer<vtkPolyData> spherePolys =
+            vtkSmartPointer<vtkPolyData>::New();
+    
+    vtkSmartPointer<vtkPoints> spherePts = vtkSmartPointer<vtkPoints>::New();
+    
+    // concave pts
+    vtkSmartPointer<vtkPolyData> concavePolyData = vtkSmartPointer<vtkPolyData>::New();
+    vtkSmartPointer<vtkPoints> concavePts = vtkSmartPointer<vtkPoints>::New();
+    vtkSmartPointer<vtkCellArray> concavePolys = vtkSmartPointer<vtkCellArray>::New();
+    
+    // hyperbolic pts
+    vtkSmartPointer<vtkPolyData> hyperPolyData = vtkSmartPointer<vtkPolyData>::New();
+    vtkSmartPointer<vtkPoints> hyperPts = vtkSmartPointer<vtkPoints>::New();
+    vtkSmartPointer<vtkCellArray> hyperPolys = vtkSmartPointer<vtkCellArray>::New();
     for(int i = 0; i < points->GetNumberOfPoints(); ++i) {
         double p[3];
         points->GetPoint(i, p);
         double curr_N[3];
         N->GetTuple(i, curr_N);
         double curr_H = H->GetValue(i);
+        double curr_K = K->GetValue(i);
+        if(curr_K < 0)
+        {
+            int newId = hyperPts->InsertNextPoint(p);
+            GetNeighborCells(mesh, i, newId, hyperPolys, hyperPts);
+        }
+        else {
+            // see the explanation on vtkCurvatures signs
+            if(curr_H < 0)
+            {
+                int newId = concavePts->InsertNextPoint(p);
+                GetNeighborCells(mesh, i, newId, concavePolys, concavePts);
+            }
+        }
+
+        double ptSphere[3];
+        ptSphere[0] = curr_N[0] * std::pow( original_volume , 1.0 / 3.0 ) / vtkMath::Pi() + center[0];
+        ptSphere[1] = curr_N[1] * std::pow( original_volume , 1.0 / 3.0 ) / vtkMath::Pi() + center[1];
+        ptSphere[2] = curr_N[2] * std::pow( original_volume , 1.0 / 3.0 ) / vtkMath::Pi() + center[2];
+        spherePts->InsertNextPoint(ptSphere);
 
         for(int idx = 0; idx < 3; ++idx) {
             p[idx] -= dt * curr_H * curr_N[idx];
@@ -204,42 +245,48 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::FlowSurfaceOneStep(double d
         points->SetPoint(i, p);
     }
     points->Modified();
+    spherePts->Modified();
+    hyperPts->Modified();
+    hyperPolys->Modified();
 
-    mass_filter->SetInputData(mesh);
-    mass_filter->Update();
-    double curr_volume = mass_filter->GetVolume();
-    for(int i = 0; i < points->GetNumberOfPoints(); ++i) {
-        double p[3];
-        points->GetPoint(i, p);
-        for(int j = 0; j < 3; ++j) {
-            p[j] *= std::pow( original_volume / curr_volume , 1.0 / 3.0 );
-        }
-//        points->SetPoint(i, p);
-    }
-    points->Modified();
+    concavePts->Modified();
+    concavePolys->Modified();
+    concavePolyData->SetPoints(concavePts);
+    concavePolyData->SetPolys(concavePolys);
+    concavePolyData->Modified();
+    
+    spherePolys->SetPoints(spherePts);
+    spherePolys->SetPolys(mesh->GetPolys());
+    spherePolys->Modified();
+    
+    hyperPolyData->SetPoints(hyperPts);
+    hyperPolyData->SetPolys(hyperPolys);
+    hyperPolyData->Modified();
+    
+    const std::string hyperbolicRegionName("hyperbolic_points");
+    const std::string concaveRegionName("concave_points");
+    const std::string sphereName("gauss_sphere_map");
+    const std::string modelName("curvature_flow_result");
 
     // firstly get other intermediate result invisible
-    HideNodesByNameByClass("curvature_flow_result","vtkMRMLModelNode");
+    HideNodesByNameByClass(modelName.c_str(),"vtkMRMLModelNode");
+    HideNodesByNameByClass(sphereName.c_str(),"vtkMRMLModelNode");
+    HideNodesByNameByClass(hyperbolicRegionName.c_str(),"vtkMRMLModelNode");
+    HideNodesByNameByClass(concaveRegionName.c_str(),"vtkMRMLModelNode");
     HideNodesByNameByClass("best_fitting_ellipsoid_polydata", "vtkMRMLModelNode");
 
     // then add this new intermediate result
-    const std::string modelName("curvature_flow_result");
+    AddModelNodeToScene(spherePolys, sphereName.c_str(), true, 1, 0,0);
     AddModelNodeToScene(mesh, modelName.c_str(), true);
+    AddModelNodeToScene(hyperPolyData, hyperbolicRegionName.c_str(), true, 1, 0, 1);
+    AddModelNodeToScene(concavePolyData, concaveRegionName.c_str(), true, 0,0,1);
 
     vtkSmartPointer<vtkPolyDataWriter> writer =
         vtkSmartPointer<vtkPolyDataWriter>::New();
     writer->SetInputData(mesh);
-    writer->SetFileName(tempFileName.c_str());
+    writer->SetFileName(filename.c_str());
     writer->Update();
 
-    // compute the fitting ellipsoid
-    vtkSmartPointer<vtkCenterOfMass> centerMassFilter =
-        vtkSmartPointer<vtkCenterOfMass>::New();
-    centerMassFilter->SetInputData(mesh);
-    centerMassFilter->SetUseScalarsAsWeights(false);
-    centerMassFilter->Update();
-    double center[3];
-    centerMassFilter->GetCenter(center);
 
 //    ShowFittingEllipsoid(points, curr_volume, center);
     return 0;
@@ -1108,8 +1155,6 @@ void vtkSlicerSkeletalRepresentationInitializerLogic::HideNodesByNameByClass(con
 
 void vtkSlicerSkeletalRepresentationInitializerLogic::HideNodesByClass(const std::string &className)
 {
-    std::cout << "Hide node class name:" << className << std::endl;
-    std::vector<vtkMRMLNode*> vectModelNodes;
     vtkSmartPointer<vtkCollection> modelNodes = this->GetMRMLScene()->GetNodesByClass(className.c_str());
     modelNodes->InitTraversal();
     for(int i = 0; i < modelNodes->GetNumberOfItems(); i++)
@@ -1789,5 +1834,51 @@ void vtkSlicerSkeletalRepresentationInitializerLogic::CalculateSpokeDirection(Po
     *x=((tip[0] - tail[0]) / spokeRadiu);
     *y=((tip[1] - tail[1]) / spokeRadiu);
     *z=((tip[2] - tail[2]) / spokeRadiu);
+    
+}
+
+void vtkSlicerSkeletalRepresentationInitializerLogic::GetNeighborCells(vtkPolyData *mesh, int ptId, int newId, vtkCellArray *output, vtkPoints* morePts)
+{
+    vtkSmartPointer<vtkIdList> cellIdList =
+            vtkSmartPointer<vtkIdList>::New();
+    mesh->GetPointCells(ptId, cellIdList);
+    for(vtkIdType i = 0; i < cellIdList->GetNumberOfIds(); i++)
+    {
+        
+        vtkCell* cell = mesh->GetCell(cellIdList->GetId(i));
+        //cout << "The cell has " << cell->GetNumberOfEdges() << " edges." << endl;
+        
+        //if the cell doesn't have any edges, it is a line
+        if(cell->GetNumberOfEdges() <= 0)
+        {
+            continue;
+        }
+        
+        for(int j = 0; j < cell->GetNumberOfEdges(); ++j)
+        {
+            vtkCell* edge = cell->GetEdge(j);
+            vtkIdList* pointIdList = edge->GetPointIds(); 
+            double pt0[3], pt1[3];
+            
+            mesh->GetPoint(pointIdList->GetId(0), pt0);
+            mesh->GetPoint(pointIdList->GetId(1), pt1);
+            
+            vtkIdType id2;
+            vtkSmartPointer<vtkLine> newEdge = vtkSmartPointer<vtkLine>::New();
+            if(pointIdList->GetId(0) == ptId)
+            {
+                id2 = morePts->InsertNextPoint(pt1);
+                newEdge->GetPointIds()->SetId(0, newId);
+                newEdge->GetPointIds()->SetId(1, id2);
+            }
+            else {
+                id2 = morePts->InsertNextPoint(pt0);
+                newEdge->GetPointIds()->SetId(1, newId);
+                newEdge->GetPointIds()->SetId(0, id2);
+            }
+            
+            output->InsertNextCell(newEdge);
+        }
+    }
 
 }

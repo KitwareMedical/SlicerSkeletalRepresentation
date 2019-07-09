@@ -1,6 +1,5 @@
 project(vtkSlicer${MODULE_NAME}ModuleLogic)
 find_package(Eigen3 REQUIRED CONFIG)
-
 set(KIT ${PROJECT_NAME})
 
 set(${KIT}_EXPORT_DIRECTIVE "VTK_SLICER_${MODULE_NAME_UPPER}_MODULE_LOGIC_EXPORT")
@@ -11,15 +10,25 @@ set(${KIT}_INCLUDE_DIRECTORIES
 set(${KIT}_SRCS
   vtkSlicer${MODULE_NAME}Logic.cxx
   vtkSlicer${MODULE_NAME}Logic.h
-  itkThinPlateSplineExtended.h
-  itkThinPlateSplineExtended.cxx
+  vtkSlicerSkeletalRepresentationInterpolater.h
+  vtkSlicerSkeletalRepresentationInterpolater.cpp
+  vtkSpoke.h
+  vtkSpoke.cpp
+  vtkSrep.h
+  vtkSrep.cpp
+  newuoa.h
+  vtkPolyData2ImageData.cpp
+  vtkPolyData2ImageData.h
+  vtkApproximateSignedDistanceMap.h
+  vtkApproximateSignedDistanceMap.cpp
+  vtkGradientDistanceFilter.cpp
+  vtkGradientDistanceFilter.h
   )
 
 set(${KIT}_TARGET_LIBRARIES
   ${ITK_LIBRARIES}
-  vtkSlicerMarkupsModuleMRML
-  vtkSlicerAnnotationsModuleMRML
   Eigen3::Eigen
+  vtkSlicerMarkupsModuleMRML
   )
 
 #-----------------------------------------------------------------------------
