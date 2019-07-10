@@ -42,7 +42,7 @@ public:
 
 private:
   void AddModelNodeToScene(vtkPolyData* mesh, const char* modelName, bool isModelVisible, double r, double g, double b);
-  
+
 private:
     vtkMRMLScene* scene;
 };

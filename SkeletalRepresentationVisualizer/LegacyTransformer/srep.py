@@ -45,7 +45,7 @@ class figure(object):
         row = int(np.floor(index / self.numCols))
         col = int(index - numCols * row)
         self.addAtom(row, col, atom)
-        
+
     def addAtom(self, row, col, atom):
         self.atoms[row, col] = atom
 

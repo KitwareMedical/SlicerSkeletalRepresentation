@@ -179,10 +179,10 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::FlowSurfaceOneStep(const st
 
     vtkSmartPointer<vtkDoubleArray> H =
         vtkDoubleArray::SafeDownCast(curvature_filter->GetOutput()->GetPointData()->GetArray("Mean_Curvature"));
-    
+
     curvature_filter->SetCurvatureTypeToGaussian();
     curvature_filter->Update();
-    vtkSmartPointer<vtkDoubleArray> K = 
+    vtkSmartPointer<vtkDoubleArray> K =
             vtkDoubleArray::SafeDownCast(curvature_filter->GetOutput()->GetPointData()->GetArray("Gauss_Curvature"));
     if(H == NULL) {
         vtkErrorMacro("error in getting mean curvature");
@@ -200,14 +200,14 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::FlowSurfaceOneStep(const st
     // Gaussian map
     vtkSmartPointer<vtkPolyData> spherePolys =
             vtkSmartPointer<vtkPolyData>::New();
-    
+
     vtkSmartPointer<vtkPoints> spherePts = vtkSmartPointer<vtkPoints>::New();
-    
+
     // concave pts
     vtkSmartPointer<vtkPolyData> concavePolyData = vtkSmartPointer<vtkPolyData>::New();
     vtkSmartPointer<vtkPoints> concavePts = vtkSmartPointer<vtkPoints>::New();
     vtkSmartPointer<vtkCellArray> concavePolys = vtkSmartPointer<vtkCellArray>::New();
-    
+
     // hyperbolic pts
     vtkSmartPointer<vtkPolyData> hyperPolyData = vtkSmartPointer<vtkPolyData>::New();
     vtkSmartPointer<vtkPoints> hyperPts = vtkSmartPointer<vtkPoints>::New();
@@ -254,15 +254,15 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::FlowSurfaceOneStep(const st
     concavePolyData->SetPoints(concavePts);
     concavePolyData->SetPolys(concavePolys);
     concavePolyData->Modified();
-    
+
     spherePolys->SetPoints(spherePts);
     spherePolys->SetPolys(mesh->GetPolys());
     spherePolys->Modified();
-    
+
     hyperPolyData->SetPoints(hyperPts);
     hyperPolyData->SetPolys(hyperPolys);
     hyperPolyData->Modified();
-    
+
     const std::string hyperbolicRegionName("hyperbolic_points");
     const std::string concaveRegionName("concave_points");
     const std::string sphereName("gauss_sphere_map");
@@ -1340,7 +1340,7 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::InklingFlow(const std::stri
 
         double testRender[3];
         points->GetPoint(maxIndex, testRender);
-//        AddPointToScene(testRender[0], testRender[1], testRender[2], 13); // sphere3D 
+//        AddPointToScene(testRender[0], testRender[1], testRender[2], 13); // sphere3D
 
         HideNodesByNameByClass("output_inkling","vtkMRMLModelNode");
 
@@ -1834,7 +1834,7 @@ void vtkSlicerSkeletalRepresentationInitializerLogic::CalculateSpokeDirection(Po
     *x=((tip[0] - tail[0]) / spokeRadiu);
     *y=((tip[1] - tail[1]) / spokeRadiu);
     *z=((tip[2] - tail[2]) / spokeRadiu);
-    
+
 }
 
 void vtkSlicerSkeletalRepresentationInitializerLogic::GetNeighborCells(vtkPolyData *mesh, int ptId, int newId, vtkCellArray *output, vtkPoints* morePts)
@@ -1844,25 +1844,25 @@ void vtkSlicerSkeletalRepresentationInitializerLogic::GetNeighborCells(vtkPolyDa
     mesh->GetPointCells(ptId, cellIdList);
     for(vtkIdType i = 0; i < cellIdList->GetNumberOfIds(); i++)
     {
-        
+
         vtkCell* cell = mesh->GetCell(cellIdList->GetId(i));
         //cout << "The cell has " << cell->GetNumberOfEdges() << " edges." << endl;
-        
+
         //if the cell doesn't have any edges, it is a line
         if(cell->GetNumberOfEdges() <= 0)
         {
             continue;
         }
-        
+
         for(int j = 0; j < cell->GetNumberOfEdges(); ++j)
         {
             vtkCell* edge = cell->GetEdge(j);
-            vtkIdList* pointIdList = edge->GetPointIds(); 
+            vtkIdList* pointIdList = edge->GetPointIds();
             double pt0[3], pt1[3];
-            
+
             mesh->GetPoint(pointIdList->GetId(0), pt0);
             mesh->GetPoint(pointIdList->GetId(1), pt1);
-            
+
             vtkIdType id2;
             vtkSmartPointer<vtkLine> newEdge = vtkSmartPointer<vtkLine>::New();
             if(pointIdList->GetId(0) == ptId)
@@ -1876,7 +1876,7 @@ void vtkSlicerSkeletalRepresentationInitializerLogic::GetNeighborCells(vtkPolyDa
                 newEdge->GetPointIds()->SetId(1, newId);
                 newEdge->GetPointIds()->SetId(0, id2);
             }
-            
+
             output->InsertNextCell(newEdge);
         }
     }

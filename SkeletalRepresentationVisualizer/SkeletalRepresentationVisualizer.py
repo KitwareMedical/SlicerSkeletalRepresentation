@@ -587,7 +587,7 @@ class SkeletalRepresentationVisualizerLogic(ScriptedLoadableModuleLogic):
 
         crestSpokeLengths = crestSpokeData.GetArray('spokeLength')
         crestSpokeDirs = crestSpokeData.GetArray('spokeDirection')
-        
+
         for i in range(upSpokes.GetNumberOfPoints()):
             pt = [0] * 3
             upSpokes.GetPoint(i, pt)
