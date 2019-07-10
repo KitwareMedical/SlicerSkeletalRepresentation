@@ -1388,7 +1388,7 @@ L290:
 L310:
     if (nf > nftest) {
         --nf;
-//		fprintf(stderr, "++ Return from NEWUOA because CALFUN has been called MAXFUN times.\n");
+//      fprintf(stderr, "++ Return from NEWUOA because CALFUN has been called MAXFUN times.\n");
         goto L530;
     }
     f = func(&x[1]);
@@ -1435,7 +1435,7 @@ L310:
     if (knew > 0) goto L410;
     /* Pick the next value of DELTA after a trust region step. */
     if (vquad >= 0) {
-//		fprintf(stderr, "++ Return from NEWUOA because a trust region step has failed to reduce Q.\n");
+//      fprintf(stderr, "++ Return from NEWUOA because a trust region step has failed to reduce Q.\n");
         goto L530;
     }
     ratio = (f - fsave) / vquad;
@@ -1688,7 +1688,7 @@ static TYPE newuoa_(int n, int npt, TYPE *x, TYPE rhobeg, TYPE rhoend, int *ret_
     np = n + 1;
     nptm = npt - np;
     if (npt < n + 2 || npt > (n + 2) * np / 2) {
-//		fprintf(stderr, "** Return from NEWUOA because NPT is not in the required interval.\n");
+//      fprintf(stderr, "** Return from NEWUOA because NPT is not in the required interval.\n");
         return 1;
     }
     ndim = npt + n;
