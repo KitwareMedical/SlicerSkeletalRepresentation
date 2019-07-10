@@ -111,12 +111,12 @@ int vtkForwardFlowLogic::FlowSurfaceMesh(const std::string &filename, double dt,
 
         vtkSmartPointer<vtkDoubleArray> H =
             vtkDoubleArray::SafeDownCast(curvature_filter->GetOutput()->GetPointData()->GetArray("Mean_Curvature"));
-        if(H == NULL) {
+        if(H == nullptr) {
             std::cerr << "error in getting mean curvature" << std::endl;
             return EXIT_FAILURE;
         }
         vtkDataArray* N = normal_filter->GetOutput()->GetPointData()->GetNormals();
-        if(N == NULL) {
+        if(N == nullptr) {
             std::cerr << "error in getting normals" << std::endl;
             return EXIT_FAILURE;
         }
@@ -188,7 +188,7 @@ int vtkForwardFlowLogic::FlowSurfaceOneStep(double dt, double smooth_amount)
     reader->SetFileName(name.c_str());
     reader->Update();
     vtkSmartPointer<vtkPolyData> mesh = reader->GetOutput();
-    if(mesh == NULL)
+    if(mesh == nullptr)
     {
         vtkErrorMacro("No mesh has read in this module. Please select input mesh file first.");
         return -1;
@@ -230,12 +230,12 @@ int vtkForwardFlowLogic::FlowSurfaceOneStep(double dt, double smooth_amount)
 
     vtkSmartPointer<vtkDoubleArray> H =
         vtkDoubleArray::SafeDownCast(curvature_filter->GetOutput()->GetPointData()->GetArray("Mean_Curvature"));
-    if(H == NULL) {
+    if(H == nullptr) {
         vtkErrorMacro("error in getting mean curvature");
         return -1;
     }
     vtkDataArray* N = normal_filter->GetOutput()->GetPointData()->GetNormals();
-    if(N == NULL) {
+    if(N == nullptr) {
         vtkErrorMacro("error in getting normals");
         return -1;
     }
@@ -318,7 +318,7 @@ void vtkForwardFlowLogic::AddModelNodeToScene(vtkPolyData* mesh, const char* mod
     vtkSmartPointer<vtkMRMLModelDisplayNode> displayModelNode;
 
     displayModelNode = vtkSmartPointer<vtkMRMLModelDisplayNode>::New();
-    if(displayModelNode == NULL)
+    if(displayModelNode == nullptr)
     {
         vtkErrorMacro("displayModelNode is NULL");
         return;
