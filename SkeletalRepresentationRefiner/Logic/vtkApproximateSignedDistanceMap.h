@@ -27,10 +27,8 @@ public:
     typedef unsigned char Pixel;
     typedef itk::Image<Pixel, 3> ImageType;
     typedef ImageType::Pointer ImagePointer;
-    
     typedef itk::Image<float, 3> RealImage;
     vtkApproximateSignedDistanceMap();
-    
     void Convert(vtkImageData *input, RealImage::Pointer outputITK);
 };
 

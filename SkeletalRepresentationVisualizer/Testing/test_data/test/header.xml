@@ -1,0 +1,16 @@
+<?xml version="1.0" ?>
+<s-rep>
+  <nRows>3</nRows>
+  <nCols>8</nCols>
+  <meshType>Quad</meshType>
+  <color>
+    <red>0</red>
+    <green>0.5</green>
+    <blue>0</blue>
+  </color>
+  <isMean>False</isMean>
+  <meanStatPath/>
+  <upSpoke>/playpen/ra_job/SlicerSkeletalRepresentation/SkeletalRepresentationVisualizer/Testing/test_data/test/up.vtp</upSpoke>
+  <downSpoke>/playpen/ra_job/SlicerSkeletalRepresentation/SkeletalRepresentationVisualizer/Testing/test_data/test/down.vtp</downSpoke>
+  <crestSpoke>/playpen/ra_job/SlicerSkeletalRepresentation/SkeletalRepresentationVisualizer/Testing/test_data/test/crest.vtp</crestSpoke>
+</s-rep>

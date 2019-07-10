@@ -6,7 +6,6 @@ class vtkSlicerSkeletalRepresentationConverter
 {
 public:
     vtkSlicerSkeletalRepresentationConverter();
-    
 };
 
 #endif // VTKSLICERSKELETALREPRESENTATIONCONVERTER_H

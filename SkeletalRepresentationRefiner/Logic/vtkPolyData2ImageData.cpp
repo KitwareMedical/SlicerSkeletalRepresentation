@@ -1,7 +1,6 @@
 /*==============================================================================
-
-  This class creates an image of the poly data of surface mesh. 
-  The image is mapped to the unit cube centered at (0.5, 0.5, 0.5). 
+  This class creates an image of the poly data of surface mesh.
+  The image is mapped to the unit cube centered at (0.5, 0.5, 0.5).
   By doing so, the image can be both shown in Pablo and Slicer.
 
 ==============================================================================*/
@@ -20,7 +19,6 @@
 
 vtkPolyData2ImageData::vtkPolyData2ImageData()
 {
-    
 }
 
 void vtkPolyData2ImageData::Convert(const std::string &inputFileName, vtkSmartPointer<vtkImageData> output)
@@ -32,7 +30,6 @@ void vtkPolyData2ImageData::Convert(const std::string &inputFileName, vtkSmartPo
 
     vtkPolyData* inputData = reader->GetPolyDataOutput();
     double bounds[6], range[3];
-    
     // 1. transform the mesh into unit cube
     vtkSmartPointer<vtkPolyData> transMesh = vtkSmartPointer<vtkPolyData>::New();
     inputData->GetBounds(bounds);
@@ -44,8 +41,7 @@ void vtkPolyData2ImageData::Convert(const std::string &inputFileName, vtkSmartPo
     ratioYX = range[1] / range[0];
     ratioZX = range[2] / range[0];
     ratioZY = range[2] / range[1];
-    
-    double newBounds[6];
+    double newBounds[6] = {0.};
     // put the longest axis to [0,1], scale other coordinates accordingly
     if(range[0] >= range[1] && range[0] >= range[2])
     {
@@ -74,7 +70,6 @@ void vtkPolyData2ImageData::Convert(const std::string &inputFileName, vtkSmartPo
         newBounds[4] = 0.0;
         newBounds[5] = 1.0;
     }
-    
     double rangeTransMesh[3];
     rangeTransMesh[0] = newBounds[1] - newBounds[0];
     rangeTransMesh[1] = newBounds[3] - newBounds[2];
@@ -101,7 +96,6 @@ void vtkPolyData2ImageData::Convert(const std::string &inputFileName, vtkSmartPo
     spacing[1] = voxel_spacing;
     spacing[2] = voxel_spacing;
     whiteImage->SetSpacing(spacing);
-    
     // compute dimensions
     int dim[3];
     for (int i = 0; i < 3; i++)
@@ -160,6 +154,5 @@ void vtkPolyData2ImageData::Convert(const std::string &inputFileName, vtkSmartPo
     imgstenc->ReverseStencilOff();
     imgstenc->SetBackgroundValue(outval);
     imgstenc->Update();
-    
     output->DeepCopy(imgstenc->GetOutput());
 }

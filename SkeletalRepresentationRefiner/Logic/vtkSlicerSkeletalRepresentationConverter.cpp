@@ -2,5 +2,9 @@
 
 vtkSlicerSkeletalRepresentationConverter::vtkSlicerSkeletalRepresentationConverter()
 {
+<<<<<<< HEAD
     
+=======
+
+>>>>>>> master
 }

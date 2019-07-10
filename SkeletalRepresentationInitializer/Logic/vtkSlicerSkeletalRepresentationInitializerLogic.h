@@ -25,23 +25,22 @@
 #define __vtkSlicerSkeletalRepresentationInitializerLogic_h
 
 // Slicer includes
-#include "vtkSlicerModuleLogic.h"
+#include <vtkSlicerModuleLogic.h>
 
-// MRML includes
-
-// STD includes
-#include <cstdlib>
-
+// SkeletalRepresentationInitializer Logic includes
 #include "vtkSlicerSkeletalRepresentationInitializerModuleLogicExport.h"
+#include <itkThinPlateSplineExtended.h>
 
-// itk lib
-#include "itkThinPlateSplineExtended.h"
-#include "itkPointSet.h"
+// ITK includes
+#include <itkPointSet.h>
+
+// VTK includes
 class vtkPolyData;
 class vtkPoints;
 class vtkCellArray;
+// STD includes
+#include <cstdlib>
 
-/// \ingroup Slicer_QtModules_ExtensionTemplate
 class VTK_SLICER_SKELETALREPRESENTATIONINITIALIZER_MODULE_LOGIC_EXPORT vtkSlicerSkeletalRepresentationInitializerLogic :
   public vtkSlicerModuleLogic
 {
@@ -117,6 +116,7 @@ private:
   void CalculateSpokeDirection(PointType tail, PointType tip, double *x, double *y, double *z);
   void GetNeighborCells(vtkPolyData* mesh, int ptId, int newId, vtkCellArray* output, vtkPoints* morePts);
   void CompletePolyData(vtkPolyData *poly, vtkPolyData *output, bool isCrest = false);
+
 private:
 
   vtkSlicerSkeletalRepresentationInitializerLogic(const vtkSlicerSkeletalRepresentationInitializerLogic&); // Not implemented

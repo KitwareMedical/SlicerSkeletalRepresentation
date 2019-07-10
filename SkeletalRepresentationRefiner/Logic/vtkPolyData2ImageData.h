@@ -25,9 +25,7 @@ class vtkPolyData2ImageData
 {
 public:
     vtkPolyData2ImageData();
-    
     void Convert(const std::string &inputFileName, vtkSmartPointer<vtkImageData> output);
-    
 };
 
 #endif // VTKPOLYDATA2IMAGEDATA_H

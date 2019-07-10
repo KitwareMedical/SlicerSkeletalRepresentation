@@ -1,0 +1,15 @@
+<s-rep>
+  <nRows>5</nRows>
+  <nCols>5</nCols>
+  <meshType>Quad</meshType>
+  <color>
+    <red>0</red>
+    <green>0.5</green>
+    <blue>0</blue>
+  </color>
+  <isMean>False</isMean>
+  <meanStatPath/>
+  <upSpoke>/playpen/ra_job/SlicerSkeletalRepresentation/SkeletalRepresentationRefiner/Testing/test_data/ellipsoid_srep/refined_up.vtp</upSpoke>
+  <downSpoke>/playpen/ra_job/SlicerSkeletalRepresentation/SkeletalRepresentationRefiner/Testing/test_data/ellipsoid_srep/refined_down.vtp</downSpoke>
+  <crestSpoke>/playpen/ra_job/SlicerSkeletalRepresentation/SkeletalRepresentationRefiner/Testing/test_data/ellipsoid_srep//playpen/ra_job/SlicerSkeletalRepresentation/SkeletalRepresentationRefiner/Testing/test_data/ellipsoid_srep/crest.vtp</crestSpoke>
+</s-rep>

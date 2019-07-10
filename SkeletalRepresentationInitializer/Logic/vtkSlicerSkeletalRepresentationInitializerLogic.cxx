@@ -18,9 +18,6 @@
 // SkeletalRepresentationInitializer Logic includes
 #include "vtkSlicerSkeletalRepresentationInitializerLogic.h"
 
-#include "vtkSmartPointer.h"
-#include "vtkPolyDataReader.h"
-#include "vtkPolyData.h"
 // MRML includes
 #include <vtkMRMLScene.h>
 #include <vtkMRMLModelNode.h>
@@ -32,32 +29,30 @@
 #include "vtkSlicerMarkupsLogic.h"
 
 // VTK includes
-#include <vtkIntArray.h>
-#include <vtkMath.h>
-#include <vtkNew.h>
-#include <vtkDoubleArray.h>
 #include <vtkCenterOfMass.h>
-#include <vtkObjectFactory.h>
 #include <vtkCurvatures.h>
-#include <vtkVector.h>
-#include <vtkWindowedSincPolyDataFilter.h>
-#include <vtkSmoothPolyDataFilter.h>
-#include <vtkParametricEllipsoid.h>
-#include <vtkParametricFunctionSource.h>
-#include <vtkImplicitPolyDataDistance.h>
-#include <vtkXMLPolyDataWriter.h>
-#include <vtkPolyDataNormals.h>
-#include <vtkSphereSource.h>	
-#include <vtkPoints.h>
-#include <vtkLine.h>
-#include <vtkQuad.h>
-#include <vtkPolyData.h>
-#include <vtkPointData.h>
 #include <vtkDataArray.h>
 #include <vtkDoubleArray.h>
+#include <vtkImplicitPolyDataDistance.h>
+#include <vtkIntArray.h>
+#include <vtkLine.h>
+#include <vtkMassProperties.h>
+#include <vtkMath.h>
+#include <vtkNew.h>
+#include <vtkObjectFactory.h>
+#include <vtkParametricEllipsoid.h>
+#include <vtkParametricFunctionSource.h>
+#include <vtkPointData.h>
+#include <vtkPoints.h>
+#include <vtkPolyData.h>
+#include <vtkPolyDataNormals.h>
 #include <vtkPolyDataReader.h>
 #include <vtkPolyDataWriter.h>
-#include <vtkMassProperties.h>
+#include <vtkXMLPolyDataWriter.h>
+#include <vtkQuad.h>
+#include <vtkSmoothPolyDataFilter.h>
+#include <vtkVector.h>
+#include <vtkWindowedSincPolyDataFilter.h>
 
 // Eigen includes
 #include <Eigen/Dense>
@@ -69,10 +64,6 @@
 
 // vtk system tools
 #include <vtksys/SystemTools.hxx>
-
-#include "qSlicerApplication.h"
-#include <QString>
-
 #define MAX_FILE_NAME  256
 //----------------------------------------------------------------------------
 vtkStandardNewMacro(vtkSlicerSkeletalRepresentationInitializerLogic);
@@ -185,7 +176,6 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::FlowSurfaceOneStep(const st
     centerMassFilter->Update();
     double center[3];
     centerMassFilter->GetCenter(center);
-    
     vtkSmartPointer<vtkDoubleArray> H =
         vtkDoubleArray::SafeDownCast(curvature_filter->GetOutput()->GetPointData()->GetArray("Mean_Curvature"));
     
@@ -241,7 +231,6 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::FlowSurfaceOneStep(const st
                 GetNeighborCells(mesh, i, newId, concavePolys, concavePts);
             }
         }
-
         double ptSphere[3];
         ptSphere[0] = curr_N[0] * std::pow( original_volume , 1.0 / 3.0 ) / vtkMath::Pi() + center[0];
         ptSphere[1] = curr_N[1] * std::pow( original_volume , 1.0 / 3.0 ) / vtkMath::Pi() + center[1];
@@ -257,7 +246,6 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::FlowSurfaceOneStep(const st
     spherePts->Modified();
     hyperPts->Modified();
     hyperPolys->Modified();
-    
     concavePts->Modified();
     concavePolys->Modified();
     concavePolyData->SetPoints(concavePts);
@@ -276,7 +264,6 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::FlowSurfaceOneStep(const st
     const std::string concaveRegionName("concave_points");
     const std::string sphereName("gauss_sphere_map");
     const std::string modelName("curvature_flow_result");
-    
     // firstly get other intermediate result invisible
     HideNodesByNameByClass(modelName.c_str(),"vtkMRMLModelNode");
     HideNodesByNameByClass(sphereName.c_str(),"vtkMRMLModelNode");
@@ -289,15 +276,11 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::FlowSurfaceOneStep(const st
     AddModelNodeToScene(mesh, modelName.c_str(), true);
     AddModelNodeToScene(hyperPolyData, hyperbolicRegionName.c_str(), true, 1, 0, 1);
     AddModelNodeToScene(concavePolyData, concaveRegionName.c_str(), true, 0,0,1);
-    
     vtkSmartPointer<vtkPolyDataWriter> writer =
         vtkSmartPointer<vtkPolyDataWriter>::New();
     writer->SetInputData(mesh);
     writer->SetFileName(filename.c_str());
     writer->Update();
-
-    
-//    ShowFittingEllipsoid(points, curr_volume, center);
     return 0;
 }
 void vtkSlicerSkeletalRepresentationInitializerLogic::SetInputFileName(const std::string &filename)
@@ -1154,7 +1137,7 @@ void vtkSlicerSkeletalRepresentationInitializerLogic::HideNodesByNameByClass(con
         vtkSmartPointer<vtkMRMLModelNode> thisModelNode = vtkMRMLModelNode::SafeDownCast(modelNodes->GetNextItemAsObject());
         vtkSmartPointer<vtkMRMLModelDisplayNode> displayNode;
         displayNode = thisModelNode->GetModelDisplayNode();
-        if(displayNode == NULL)
+        if(displayNode == nullptr)
         {
             continue;
         }
@@ -1174,7 +1157,7 @@ void vtkSlicerSkeletalRepresentationInitializerLogic::HideNodesByClass(const std
         vtkSmartPointer<vtkMRMLModelNode> thisModelNode = vtkMRMLModelNode::SafeDownCast(modelNodes->GetNextItemAsObject());
         vtkSmartPointer<vtkMRMLModelDisplayNode> displayNode;
         displayNode = thisModelNode->GetModelDisplayNode();
-        if(displayNode == NULL)
+        if(displayNode == nullptr)
         {
             continue;
         }
@@ -1242,7 +1225,7 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::InklingFlow(const std::stri
         normal_filter->SetInputData(mesh);
         normal_filter->Update();
         vtkDataArray* N = normal_filter->GetOutput()->GetPointData()->GetNormals();
-        if(N == NULL) {
+        if(N == nullptr) {
             std::cerr << "error in getting normals" << std::endl;
             return EXIT_FAILURE;
         }
@@ -1258,7 +1241,7 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::InklingFlow(const std::stri
             vtkDoubleArray::SafeDownCast(curvature_filter->GetOutput()->GetPointData()->GetArray("Mean_Curvature"));
 
 
-        if(H == NULL) {
+        if(H == nullptr) {
             std::cerr << "error in getting mean curvature" << std::endl;
             return EXIT_FAILURE;
         }
@@ -1268,7 +1251,7 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::InklingFlow(const std::stri
         vtkSmartPointer<vtkDoubleArray> K =
             vtkDoubleArray::SafeDownCast(curvature_filter->GetOutput()->GetPointData()->GetArray("Gauss_Curvature"));
 
-        if(K == NULL) {
+        if(K == nullptr) {
             std::cerr << "error in getting Gaussian curvature" << std::endl;
             return EXIT_FAILURE;
         }
@@ -1278,7 +1261,7 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::InklingFlow(const std::stri
         vtkSmartPointer<vtkDoubleArray> MC =
             vtkDoubleArray::SafeDownCast(curvature_filter->GetOutput()->GetPointData()->GetArray("Maximum_Curvature"));
 
-        if(MC == NULL) {
+        if(MC == nullptr) {
             std::cerr << "error in getting max curvature" << std::endl;
             return EXIT_FAILURE;
         }
@@ -1287,7 +1270,7 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::InklingFlow(const std::stri
         curvature_filter->Update();
         vtkSmartPointer<vtkDoubleArray> MinC =
             vtkDoubleArray::SafeDownCast(curvature_filter->GetOutput()->GetPointData()->GetArray("Minimum_Curvature"));
-        if(MinC == NULL)
+        if(MinC == nullptr)
         {
             std::cout << "error in getting min curvature" << std::endl;
             return -1;
@@ -1407,7 +1390,7 @@ void vtkSlicerSkeletalRepresentationInitializerLogic::AddPointToScene(double x, 
     vtkSmartPointer<vtkMRMLMarkupsFiducialNode> fidNode;
 
     fidNode = vtkSmartPointer<vtkMRMLMarkupsFiducialNode>::New();
-    if(fidNode == NULL)
+    if(fidNode == nullptr)
     {
         vtkErrorMacro("fidNode is NULL");
         return;
@@ -1948,7 +1931,6 @@ void vtkSlicerSkeletalRepresentationInitializerLogic::GetNeighborCells(vtkPolyDa
             output->InsertNextCell(newEdge);
         }
     }
-    
 }
 
 void vtkSlicerSkeletalRepresentationInitializerLogic::CompletePolyData(vtkPolyData *poly, vtkPolyData *output, bool isCrest)

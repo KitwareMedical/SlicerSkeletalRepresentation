@@ -35,7 +35,7 @@ class Q_SLICER_QTMODULES_SKELETALREPRESENTATIONREFINER_EXPORT qSlicerSkeletalRep
 public:
 
   typedef qSlicerAbstractModuleWidget Superclass;
-  qSlicerSkeletalRepresentationRefinerModuleWidget(QWidget *parent=0);
+  qSlicerSkeletalRepresentationRefinerModuleWidget(QWidget *parent=nullptr);
   virtual ~qSlicerSkeletalRepresentationRefinerModuleWidget();
 
 public slots:

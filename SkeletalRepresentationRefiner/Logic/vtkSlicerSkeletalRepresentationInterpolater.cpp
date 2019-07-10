@@ -15,12 +15,13 @@
 
 ==============================================================================*/
 #include "vtkSlicerSkeletalRepresentationInterpolater.h"
-#include <math.h>
 #include "vtkSpoke.h"
+
+// STD includes
+#include <cmath>
 
 vtkSlicerSkeletalRepresentationInterpolater::vtkSlicerSkeletalRepresentationInterpolater()
 {
-    
 }
 
 void vtkSlicerSkeletalRepresentationInterpolater::Interpolate(double u, double v,
@@ -29,31 +30,27 @@ void vtkSlicerSkeletalRepresentationInterpolater::Interpolate(double u, double v
     // 1. interpolate spoke length and direction
     double lambda = 1.0;
     InterpolateQuad(cornerSpokes, u, v, lambda, interpolatedSpoke);
-    
     double dir[3];
     interpolatedSpoke->GetDirection(dir);
-    
     // 2. interpolate skeletal point
     double pt[3];
     InterpolateSkeletalPoint(cornerSpokes, u, v, pt);
     interpolatedSpoke->SetSkeletalPoint(pt[0], pt[1], pt[2]);
 }
 
-void vtkSlicerSkeletalRepresentationInterpolater::InterpolateQuad(vtkSpoke **cornerSpokes, 
-                                                                  double u, double v, 
+void vtkSlicerSkeletalRepresentationInterpolater::InterpolateQuad(vtkSpoke **cornerSpokes,
+                                                                  double u, double v,
                                                                   double lambda, vtkSpoke *interpolatedSpoke)
 {
     vtkSpoke* Sp11 = cornerSpokes[0];
     vtkSpoke* Sp21 = cornerSpokes[1];
     vtkSpoke* Sp22 = cornerSpokes[2];
     vtkSpoke* Sp12 = cornerSpokes[3];
-    
     vtkSpoke topMiddle, leftMiddle, rightMiddle, botMiddle;
     InterpolateMiddleSpoke(Sp11, Sp12, lambda, &topMiddle);
     InterpolateMiddleSpoke(Sp11, Sp21, lambda, &leftMiddle);
     InterpolateMiddleSpoke(Sp21, Sp22, lambda, &botMiddle);
     InterpolateMiddleSpoke(Sp22, Sp12, lambda, &rightMiddle);
-    
     // interpolate center spoke in this quad
     vtkSpoke centerA, centerB, center;
     InterpolateMiddleSpoke(&topMiddle, &botMiddle, lambda, &centerA);
@@ -67,17 +64,16 @@ void vtkSlicerSkeletalRepresentationInterpolater::InterpolateQuad(vtkSpoke **cor
     uCenter[2] = 0.5 * (uCenterA[2] + uCenterB[2]);
     center.SetDirection(uCenter);
     center.SetRadius(rCenter);
-    
     double halfDist = lambda/2;
-    
+
     double interpolatedU[3]; double interpolatedR;
-    if(abs(u - halfDist ) <= tolerance && abs(v - halfDist) <= tolerance)
+    if(std::abs(u - halfDist ) <= tolerance && std::abs(v - halfDist) <= tolerance)
     {
         // if the target spoke locates in the center of this quad, return center spoke
         interpolatedSpoke->SetDirection(uCenter);
         interpolatedSpoke->SetRadius(rCenter);
     }
-    else if(abs(u) < tolerance && abs(v) < tolerance)
+    else if(std::abs(u) < tolerance && std::abs(v) < tolerance)
     {
         // left top corner
         Sp11->GetDirection(interpolatedU);
@@ -85,7 +81,7 @@ void vtkSlicerSkeletalRepresentationInterpolater::InterpolateQuad(vtkSpoke **cor
         interpolatedSpoke->SetDirection(interpolatedU);
         interpolatedSpoke->SetRadius(interpolatedR);
     }
-    else if(abs(u-lambda) < tolerance && abs(v) < tolerance)
+    else if(std::abs(u-lambda) < tolerance && std::abs(v) < tolerance)
     {
         // left bottom corner
         Sp21->GetDirection(interpolatedU);
@@ -93,7 +89,7 @@ void vtkSlicerSkeletalRepresentationInterpolater::InterpolateQuad(vtkSpoke **cor
         interpolatedSpoke->SetDirection(interpolatedU);
         interpolatedSpoke->SetRadius(interpolatedR);
     }
-    else if(abs(v-lambda) < tolerance && abs(u) < tolerance)
+    else if(std::abs(v-lambda) < tolerance && std::abs(u) < tolerance)
     {
         // right top corner
         Sp12->GetDirection(interpolatedU);
@@ -101,7 +97,7 @@ void vtkSlicerSkeletalRepresentationInterpolater::InterpolateQuad(vtkSpoke **cor
         interpolatedSpoke->SetDirection(interpolatedU);
         interpolatedSpoke->SetRadius(interpolatedR);
     }
-    else if(abs(v-lambda) < tolerance && abs(u-lambda) < tolerance)
+    else if(std::abs(v-lambda) < tolerance && std::abs(u-lambda) < tolerance)
     {
         // right bottom corner
         Sp22->GetDirection(interpolatedU);
@@ -109,7 +105,7 @@ void vtkSlicerSkeletalRepresentationInterpolater::InterpolateQuad(vtkSpoke **cor
         interpolatedSpoke->SetDirection(interpolatedU);
         interpolatedSpoke->SetRadius(interpolatedR);
     }
-    else if(abs(u - halfDist) <= tolerance && abs(v) < tolerance)
+    else if(std::abs(u - halfDist) <= tolerance && std::abs(v) < tolerance)
     {
         // on the left edge
         leftMiddle.GetDirection(interpolatedU);
@@ -117,7 +113,7 @@ void vtkSlicerSkeletalRepresentationInterpolater::InterpolateQuad(vtkSpoke **cor
         interpolatedSpoke->SetDirection(interpolatedU);
         interpolatedSpoke->SetRadius(interpolatedR);
     }
-    else if(abs(u) < tolerance && abs(v - halfDist) < tolerance)
+    else if(std::abs(u) < tolerance && std::abs(v - halfDist) < tolerance)
     {
         // on the top edge
         topMiddle.GetDirection(interpolatedU);
@@ -125,7 +121,7 @@ void vtkSlicerSkeletalRepresentationInterpolater::InterpolateQuad(vtkSpoke **cor
         interpolatedSpoke->SetDirection(interpolatedU);
         interpolatedSpoke->SetRadius(interpolatedR);
     }
-    else if(abs(u - halfDist) < tolerance && abs(v-lambda) < tolerance)
+    else if(std::abs(u - halfDist) < tolerance && std::abs(v-lambda) < tolerance)
     {
         // right edge
         rightMiddle.GetDirection(interpolatedU);
@@ -133,7 +129,7 @@ void vtkSlicerSkeletalRepresentationInterpolater::InterpolateQuad(vtkSpoke **cor
         interpolatedSpoke->SetDirection(interpolatedU);
         interpolatedSpoke->SetRadius(interpolatedR);
     }
-    else if(abs(u-lambda) < tolerance && abs(v-halfDist) < tolerance)
+    else if(std::abs(u-lambda) < tolerance && std::abs(v-halfDist) < tolerance)
     {
         // bot edge
         botMiddle.GetDirection(interpolatedU);
@@ -184,28 +180,26 @@ void vtkSlicerSkeletalRepresentationInterpolater::InterpolateQuad(vtkSpoke **cor
             newCorner[2] = Sp22;
             newCorner[3] = &rightMiddle;
             InterpolateQuad(newCorner, u-halfDist, v-halfDist, lambda/2, interpolatedSpoke);
-            
         }
         // fall on the vertical axis, interpolate it in a degenerate quad: line segment
-        else if(abs(v-halfDist) < tolerance)
+        else if(std::abs(v-halfDist) < tolerance)
         {
             newCorner[0] = &topMiddle;
             newCorner[1] = &botMiddle;
-            newCorner[2] = NULL;
-            newCorner[3] = NULL;
+            newCorner[2] = nullptr;
+            newCorner[3] = nullptr;
             InterpolateSegment(newCorner, u, 1, interpolatedSpoke);
         }
         // fall on the horizontal axis
-        else if(abs(u-halfDist) < tolerance)
+        else if(std::abs(u-halfDist) < tolerance)
         {
             newCorner[0] = &leftMiddle;
             newCorner[1] = &rightMiddle;
-            newCorner[2] = NULL;
-            newCorner[3] = NULL;
+            newCorner[2] = nullptr;
+            newCorner[3] = nullptr;
             InterpolateSegment(newCorner, v, 1, interpolatedSpoke);
         }
     }
-    
 }
 
 void vtkSlicerSkeletalRepresentationInterpolater::InterpolateSegment(vtkSpoke **endSpokes, double dist, double lambda, vtkSpoke *interpolatedSpoke)
@@ -215,7 +209,7 @@ void vtkSlicerSkeletalRepresentationInterpolater::InterpolateSegment(vtkSpoke **
     vtkSpoke middleSpoke;
     InterpolateMiddleSpoke(start, end, lambda, &middleSpoke);
     double halfDist = lambda/2;
-    if(abs(dist-halfDist) < tolerance)
+    if(std::abs(dist-halfDist) < tolerance)
     {
         *interpolatedSpoke = middleSpoke;
     }
@@ -241,41 +235,37 @@ void vtkSlicerSkeletalRepresentationInterpolater::InterpolateMiddleSpoke(vtkSpok
     double startU[3], endU[3];
     startS->GetDirection(startU);
     endS->GetDirection(endU);
-    
     double Uvv_start[3],Uvv_end[3];
     compute2ndDerivative(startU, endU, endU, d, Uvv_end);
     compute2ndDerivative(startU, endU, startU, 0, Uvv_start);
-    
     // 2. compute the interpolated spoke
     double avg[3];
     startS->Add(endS, avg);
     avg[0] /= 2;
     avg[1] /= 2;
     avg[2] /= 2;
-    
     double halfDist = d / 2;
     double uMiddle[3];
     slerp(startU, endU, halfDist, uMiddle);
-    
-    double innerProd1 = uMiddle[0] * avg[0] + 
-                        uMiddle[1] * avg[1] + 
+
+    double innerProd1 = uMiddle[0] * avg[0] +
+                        uMiddle[1] * avg[1] +
                         uMiddle[2] * avg[2];
-    
-    double innerProd2 = startU[0] * Uvv_start[0] + 
-                        startU[1] * Uvv_start[1] + 
+
+    double innerProd2 = startU[0] * Uvv_start[0] +
+                        startU[1] * Uvv_start[1] +
                         startU[2] * Uvv_start[2];
-    
-    double innerProd3 = endU[0] * Uvv_end[0] + 
-                        endU[1] * Uvv_end[1] + 
+
+    double innerProd3 = endU[0] * Uvv_end[0] +
+                        endU[1] * Uvv_end[1] +
                         endU[2] * Uvv_end[2];
-    
-    double interpolatedR = 
+
+    double interpolatedR =
             innerProd1 - halfDist*halfDist*0.25*(innerProd2 + innerProd3);
-    
+
     // 3. return the interpolated
     interpolatedSpoke->SetRadius(interpolatedR);
     interpolatedSpoke->SetDirection(uMiddle);
-    
 }
 double h1(double s) { return 2*(s * s * s) - 3*(s * s) + 1; }
 double h2(double s) { return -2*(s * s * s) + 3*(s * s); }
@@ -287,13 +277,11 @@ void vtkSlicerSkeletalRepresentationInterpolater::InterpolateSkeletalPoint(vtkSp
     vtkSpoke* Sp21 = cornerSpokes[1];
     vtkSpoke* Sp22 = cornerSpokes[2];
     vtkSpoke* Sp12 = cornerSpokes[3];
-    
     double x11[3], x12[3], x21[3], x22[3];
     Sp11->GetSkeletalPoint(x11);
     Sp12->GetSkeletalPoint(x12);
     Sp21->GetSkeletalPoint(x21);
     Sp22->GetSkeletalPoint(x22);
-   
     double hx[4][4];
     double hy[4][4];
     double hz[4][4];
@@ -304,38 +292,33 @@ void vtkSlicerSkeletalRepresentationInterpolater::InterpolateSkeletalPoint(vtkSp
     hx[3][0] = dxdu21[0]; 	    hx[3][1] = dxdu22[0];
     hx[0][2] = dxdv11[0];	    hx[0][3] = dxdv12[0];
     hx[1][2] = dxdv21[0];	    hx[1][3] = dxdv22[0];
-    hx[2][2] = 0;               hx[2][3] = 0; 
+    hx[2][2] = 0;               hx[2][3] = 0;
     hx[3][2] = 0;               hx[3][3] = 0;
-
-
     hy[0][0] = x11[1];		    hy[0][1] = x12[1];
     hy[1][0] = x21[1];	 	    hy[1][1] = x22[1];
     hy[2][0] = dxdu11[1]; 	    hy[2][1] = dxdu12[1];
     hy[3][0] = dxdu21[1]; 	    hy[3][1] = dxdu22[1];
     hy[0][2] = dxdv11[1];	    hy[0][3] = dxdv12[1];
     hy[1][2] = dxdv21[1];	    hy[1][3] = dxdv22[1];
-    hy[2][2] = 0;               hy[2][3] = 0; 
+    hy[2][2] = 0;               hy[2][3] = 0;
     hy[3][2] = 0;               hy[3][3] = 0;
-
     hz[0][0] = x11[2];		 hz[0][1] = x12[2];
     hz[1][0] = x21[2];	 	 hz[1][1] = x22[2];
     hz[2][0] = dxdu11[2]; 	 hz[2][1] = dxdu12[2];
     hz[3][0] = dxdu21[2]; 	 hz[3][1] = dxdu22[2];
     hz[0][2] = dxdv11[2];	 hz[0][3] = dxdv12[2];
     hz[1][2] = dxdv21[2];	 hz[1][3] = dxdv22[2];
-    hz[2][2] = 0;            hz[2][3] = 0; 
+    hz[2][2] = 0;            hz[2][3] = 0;
     hz[3][2] = 0;            hz[3][3] = 0;
-
     double hu[4], hv[4];
-    hu[0] = h1(u);  
-    hu[1] = h2(u);  
-    hu[2] = h3(u); 
+    hu[0] = h1(u);
+    hu[1] = h2(u);
+    hu[2] = h3(u);
     hu[3] = h4(u);
-    hv[0] = h1(v);  
-    hv[1] = h2(v);  
-    hv[2] = h3(v); 
+    hv[0] = h1(v);
+    hv[1] = h2(v);
+    hv[2] = h3(v);
     hv[3] = h4(v);
-    
     // supposed computation is these
     //    vnl_double_1x1 xn = hu.transpose() * hx * hv;
     //    vnl_double_1x1 yn = hu.transpose() * hy * hv;
@@ -345,17 +328,14 @@ void vtkSlicerSkeletalRepresentationInterpolater::InterpolateSkeletalPoint(vtkSp
     huThx[1] = hu[0] * hx[0][1] + hu[1] * hx[1][1] + hu[2] * hx[2][1] + hu[3] * hx[3][1];
     huThx[2] = hu[0] * hx[0][2] + hu[1] * hx[1][2] + hu[2] * hx[2][2] + hu[3] * hx[3][2];
     huThx[3] = hu[0] * hx[0][3] + hu[1] * hx[1][3] + hu[2] * hx[2][3] + hu[3] * hx[3][3];
-    
     huThy[0] = hu[0] * hy[0][0] + hu[1] * hy[1][0] + hu[2] * hy[2][0] + hu[3] * hy[3][0];
     huThy[1] = hu[0] * hy[0][1] + hu[1] * hy[1][1] + hu[2] * hy[2][1] + hu[3] * hy[3][1];
     huThy[2] = hu[0] * hy[0][2] + hu[1] * hy[1][2] + hu[2] * hy[2][2] + hu[3] * hy[3][2];
     huThy[3] = hu[0] * hy[0][3] + hu[1] * hy[1][3] + hu[2] * hy[2][3] + hu[3] * hy[3][3];
-    
     huThz[0] = hu[0] * hz[0][0] + hu[1] * hz[1][0] + hu[2] * hz[2][0] + hu[3] * hz[3][0];
     huThz[1] = hu[0] * hz[0][1] + hu[1] * hz[1][1] + hu[2] * hz[2][1] + hu[3] * hz[3][1];
     huThz[2] = hu[0] * hz[0][2] + hu[1] * hz[1][2] + hu[2] * hz[2][2] + hu[3] * hz[3][2];
     huThz[3] = hu[0] * hz[0][3] + hu[1] * hz[1][3] + hu[2] * hz[2][3] + hu[3] * hz[3][3];
-
     output[0] = huThx[0] * hv[0] + huThx[1] * hv[1] + huThx[2] * hv[2];
     output[1] = huThy[0] * hv[0] + huThy[1] * hv[1] + huThy[2] * hv[2];
     output[2] = huThz[0] * hv[0] + huThz[1] * hv[1] + huThz[2] * hv[2];
@@ -380,7 +360,7 @@ void vtkSlicerSkeletalRepresentationInterpolater::SetCornerDxdv(double *v11, dou
 void vtkSlicerSkeletalRepresentationInterpolater::compute2ndDerivative(double *startU, double *endU, double *targetU, double d, double *output)
 {
     double del = 1e-5;
-    double Upv1[3], Upv2[3], Upv3[3], Upv4[3], Upv5[3];
+    double Upv1[3], Upv2[3], /*Upv3[3],*/ Upv4[3], Upv5[3];
     slerp(startU, endU, d+2*del, Upv1);
     slerp(startU, endU, d+del, Upv2);
     //slerp(startU, endU, d, Upv3);
@@ -404,7 +384,6 @@ void vtkSlicerSkeletalRepresentationInterpolater::slerp(double *U1, double *U2, 
         u1Tu2 = -1.0;
     }
     double phi = acos(u1Tu2);
-    
     output[0] = ( sin((1-u)*phi)/sin(phi) )*U1[0] + ( sin(u*phi)/sin(phi) )*U2[0];
     output[1] = ( sin((1-u)*phi)/sin(phi) )*U1[1] + ( sin(u*phi)/sin(phi) )*U2[1];
     output[2] = ( sin((1-u)*phi)/sin(phi) )*U1[2] + ( sin(u*phi)/sin(phi) )*U2[2];

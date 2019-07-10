@@ -1,7 +1,12 @@
 <s-rep>
+<<<<<<< HEAD
   <nRows>5</nRows>
   <nCols>5</nCols>
   <meshType>Quad</meshType>
+=======
+  <nRows>9</nRows>
+  <nCols>9</nCols>
+>>>>>>> master
   <color>
     <red>0</red>
     <green>0.5</green>
@@ -9,7 +14,13 @@
   </color>
   <isMean>False</isMean>
   <meanStatPath/>
+<<<<<<< HEAD
   <upSpoke>/playpen/ra_job/SlicerSkeletalRepresentation/SkeletalRepresentationRefiner/Testing/test_data/srep_before_refinement/up.vtp</upSpoke>
   <downSpoke>/playpen/ra_job/SlicerSkeletalRepresentation/SkeletalRepresentationRefiner/Testing/test_data/srep_before_refinement/down.vtp</downSpoke>
   <crestSpoke>/playpen/ra_job/SlicerSkeletalRepresentation/SkeletalRepresentationRefiner/Testing/test_data/srep_before_refinement/crest.vtp</crestSpoke>
+=======
+  <upSpoke>up.vtp</upSpoke>
+  <downSpoke>down.vtp</downSpoke>
+  <crestSpoke>crest.vtp</crestSpoke>
+>>>>>>> master
 </s-rep>

@@ -28,7 +28,6 @@ vtkSpoke::vtkSpoke(double radius, double px, double py, double pz, double ux, do
     mPx = px;
     mPy = py;
     mPz = pz;
-    
     double r = sqrt(ux * ux + uy * uy + uz * uz);
     mUx = ux / r;
     mUy = uy / r;
@@ -41,12 +40,10 @@ vtkSpoke::vtkSpoke(const vtkSpoke &other)
     other.GetDirection(u);
     other.GetSkeletalPoint(p);
     r = other.GetRadius();
-    
     mR = r;
     mPx = p[0];
     mPy = p[1];
     mPz = p[2];
-    
     mUx = u[0];
     mUy = u[1];
     mUz = u[2];
@@ -58,12 +55,10 @@ vtkSpoke &vtkSpoke::operator=(const vtkSpoke &other)
     other.GetDirection(u);
     other.GetSkeletalPoint(p);
     r = other.GetRadius();
-    
     mR = r;
     mPx = p[0];
     mPy = p[1];
     mPz = p[2];
-    
     mUx = u[0];
     mUy = u[1];
     mUz = u[2];
@@ -95,7 +90,6 @@ void vtkSpoke::GetDirection(double *output) const
     output[0] = this->mUx;
     output[1] = this->mUy;
     output[2] = this->mUz;
-    
     vtkMath::Normalize(output);
 }
 
@@ -116,15 +110,13 @@ void vtkSpoke::Add(vtkSpoke *another, double *output) const
     double eX = this->mR * this->mUx;
     double eY = this->mR * this->mUy;
     double eZ = this->mR * this->mUz;
-    
     double aX = another->mR * another->mUx;
     double aY = another->mR * another->mUy;
     double aZ = another->mR * another->mUz;
-    
+
     output[0] = eX + aX;
     output[1] = eY + aY;
     output[2] = eZ + aZ;
-    
 }
 
 void vtkSpoke::Diff(vtkSpoke *another, double *output) const
@@ -132,11 +124,9 @@ void vtkSpoke::Diff(vtkSpoke *another, double *output) const
     double eX = this->mR * this->mUx;
     double eY = this->mR * this->mUy;
     double eZ = this->mR * this->mUz;
-    
     double aX = another->mR * another->mUx;
     double aY = another->mR * another->mUy;
     double aZ = another->mR * another->mUz;
-    
     output[0] = eX - aX;
     output[1] = eY - aY;
     output[2] = eZ - aZ;
@@ -152,7 +142,7 @@ void vtkSpoke::GetBoundaryPoint(double *output) const
 void vtkSpoke::SetNeighborU(const std::vector<vtkSpoke *> &neighbors, bool isForward)
 {
     mNeighborsU.clear();
-    for (int i = 0; i < neighbors.size(); ++i) {
+    for (size_t i = 0; i < neighbors.size(); ++i) {
         mNeighborsU.push_back(neighbors[i]);
     }
     mIsForwardU = isForward;
@@ -161,7 +151,7 @@ void vtkSpoke::SetNeighborU(const std::vector<vtkSpoke *> &neighbors, bool isFor
 void vtkSpoke::SetNeighborV(const std::vector<vtkSpoke *> &neighbors, bool isForward)
 {
     mNeighborsV.clear();
-    for (int i = 0; i < neighbors.size(); ++i) {
+    for (size_t i = 0; i < neighbors.size(); ++i) {
         mNeighborsV.push_back(neighbors[i]);
     }
     mIsForwardV = isForward;
@@ -171,12 +161,10 @@ double vtkSpoke::GetRSradPenalty(double stepSize)
 {
     // 1. compute derivatives
     double dxdu[3], dxdv[3], dSdu[3], dSdv[3], U[3], drdu, drdv; // variables that will be used
-    
     // neighbors in each direction could be either 1 or 2
     ComputeDerivatives(mNeighborsU, mIsForwardU, stepSize, dxdu, dSdu, &drdu);
     ComputeDerivatives(mNeighborsV, mIsForwardV, stepSize, dxdv, dSdv, &drdv);
     this->GetDirection(U);
-    
     // 2. construct rSrad Matrix
     double UTU[3][3]; // UT*U - I
     UTU[0][0] = U[0] * U[0] - 1;
@@ -188,22 +176,18 @@ double vtkSpoke::GetRSradPenalty(double stepSize)
     UTU[2][0] = U[2] * U[0];
     UTU[2][1] = U[2] * U[1];
     UTU[2][2] = U[2] * U[2] -1;
-    
     // Notation in Han, Qiong's dissertation
     Eigen::MatrixXd Q(2,3);
     Q(0,0) = dxdu[0] * UTU[0][0] + dxdu[1] * UTU[1][0] + dxdu[2] * UTU[2][0];
     Q(0,1) = dxdu[0] * UTU[0][1] + dxdu[1] * UTU[1][1] + dxdu[2] * UTU[2][1];
     Q(0,2) = dxdu[0] * UTU[0][2] + dxdu[1] * UTU[1][2] + dxdu[2] * UTU[2][2];
-     
     Q(1,0) = dxdv[0] * UTU[0][0] + dxdv[1] * UTU[1][0] + dxdv[2] * UTU[2][0];
     Q(1,1) = dxdv[0] * UTU[0][1] + dxdv[1] * UTU[1][1] + dxdv[2] * UTU[2][1];
     Q(1,2) = dxdv[0] * UTU[0][2] + dxdv[1] * UTU[1][2] + dxdv[2] * UTU[2][2];
-    
     Eigen::MatrixXd leftSide(2,3), rightSide(3, 2);
     leftSide(0,0) = dSdu[0] - drdu * U[0];
     leftSide(0,1) = dSdu[1] - drdu * U[1];
-    leftSide(0,2) = dSdu[2] - drdu * U[2];
-                
+    leftSide(0,2) = dSdu[2] - drdu * U[2];              
     leftSide(1,0) = dSdv[0] - drdv * U[0];
     leftSide(1,1) = dSdv[1] - drdv * U[1];
     leftSide(1,2) = dSdv[2] - drdv * U[2];
@@ -213,7 +197,6 @@ double vtkSpoke::GetRSradPenalty(double stepSize)
     QQT_inv = QQT.inverse();
     
     rightSide = Q.transpose() * QQT_inv;
-    
     Eigen::Matrix2d rSradMat;
     rSradMat = leftSide * rightSide;
     rSradMat.transposeInPlace();
@@ -247,12 +230,10 @@ void vtkSpoke::ComputeDerivatives(std::vector<vtkSpoke*> neibors, bool isForward
             *drdu = mR - neiborR;
             this->Diff(neibors[0], dSdu);
         }
-        
         dxdu[0] /= stepSize;
         dxdu[1] /= stepSize;
         dxdu[2] /= stepSize;
         *drdu /= stepSize;
-        
         dSdu[0]  /= stepSize;
         dSdu[1]  /= stepSize;
         dSdu[2]  /= stepSize;
@@ -263,10 +244,8 @@ void vtkSpoke::ComputeDerivatives(std::vector<vtkSpoke*> neibors, bool isForward
         neibors[1]->Diff(neibors[0], dSdu);
         neibors[1]->GetSkeletalPoint(neiborX1);
         neibors[0]->GetSkeletalPoint(neiborX0);
-        
         neiborR1 = neibors[1]->GetRadius();
         neiborR0 = neibors[0]->GetRadius();
-        
         *drdu = (neiborR1 - neiborR0) / stepSize / 2;
         dxdu[0] = (neiborX1[0] - neiborX0[0]) / stepSize / 2;
         dxdu[1] = (neiborX1[1] - neiborX0[1]) / stepSize / 2;

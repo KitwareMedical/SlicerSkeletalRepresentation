@@ -89,7 +89,6 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::PrintSelf(ostream& os, vtkInde
 void vtkSlicerSkeletalRepresentationRefinerLogic::SetImageFileName(const std::string &imageFilePath)
 {
     mTargetMeshFilePath = imageFilePath;
-    
     // visualize the input surface mesh
     vtkSmartPointer<vtkPolyDataReader> reader = vtkSmartPointer<vtkPolyDataReader>::New();
     reader->SetFileName(imageFilePath.c_str());
@@ -109,7 +108,7 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::SetOutputPath(const string &ou
     mOutputPath = outputPath;
 }
 
-int iterNum = 0;
+static int iterNum = 0;
 void vtkSlicerSkeletalRepresentationRefinerLogic::Refine(double stepSize, double endCriterion, int maxIter, int interpolationLevel)
 {
     mFirstCost = true;
@@ -139,7 +138,7 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::Refine(double stepSize, double
     // make tuples of interpolation positions (u,v)
     mInterpolatePositions.clear();
     double tol = 1e-6;
-    int shares = pow(2, interpolationLevel);
+    int shares = static_cast<int>(pow(2, interpolationLevel));
     double interval = double(1.0 / shares);
     for(int i = 0; i <= shares; ++i)
     {
@@ -155,7 +154,6 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::Refine(double stepSize, double
             mInterpolatePositions.push_back(uv);
         }
     }
-    
     if(interpolationLevel == 0)
     {
         mInterpolatePositions.push_back(std::pair<double, double>(0, 0));
@@ -178,7 +176,7 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::Refine(double stepSize, double
     {
         std::cerr << "The s-rep model is empty." << std::endl;
         delete crestS;
-        crestS = NULL;
+        crestS = nullptr;
         return;
     }
     vtkSmartPointer<vtkPolyData> crestSrep = vtkSmartPointer<vtkPolyData>::New();
@@ -189,7 +187,6 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::Refine(double stepSize, double
     // Update header file
     std::string newHeaderFileName;
     UpdateHeader(headerFileName, mOutputPath, &newHeaderFileName);
-    
     ShowImpliedBoundary(interpolationLevel, newHeaderFileName, "Refined ");
 }
 
@@ -218,15 +215,15 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::InterpolateSrep(int interpolat
     {
         std::cerr << "The s-rep model is empty." << std::endl;
         delete srep;
-        srep = NULL;
+        srep = nullptr;
         return;
     }
     // 1.1 interpolate and visualize for verification
     // collect neighboring spokes around corners
     vtkSlicerSkeletalRepresentationInterpolater interpolater;
     
-    int shares = pow(2, interpolationLevel);
-    double interval = (double)(1.0/ shares);
+    int shares = static_cast<int>(pow(2, interpolationLevel));
+    double interval = static_cast<double>(1.0/ shares);
     std::vector<double> steps;
     steps.push_back(0.0);
     for(int i = 1; i <= shares; ++i)
@@ -247,9 +244,9 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::InterpolateSrep(int interpolat
                     dXdu21[3], dXdv21[3], 
                     dXdu22[3], dXdv22[3];
             
-            for(int i = 0; i < steps.size(); ++i)
+            for(size_t i = 0; i < steps.size(); ++i)
             {
-                for(int j = 0; j < steps.size(); ++j)
+                for(size_t j = 0; j < steps.size(); ++j)
                 {
                     cornerSpokes[0] = srep->GetSpoke(r,c);
                     cornerSpokes[1] = srep->GetSpoke(r+1, c);
@@ -309,7 +306,7 @@ double vtkSlicerSkeletalRepresentationRefinerLogic::EvaluateObjectiveFunction(do
     // TODO: SHOULD add progress bar here. 
     //std::cout << "Current iteration: " << iterNum++ << std::endl;
     
-    if(mSrep == NULL)
+    if(mSrep == nullptr)
     {
         std::cerr << "The srep pointer in the refinement is NULL." << std::endl;
         return -100000.0;
@@ -321,7 +318,7 @@ double vtkSlicerSkeletalRepresentationRefinerLogic::EvaluateObjectiveFunction(do
     tempSrep->DeepCopy(*mSrep);
     tempSrep->Refine(coeff);
     double imageDist = 0.0, normal = 0.0, srad = 0.0;
-    int paramDim = mCoeffArray.size();
+    int paramDim = static_cast<int>(mCoeffArray.size());
     int spokeNum = paramDim / 4;
     // 1. Compute image match from all spokes and those spokes affected by them
     for(int i = 0; i < spokeNum; ++i)
@@ -455,7 +452,7 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::TransformSrep(const std::strin
     {
         std::cerr << "The s-rep model is empty." << std::endl;
         delete srep;
-        srep = NULL;
+        srep = nullptr;
         return;
     }
     
@@ -530,10 +527,13 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::ShowImpliedBoundary(int interp
     
 }
 
-void vtkSlicerSkeletalRepresentationRefinerLogic::ComputeDerivative(std::vector<double> skeletalPoints, int r, int c, int nRows, int nCols, double *dXdu, double *dXdv)
+void vtkSlicerSkeletalRepresentationRefinerLogic::ComputeDerivative(std::vector<double> skeletalPoints, int intr, int intc, int nRows, int intCols, double *dXdu, double *dXdv)
 {
     // 0-based index of elements if arranged in array
-    int id = r * nCols + c;
+    size_t nCols = static_cast<size_t>(intCols);
+    size_t r = static_cast<size_t>(intr);
+    size_t c= static_cast<size_t>(intc);
+    size_t id = static_cast<size_t>(r * nCols + c);
     double head[3], tail[3];
     double factor = 0.5;
     if(r == 0)
@@ -549,7 +549,7 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::ComputeDerivative(std::vector<
         tail[2] = skeletalPoints[(id)*3+2];
         factor = 1.0;
     }
-    else if(r == nRows - 1)
+    else if(r == static_cast<size_t>(nRows - 1))
     {
         // last row
         // backward difference
@@ -622,17 +622,16 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::ConvertSpokes2PolyData(std::ve
     vtkSmartPointer<vtkPoints> pts = vtkSmartPointer<vtkPoints>::New();
     vtkSmartPointer<vtkCellArray> arrows = vtkSmartPointer<vtkCellArray>::New();
     
-    int numSpokes = input.size();
-    for(int i = 0; i < numSpokes; ++i)
+    size_t numSpokes = input.size();
+    for(size_t i = 0; i < numSpokes; ++i)
     {
         vtkSpoke* currSpoke = input[i];
-        double basePt[3], bdryPt[3], dir[3], radius;
+        double basePt[3], bdryPt[3], dir[3];
         currSpoke->GetSkeletalPoint(basePt);
         currSpoke->GetBoundaryPoint(bdryPt);
-        radius = currSpoke->GetRadius();
         currSpoke->GetDirection(dir);
-        int id0 = (pts->InsertNextPoint(basePt[0], basePt[1], basePt[2]));
-        int id1 = pts->InsertNextPoint(bdryPt[0], bdryPt[1], bdryPt[2]);
+        vtkIdType id0 = (pts->InsertNextPoint(basePt[0], basePt[1], basePt[2]));
+        vtkIdType id1 = pts->InsertNextPoint(bdryPt[0], bdryPt[1], bdryPt[2]);
         
         vtkSmartPointer<vtkLine> currLine = vtkSmartPointer<vtkLine>::New();
         currLine->GetPointIds()->SetId(0, id0);
@@ -650,22 +649,21 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::SaveSpokes2Vtp(std::vector<vtk
     vtkSmartPointer<vtkDoubleArray> spokeDirection = vtkSmartPointer<vtkDoubleArray>::New();
     vtkSmartPointer<vtkDoubleArray> spokeLengths = vtkSmartPointer<vtkDoubleArray>::New();
     
-    int numSpokes = input.size();
+    size_t numSpokes = input.size();
     spokeLengths->SetNumberOfComponents(1);
     spokeLengths->SetName("spokeLength");
     
     spokeDirection->SetNumberOfComponents(3);
     spokeDirection->SetName("spokeDirection");
   
-    for(int i = 0; i < numSpokes; ++i)
+    for(size_t i = 0; i < numSpokes; ++i)
     {
         vtkSpoke* currSpoke = input[i];
         double basePt[3], dir[3], radius;
         currSpoke->GetSkeletalPoint(basePt);
         radius = currSpoke->GetRadius();
         currSpoke->GetDirection(dir);
-        int id0 = pts->InsertNextPoint(basePt[0], basePt[1], basePt[2]);
-        
+        pts->InsertNextPoint(basePt[0], basePt[1], basePt[2]);
         spokeDirection->InsertNextTuple(dir);
         spokeLengths->InsertNextTuple1(radius);
     }
@@ -688,7 +686,7 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::TransSpokes2PolyData(std::vect
     vtkSmartPointer<vtkPoints> pts = vtkSmartPointer<vtkPoints>::New();
     vtkSmartPointer<vtkCellArray> arrows = vtkSmartPointer<vtkCellArray>::New();
   
-    for(int i = 0; i < input.size(); ++i)
+    for(size_t i = 0; i < input.size(); ++i)
     {
         vtkSpoke* currSpoke = input[i];
         double basePt[3], bdryPt[3];
@@ -703,8 +701,8 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::TransSpokes2PolyData(std::vect
         bdryPt[1] = bdryPt[1] * mTransformationMat[1][1] + mTransformationMat[3][1];
         bdryPt[2] = bdryPt[2] * mTransformationMat[2][2] + mTransformationMat[3][2];
         
-        int id0 = pts->InsertNextPoint(basePt[0], basePt[1], basePt[2]);
-        int id1 = pts->InsertNextPoint(bdryPt[0], bdryPt[1], bdryPt[2]);
+        vtkIdType id0 = pts->InsertNextPoint(basePt[0], basePt[1], basePt[2]);
+        vtkIdType id1 = pts->InsertNextPoint(bdryPt[0], bdryPt[1], bdryPt[2]);
         
         vtkSmartPointer<vtkLine> currLine = vtkSmartPointer<vtkLine>::New();
         currLine->GetPointIds()->SetId(0, id0);
@@ -758,13 +756,13 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::SetMRMLSceneInternal(vtkMRMLSc
 //-----------------------------------------------------------------------------
 void vtkSlicerSkeletalRepresentationRefinerLogic::RegisterNodes()
 {
-  assert(this->GetMRMLScene() != 0);
+  assert(this->GetMRMLScene() != nullptr);
 }
 
 //---------------------------------------------------------------------------
 void vtkSlicerSkeletalRepresentationRefinerLogic::UpdateFromMRMLScene()
 {
-  assert(this->GetMRMLScene() != 0);
+  assert(this->GetMRMLScene() != nullptr);
 }
 
 //---------------------------------------------------------------------------
@@ -790,7 +788,7 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::Parse(const std::string &model
     vtkSmartPointer<vtkPolyData> spokesPolyData = reader->GetOutput();
     vtkSmartPointer<vtkPointData> spokesPointData = spokesPolyData->GetPointData();
     int numOfArrays = spokesPointData->GetNumberOfArrays();
-    int numOfSpokes = spokesPolyData->GetNumberOfPoints();
+    vtkIdType numOfSpokes = spokesPolyData->GetNumberOfPoints();
 
     if(numOfSpokes == 0 || numOfArrays == 0)
     {
@@ -803,7 +801,6 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::Parse(const std::string &model
     
     for(int i = 0; i < numOfSpokes; ++i)
     {
-        int idx = i * 4; // Ux, Uy, Uz,r
         int idxDir = i * 3; // Ux, Uy, Uz
         
         // coefficients (dirs + radii) for newuoa
@@ -856,12 +853,12 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::ParseHeader(const std::string 
             char* eName = e->GetName();
             if(strcmp(eName, "nRows") == 0)
             {
-                r = strtol(e->GetCharacterData(), &pEnd, 10);
+                r = static_cast<int>(strtol(e->GetCharacterData(), &pEnd, 10));
                 *nRows = r;
             }
             else if(strcmp(eName, "nCols") == 0)
             {
-                c = strtol(e->GetCharacterData(), &pEnd, 10);
+                c = static_cast<int>(strtol(e->GetCharacterData(), &pEnd, 10));
                 *nCols = c;
             }
             else if(strcmp(eName, "upSpoke") == 0)
@@ -933,12 +930,12 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::UpdateHeader(const string &hea
             char* eName = e->GetName();
             if(strcmp(eName, "nRows") == 0)
             {
-                r = strtol(e->GetCharacterData(), &pEnd, 10);
+                r = static_cast<int>(strtol(e->GetCharacterData(), &pEnd, 10));
                 nRows = r;
             }
             else if(strcmp(eName, "nCols") == 0)
             {
-                c = strtol(e->GetCharacterData(), &pEnd, 10);
+                c = static_cast<int>(strtol(e->GetCharacterData(), &pEnd, 10));
                 nCols = c;
             }
             else if(strcmp(eName, "upSpoke") == 0)
@@ -1018,9 +1015,9 @@ double vtkSlicerSkeletalRepresentationRefinerLogic::ComputeDistance(vtkSpoke *th
     int y = static_cast<int>(pt[1]+0.5);
     int z = static_cast<int>(pt[2]+0.5);
     
-    int maxX = 1 / voxelSpacing - 1;
-    int maxY = 1 / voxelSpacing - 1;
-    int maxZ = 1 / voxelSpacing - 1;
+    int maxX = static_cast<int>(1 / voxelSpacing - 1);
+    int maxY = static_cast<int>(1 / voxelSpacing - 1);
+    int maxZ = static_cast<int>(1 / voxelSpacing - 1);
     
     if(x > maxX) x = maxX;
     if(y > maxY) y = maxY;
@@ -1030,7 +1027,7 @@ double vtkSlicerSkeletalRepresentationRefinerLogic::ComputeDistance(vtkSpoke *th
     if(y < 0) y = 0;
     if(z < 0) z = 0;
     
-    if(mAntiAliasedImage == NULL)
+    if(mAntiAliasedImage == nullptr)
     {
         std::cerr << "The image in this RefinerLogic instance is empty." << std::endl;
         return -10000.0;
@@ -1038,7 +1035,7 @@ double vtkSlicerSkeletalRepresentationRefinerLogic::ComputeDistance(vtkSpoke *th
     RealImage::IndexType pixelIndex = {{x,y,z}};
     float dist = mAntiAliasedImage->GetPixel(pixelIndex);
     
-    if(mGradDistImage == NULL)
+    if(mGradDistImage == nullptr)
     {
         return -10000.0;
     }
@@ -1050,14 +1047,16 @@ double vtkSlicerSkeletalRepresentationRefinerLogic::ComputeDistance(vtkSpoke *th
     
     VectorImage::PixelType grad = mGradDistImage->GetPixel(indexGrad);
     double normalVector[3];
-    normalVector[0] = grad[0]; normalVector[1] = grad[1]; normalVector[2] = grad[2];
+    normalVector[0] = static_cast<double>(grad[0]);
+    normalVector[1] = static_cast<double>(grad[1]); 
+    normalVector[2] = static_cast<double>(grad[2]);
     // normalize the normal vector
     vtkMath::Normalize(normalVector);
     
     double spokeDir[3]; 
     theSpoke->GetDirection(spokeDir);
     double dotProduct = vtkMath::Dot(normalVector, spokeDir);
-    double distSqr = dist * dist;
+    double distSqr = static_cast<double>(dist * dist);
     
     // The normal match (between [0,1]) is scaled by the distance so that the overall term is comparable
     *normalMatch = *normalMatch + distSqr * (1 - dotProduct);
@@ -1086,7 +1085,7 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::Visualize(vtkPolyData *model, 
     vtkSmartPointer<vtkMRMLModelDisplayNode> displayModelNode;
 
     displayModelNode = vtkSmartPointer<vtkMRMLModelDisplayNode>::New();
-    if(displayModelNode == NULL)
+    if(displayModelNode == nullptr)
     {
         vtkErrorMacro("displayModelNode is NULL");
         return;
@@ -1123,7 +1122,7 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::HideNodesByClass(const string 
         vtkSmartPointer<vtkMRMLModelNode> thisModelNode = vtkMRMLModelNode::SafeDownCast(modelNodes->GetNextItemAsObject());
         vtkSmartPointer<vtkMRMLModelDisplayNode> displayNode;
         displayNode = thisModelNode->GetModelDisplayNode();
-        if(displayNode == NULL)
+        if(displayNode == nullptr)
         {
             continue;
         }
@@ -1138,14 +1137,14 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::TransformSrep2ImageCS(vtkSrep 
 {
     if(input->IsEmpty())
     {
-        mat4x4 = NULL;
+        mat4x4 = nullptr;
         return;
     }
     // 1. Find the bounding box of boundary
     std::vector<vtkSpoke *> spokes = input->GetAllSpokes();
     vtkSmartPointer<vtkPoints> boundaryPts = 
             vtkSmartPointer<vtkPoints>::New();
-    for(int i = 0; i < spokes.size(); ++i)
+    for(size_t i = 0; i < spokes.size(); ++i)
     {
         double pt[3];
         spokes[i]->GetBoundaryPoint(pt);
@@ -1229,11 +1228,11 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::ConnectImpliedBoundaryPts(int 
     {
         std::cerr << "The s-rep model is empty." << std::endl;
         delete srep;
-        srep = NULL;
+        srep = nullptr;
         return;
     }
     std::vector<vtkSpoke *> pSpokes = srep->GetAllSpokes();
-    for (int i = 0; i < pSpokes.size(); ++i) {
+    for (size_t i = 0; i < pSpokes.size(); ++i) {
         vtkSpoke *s = new vtkSpoke(*pSpokes[i]);
         primary.push_back(s);
     }
@@ -1242,8 +1241,8 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::ConnectImpliedBoundaryPts(int 
     // collect neighboring spokes around corners
     vtkSlicerSkeletalRepresentationInterpolater interpolater;
     
-    int shares = pow(2, interpolationLevel);
-    double interval = (double)(1.0/ shares);
+    int shares = static_cast<int>(pow(2, interpolationLevel));
+    double interval = static_cast<double>((1.0/ shares));
     std::vector<double> steps;
     
     for(int i = 0; i <= shares; ++i)
@@ -1282,9 +1281,9 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::ConnectImpliedBoundaryPts(int 
             
             std::vector<vtkSpoke *> innerQuadSpokes;
             std::vector<vtkSpoke *> topEdgeSpokes, botEdgeSpokes, leftEdgeSpokes, rightEdgeSpokes;
-            for(int i = 0; i < steps.size(); ++i)
+            for(size_t i = 0; i < steps.size(); ++i)
             {
-                for(int j = 0; j < steps.size(); ++j)
+                for(size_t j = 0; j < steps.size(); ++j)
                 {
                     vtkSpoke* in1 = new vtkSpoke;
                     interpolater.Interpolate(double(steps[i]), double(steps[j]), cornerSpokes, in1);
@@ -1316,11 +1315,11 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::ConnectImpliedBoundaryPts(int 
                 // col
                 for(int j = 0; j < shares; ++j)
                 {
-                    int idTop = i * (shares+1) + j;
+                    size_t idTop = static_cast<size_t>(i * (shares+1) + j);
                     vtkSpoke *s0 = innerQuadSpokes[idTop];
                     vtkSpoke *s1 = innerQuadSpokes[idTop+1];
                     
-                    int idBot = (i+1) * (shares + 1) + j;
+                    size_t idBot = static_cast<size_t>((i+1) * (shares + 1) + j);
                     vtkSpoke *s2 = innerQuadSpokes[idBot];
                     vtkSpoke *s3 = innerQuadSpokes[idBot+1];
                     double p0[3], p1[3], p2[3], p3[3];
@@ -1328,10 +1327,10 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::ConnectImpliedBoundaryPts(int 
                     s1->GetBoundaryPoint(p1);
                     s2->GetBoundaryPoint(p2);
                     s3->GetBoundaryPoint(p3);
-                    int id0 = pts->InsertNextPoint(p0);
-                    int id1 = pts->InsertNextPoint(p1);
-                    int id2 = pts->InsertNextPoint(p2);
-                    int id3 = pts->InsertNextPoint(p3);
+                    vtkIdType id0 = pts->InsertNextPoint(p0);
+                    vtkIdType id1 = pts->InsertNextPoint(p1);
+                    vtkIdType id2 = pts->InsertNextPoint(p2);
+                    vtkIdType id3 = pts->InsertNextPoint(p3);
                     vtkSmartPointer<vtkQuad> quad = vtkSmartPointer<vtkQuad>::New();
                     quad->GetPointIds()->SetId(0, id0);
                     quad->GetPointIds()->SetId(1, id2);
@@ -1352,10 +1351,10 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::ConnectImpliedBoundaryPts(int 
         }
     }
     delete srep;
-    srep = NULL;
+    srep = nullptr;
 }
 
-void vtkSlicerSkeletalRepresentationRefinerLogic::ConnectCrestRegion(int interpolationLevel,
+void vtkSlicerSkeletalRepresentationRefinerLogic::ConnectCrestRegion(int vtkNotUsed(interpolationLevel),
                                                                      int nRows, int nCols, 
                                                                      const string &srepFileName, double crestShift
                                                                      , std::vector<vtkSpoke*>& upSpokes, std::vector<vtkSpoke*>& downSpokes)
@@ -1373,15 +1372,15 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::ConnectCrestRegion(int interpo
     srep.ShiftSpokes(-crestShift);
     std::vector<vtkSpoke *> crestSpokes = srep.GetAllSpokes();
     if(crestSpokes.empty()) return;
-    
     // 1. circumferencial + radial connection
     vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
     vtkSmartPointer<vtkAppendPolyData> appendFilter =
       vtkSmartPointer<vtkAppendPolyData>::New();
     // a. add first row of crest points
     double ptCrest[3], ptUp[3], ptDown[3];
-    int nCrestPts = crestSpokes.size();
-    for(int i = 0; i < nCols; ++i)
+    size_t nCrestPts = crestSpokes.size();
+    size_t snCols = static_cast<size_t>(nCols);
+    for(size_t i = 0; i < snCols; ++i)
     {
         crestSpokes[i]->GetBoundaryPoint(ptCrest);
         points->InsertNextPoint(ptCrest);
@@ -1403,15 +1402,16 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::ConnectCrestRegion(int interpo
     }
     
     // b. add right col of crest points
-    for(int i = nCols + 1; i < nCols + 2 * (nRows - 2); ++i)
+    size_t snRows = static_cast<size_t>(nRows);
+    for(size_t i = snCols + 1; i < snCols + 2 * (snRows - 2); ++i)
     {
-        if((i - nCols) % 2 == 1)
+        if((i - snCols) % 2 == 1)
         {
             crestSpokes[i]->GetBoundaryPoint(ptCrest);
             points->InsertNextPoint(ptCrest);
             
-            int r = (i - nCols) / 2 + 2;
-            int idInterior = r * nCols - 1;
+            size_t r = (i - snCols) / 2 + 2;
+            size_t idInterior = r * snCols - 1;
             vtkSmartPointer<vtkPoints> radialCurve = vtkSmartPointer<vtkPoints>::New();
             upSpokes[idInterior]->GetBoundaryPoint(ptUp);
             downSpokes[idInterior]->GetBoundaryPoint(ptDown);
@@ -1433,13 +1433,13 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::ConnectCrestRegion(int interpo
     points->InsertNextPoint(ptCrest);
     
     // c. add bottom row in reverse order
-    for(int i = nCols + 2 * (nRows - 2); i < nCrestPts; ++i)
+    for(size_t i = snCols + 2 * (snRows - 2); i < nCrestPts; ++i)
     {
-        int index = nCrestPts - (i - nCols - 2 * (nRows - 2)) - 1;
+        size_t index = nCrestPts - (i - snCols - 2 * (snRows - 2)) - 1;
         crestSpokes[index]->GetBoundaryPoint(ptCrest);
         points->InsertNextPoint(ptCrest);
         
-        int idInterior = nRows * nCols - 1 - (i - nCols - 2 * (nRows - 2));
+        size_t idInterior = snRows * snCols - 1 - (i - snCols - 2 * (snRows - 2));
         vtkSmartPointer<vtkPoints> radialCurve = vtkSmartPointer<vtkPoints>::New();
         upSpokes[idInterior]->GetBoundaryPoint(ptUp);
         downSpokes[idInterior]->GetBoundaryPoint(ptDown);
@@ -1457,14 +1457,14 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::ConnectCrestRegion(int interpo
     }
     
     // d. add left col from bottom to top
-    int leftBot = nCrestPts - nCols; // crest point in 2nd last row and 1st col
-    for(int i = 0; i < nRows - 2; ++i)
+    size_t leftBot = nCrestPts - snCols; // crest point in 2nd last row and 1st col
+    for(size_t i = 0; i < snRows - 2; ++i)
     {
-        int index = leftBot - 2 - i * 2;
+        size_t index = static_cast<size_t>(leftBot - 2 - i * 2);
         crestSpokes[index]->GetBoundaryPoint(ptCrest);
         points->InsertNextPoint(ptCrest);
         
-        int idInterior = (nRows - i - 2) * nCols;
+        size_t idInterior = static_cast<size_t>((snRows - i - 2) * snCols);
         vtkSmartPointer<vtkPoints> radialCurve = vtkSmartPointer<vtkPoints>::New();
         upSpokes[idInterior]->GetBoundaryPoint(ptUp);
         downSpokes[idInterior]->GetBoundaryPoint(ptDown);
@@ -1514,12 +1514,12 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::ConnectFoldCurve(const std::ve
     {
         return;
     }
-    for (int i = 0; i < edgeSpokes.size()-1; ++i) {
+    for (size_t i = 0; i < edgeSpokes.size()-1; ++i) {
         double pt0[3], pt1[3];
         edgeSpokes[i]->GetSkeletalPoint(pt0);
         edgeSpokes[i+1]->GetSkeletalPoint(pt1);
-        int id0 = foldCurvePts->InsertNextPoint(pt0);
-        int id1 = foldCurvePts->InsertNextPoint(pt1);
+        vtkIdType id0 = foldCurvePts->InsertNextPoint(pt0);
+        vtkIdType id1 = foldCurvePts->InsertNextPoint(pt1);
         
         vtkSmartPointer<vtkLine> line = vtkSmartPointer<vtkLine>::New();
         line->GetPointIds()->SetId(0, id0);
@@ -1539,14 +1539,14 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::RefinePartOfSpokes(const strin
     {
         std::cerr << "The s-rep model is empty." << std::endl;
         delete srep;
-        srep = NULL;
+        srep = nullptr;
         return;
     }
     
     // total number of parameters that need to optimize
-    int paramDim = mCoeffArray.size();
+    size_t paramDim = mCoeffArray.size();
     double coeff[paramDim];
-    for(int i = 0; i < paramDim; ++i)
+    for(size_t i = 0; i < paramDim; ++i)
     {
         coeff[i] = mCoeffArray[i];
     }
@@ -1559,7 +1559,7 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::RefinePartOfSpokes(const strin
  
     mFirstCost = true;
     // 2. Invoke newuoa to optimize
-    min_newuoa(paramDim, coeff, *this, stepSize, endCriterion, maxIter);
+    min_newuoa(static_cast<int>(paramDim), coeff, *this, stepSize, endCriterion, maxIter);
     
     // Re-evaluate the cost
     mFirstCost = true;
@@ -1576,10 +1576,10 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::RefinePartOfSpokes(const strin
     std::string fileName = vtksys::SystemTools::GetFilenameName(srepFileName);
     outputFile = outputFile + newFilePrefix + fileName;
     SaveSpokes2Vtp(srep->GetAllSpokes(), outputFile);
-    if(mSrep != NULL)
+    if(mSrep != nullptr)
     {
         delete mSrep;
-        mSrep = NULL;
+        mSrep = nullptr;
     }
 }
 
@@ -1847,7 +1847,7 @@ double vtkSlicerSkeletalRepresentationRefinerLogic::ComputeRSradPenalty(vtkSrep 
     
     //compute the penalty
     double step = mInterpolatePositions[0].second;
-    for(int i = 0; i < primarySpokes.size(); ++i)
+    for(size_t i = 0; i < primarySpokes.size(); ++i)
     {
         double thisPenalty = primarySpokes[i]->GetRSradPenalty(step);
         penalty += thisPenalty;

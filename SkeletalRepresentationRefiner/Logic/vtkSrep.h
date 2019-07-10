@@ -31,42 +31,38 @@ class vtkSrep
 {
 public:
     vtkSrep();
-    
     // new points
     vtkSrep(int r, int c, std::vector<double> &radii, std::vector<double> &dirs, std::vector<double> &skeletalPoints);
-    
+
     // delete points
-    ~vtkSrep(); 
-    
+    ~vtkSrep();
+
     // look for spoke at row = r, col = c
     vtkSpoke *GetSpoke(int r, int c) const;
-    
+
     // False if there is no spoke in this srep
     bool IsEmpty() const;
-    
+
     // Get the vector of spokes
     std::vector<vtkSpoke *> &GetAllSpokes();
-    
+
     // Get all skeletal points
     std::vector<double> &GetAllSkeletalPoints();
-    
     // Update spoke lengths and dirs
     // The input array is from NEWUOA, formed in order of (ux, uy, uz, x_r)
     // where x_r is the logarithm of the ratio
     void Refine(const double *coeff);
-    
     // Add spokes. It's ok that spokes share skeletal points with existing spokes
     void AddSpokes(std::vector<double> &radii, std::vector<double> &dirs, std::vector<double> &skeletalPoints);
-    
+
     // Shift spokes along the spoke direction. Useful in transformation between legacy and new format sreps
     void ShiftSpokes(double shift);
-    
+
     void DeepCopy(vtkSrep& src);
-    
+
     int GetNumRows() const;
-    
+
     int GetNumCols() const;
-    
 private:
     int nRows;
     int nCols;

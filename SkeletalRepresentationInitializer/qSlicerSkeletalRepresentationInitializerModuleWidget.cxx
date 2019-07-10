@@ -90,7 +90,7 @@ void qSlicerSkeletalRepresentationInitializerModuleWidget::setup()
 
 void qSlicerSkeletalRepresentationInitializerModuleWidget::pullUpFittingEllipsoid()
 {
-    Q_D(qSlicerSkeletalRepresentationInitializerModuleWidget);
+//    Q_D(qSlicerSkeletalRepresentationInitializerModuleWidget);
     //d->logic()->DummyShowFittingEllipsoid();
 
 }

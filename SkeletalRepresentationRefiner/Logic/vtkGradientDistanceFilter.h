@@ -9,11 +9,8 @@ class vtkGradientDistanceFilter
 public:
     typedef itk::Image<float, 3> RealImage;
     typedef itk::Image<itk::CovariantVector<float, 3>, 3> VectorImage;
-    
     vtkGradientDistanceFilter();
-    
     void Filter(RealImage::Pointer input, VectorImage::Pointer output);
-    
 private:
     void DeepCopy(VectorImage::Pointer input, VectorImage::Pointer output);
     bool CompareImages(VectorImage::Pointer input, VectorImage::Pointer output);

@@ -8,21 +8,18 @@
 #include "itksys/SystemTools.hxx"
 vtkApproximateSignedDistanceMap::vtkApproximateSignedDistanceMap()
 {
-    
 }
 
 void vtkApproximateSignedDistanceMap::Convert(vtkImageData *input, RealImage::Pointer outputITK)
 {
     std::cout << "Started to convert image to signed distance map..." << std::endl;
     using FilterType = itk::VTKImageToImageFilter< ImageType >;
-   
     vtkSmartPointer< vtkImageMagnitude > magnitude =
        vtkSmartPointer< vtkImageMagnitude >::New();
     magnitude->SetInputData(input );
     magnitude->Update();
     FilterType::Pointer filter = FilterType::New();
     filter->SetInput(magnitude->GetOutput());
-    
     try
     {
         filter->Update();
@@ -33,12 +30,9 @@ void vtkApproximateSignedDistanceMap::Convert(vtkImageData *input, RealImage::Po
           approximateSignedDistanceMapImageFilter->SetInsideValue(255);
           approximateSignedDistanceMapImageFilter->SetOutsideValue(0);
           approximateSignedDistanceMapImageFilter->Update();
-        
         RealImage::Pointer image = approximateSignedDistanceMapImageFilter->GetOutput();
-        
         DeepCopy<RealImage>(image, outputITK);
         std::cout << "Finished generating distance map." << std::endl;
-        
     }
     catch( itk::ExceptionObject & error )
     {
