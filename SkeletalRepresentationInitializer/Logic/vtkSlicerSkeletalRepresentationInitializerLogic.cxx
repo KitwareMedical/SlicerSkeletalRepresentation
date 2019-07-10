@@ -128,7 +128,7 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::FlowSurfaceOneStep(const st
     reader->SetFileName(filename.c_str());
     reader->Update();
     vtkSmartPointer<vtkPolyData> mesh = reader->GetOutput();
-    if(mesh == NULL)
+    if(mesh == nullptr)
     {
         vtkErrorMacro("No mesh has read in this module. Please select input mesh file first.");
         return -1;
@@ -184,12 +184,12 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::FlowSurfaceOneStep(const st
     curvature_filter->Update();
     vtkSmartPointer<vtkDoubleArray> K =
             vtkDoubleArray::SafeDownCast(curvature_filter->GetOutput()->GetPointData()->GetArray("Gauss_Curvature"));
-    if(H == NULL) {
+    if(H == nullptr) {
         vtkErrorMacro("error in getting mean curvature");
         return -1;
     }
     vtkDataArray* N = normal_filter->GetOutput()->GetPointData()->GetNormals();
-    if(N == NULL) {
+    if(N == nullptr) {
         vtkErrorMacro("error in getting normals");
         return -1;
     }
@@ -388,12 +388,12 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::FlowSurfaceMesh(const std::
 
         vtkSmartPointer<vtkDoubleArray> H =
             vtkDoubleArray::SafeDownCast(curvature_filter->GetOutput()->GetPointData()->GetArray("Mean_Curvature"));
-        if(H == NULL) {
+        if(H == nullptr) {
             std::cerr << "error in getting mean curvature" << std::endl;
             return EXIT_FAILURE;
         }
         vtkDataArray* N = normal_filter->GetOutput()->GetPointData()->GetNormals();
-        if(N == NULL) {
+        if(N == nullptr) {
             std::cerr << "error in getting normals" << std::endl;
             return EXIT_FAILURE;
         }
@@ -479,7 +479,7 @@ void vtkSlicerSkeletalRepresentationInitializerLogic::AddModelNodeToScene(vtkPol
     vtkSmartPointer<vtkMRMLModelDisplayNode> displayModelNode;
 
     displayModelNode = vtkSmartPointer<vtkMRMLModelDisplayNode>::New();
-    if(displayModelNode == NULL)
+    if(displayModelNode == nullptr)
     {
         vtkErrorMacro("displayModelNode is NULL");
         return;
@@ -1142,7 +1142,7 @@ void vtkSlicerSkeletalRepresentationInitializerLogic::HideNodesByNameByClass(con
         vtkSmartPointer<vtkMRMLModelNode> thisModelNode = vtkMRMLModelNode::SafeDownCast(modelNodes->GetNextItemAsObject());
         vtkSmartPointer<vtkMRMLModelDisplayNode> displayNode;
         displayNode = thisModelNode->GetModelDisplayNode();
-        if(displayNode == NULL)
+        if(displayNode == nullptr)
         {
             continue;
         }
@@ -1162,7 +1162,7 @@ void vtkSlicerSkeletalRepresentationInitializerLogic::HideNodesByClass(const std
         vtkSmartPointer<vtkMRMLModelNode> thisModelNode = vtkMRMLModelNode::SafeDownCast(modelNodes->GetNextItemAsObject());
         vtkSmartPointer<vtkMRMLModelDisplayNode> displayNode;
         displayNode = thisModelNode->GetModelDisplayNode();
-        if(displayNode == NULL)
+        if(displayNode == nullptr)
         {
             continue;
         }
@@ -1230,7 +1230,7 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::InklingFlow(const std::stri
         normal_filter->SetInputData(mesh);
         normal_filter->Update();
         vtkDataArray* N = normal_filter->GetOutput()->GetPointData()->GetNormals();
-        if(N == NULL) {
+        if(N == nullptr) {
             std::cerr << "error in getting normals" << std::endl;
             return EXIT_FAILURE;
         }
@@ -1246,7 +1246,7 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::InklingFlow(const std::stri
             vtkDoubleArray::SafeDownCast(curvature_filter->GetOutput()->GetPointData()->GetArray("Mean_Curvature"));
 
 
-        if(H == NULL) {
+        if(H == nullptr) {
             std::cerr << "error in getting mean curvature" << std::endl;
             return EXIT_FAILURE;
         }
@@ -1256,7 +1256,7 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::InklingFlow(const std::stri
         vtkSmartPointer<vtkDoubleArray> K =
             vtkDoubleArray::SafeDownCast(curvature_filter->GetOutput()->GetPointData()->GetArray("Gauss_Curvature"));
 
-        if(K == NULL) {
+        if(K == nullptr) {
             std::cerr << "error in getting Gaussian curvature" << std::endl;
             return EXIT_FAILURE;
         }
@@ -1266,7 +1266,7 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::InklingFlow(const std::stri
         vtkSmartPointer<vtkDoubleArray> MC =
             vtkDoubleArray::SafeDownCast(curvature_filter->GetOutput()->GetPointData()->GetArray("Maximum_Curvature"));
 
-        if(MC == NULL) {
+        if(MC == nullptr) {
             std::cerr << "error in getting max curvature" << std::endl;
             return EXIT_FAILURE;
         }
@@ -1275,7 +1275,7 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::InklingFlow(const std::stri
         curvature_filter->Update();
         vtkSmartPointer<vtkDoubleArray> MinC =
             vtkDoubleArray::SafeDownCast(curvature_filter->GetOutput()->GetPointData()->GetArray("Minimum_Curvature"));
-        if(MinC == NULL)
+        if(MinC == nullptr)
         {
             std::cout << "error in getting min curvature" << std::endl;
             return -1;
@@ -1395,7 +1395,7 @@ void vtkSlicerSkeletalRepresentationInitializerLogic::AddPointToScene(double x, 
     vtkSmartPointer<vtkMRMLMarkupsFiducialNode> fidNode;
 
     fidNode = vtkSmartPointer<vtkMRMLMarkupsFiducialNode>::New();
-    if(fidNode == NULL)
+    if(fidNode == nullptr)
     {
         vtkErrorMacro("fidNode is NULL");
         return;

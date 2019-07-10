@@ -165,7 +165,7 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::Refine(double stepSize, double
     {
         std::cerr << "The s-rep model is empty." << std::endl;
         delete crestS;
-        crestS = NULL;
+        crestS = nullptr;
         return;
     }
     vtkSmartPointer<vtkPolyData> crestSrep = vtkSmartPointer<vtkPolyData>::New();
@@ -205,7 +205,7 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::InterpolateSrep(int interpolat
     {
         std::cerr << "The s-rep model is empty." << std::endl;
         delete srep;
-        srep = NULL;
+        srep = nullptr;
         return;
     }
     // 1.1 interpolate and visualize for verification
@@ -296,9 +296,9 @@ double vtkSlicerSkeletalRepresentationRefinerLogic::EvaluateObjectiveFunction(do
     // TODO: SHOULD add progress bar here.
     //std::cout << "Current iteration: " << iterNum++ << std::endl;
 
-    if(mSrep == NULL)
+    if(mSrep == nullptr)
     {
-        std::cerr << "The srep pointer in the refinement is NULL." << std::endl;
+        std::cerr << "The srep pointer in the refinement is nullptr." << std::endl;
         return -100000.0;
     }
 
@@ -442,7 +442,7 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::TransformSrep(const std::strin
     {
         std::cerr << "The s-rep model is empty." << std::endl;
         delete srep;
-        srep = NULL;
+        srep = nullptr;
         return;
     }
 
@@ -742,13 +742,13 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::SetMRMLSceneInternal(vtkMRMLSc
 //-----------------------------------------------------------------------------
 void vtkSlicerSkeletalRepresentationRefinerLogic::RegisterNodes()
 {
-  assert(this->GetMRMLScene() != 0);
+  assert(this->GetMRMLScene() != nullptr);
 }
 
 //---------------------------------------------------------------------------
 void vtkSlicerSkeletalRepresentationRefinerLogic::UpdateFromMRMLScene()
 {
-  assert(this->GetMRMLScene() != 0);
+  assert(this->GetMRMLScene() != nullptr);
 }
 
 //---------------------------------------------------------------------------
@@ -1012,7 +1012,7 @@ double vtkSlicerSkeletalRepresentationRefinerLogic::ComputeDistance(vtkSpoke *th
     if(y < 0) y = 0;
     if(z < 0) z = 0;
 
-    if(mAntiAliasedImage == NULL)
+    if(mAntiAliasedImage == nullptr)
     {
         std::cerr << "The image in this RefinerLogic instance is empty." << std::endl;
         return -10000.0;
@@ -1020,7 +1020,7 @@ double vtkSlicerSkeletalRepresentationRefinerLogic::ComputeDistance(vtkSpoke *th
     RealImage::IndexType pixelIndex = {{x,y,z}};
     float dist = mAntiAliasedImage->GetPixel(pixelIndex);
 
-    if(mGradDistImage == NULL)
+    if(mGradDistImage == nullptr)
     {
         return -10000.0;
     }
@@ -1068,7 +1068,7 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::Visualize(vtkPolyData *model, 
     vtkSmartPointer<vtkMRMLModelDisplayNode> displayModelNode;
 
     displayModelNode = vtkSmartPointer<vtkMRMLModelDisplayNode>::New();
-    if(displayModelNode == NULL)
+    if(displayModelNode == nullptr)
     {
         vtkErrorMacro("displayModelNode is NULL");
         return;
@@ -1105,7 +1105,7 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::HideNodesByClass(const string 
         vtkSmartPointer<vtkMRMLModelNode> thisModelNode = vtkMRMLModelNode::SafeDownCast(modelNodes->GetNextItemAsObject());
         vtkSmartPointer<vtkMRMLModelDisplayNode> displayNode;
         displayNode = thisModelNode->GetModelDisplayNode();
-        if(displayNode == NULL)
+        if(displayNode == nullptr)
         {
             continue;
         }
@@ -1120,7 +1120,7 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::TransformSrep2ImageCS(vtkSrep 
 {
     if(input->IsEmpty())
     {
-        mat4x4 = NULL;
+        mat4x4 = nullptr;
         return;
     }
     // 1. Find the bounding box of boundary
@@ -1211,7 +1211,7 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::ConnectImpliedBoundaryPts(int 
     {
         std::cerr << "The s-rep model is empty." << std::endl;
         delete srep;
-        srep = NULL;
+        srep = nullptr;
         return;
     }
     std::vector<vtkSpoke *> pSpokes = srep->GetAllSpokes();
@@ -1334,7 +1334,7 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::ConnectImpliedBoundaryPts(int 
         }
     }
     delete srep;
-    srep = NULL;
+    srep = nullptr;
 }
 
 void vtkSlicerSkeletalRepresentationRefinerLogic::ConnectCrestRegion(int vtkNotUsed(interpolationLevel),
@@ -1477,7 +1477,7 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::RefinePartOfSpokes(const strin
     {
         std::cerr << "The s-rep model is empty." << std::endl;
         delete srep;
-        srep = NULL;
+        srep = nullptr;
         return;
     }
 
@@ -1514,10 +1514,10 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::RefinePartOfSpokes(const strin
     std::string fileName = vtksys::SystemTools::GetFilenameName(srepFileName);
     outputFile = outputFile + newFilePrefix + fileName;
     SaveSpokes2Vtp(srep->GetAllSpokes(), outputFile);
-    if(mSrep != NULL)
+    if(mSrep != nullptr)
     {
         delete mSrep;
-        mSrep = NULL;
+        mSrep = nullptr;
     }
 }
 
