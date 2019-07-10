@@ -1,7 +1,7 @@
 
 #-----------------------------------------------------------------------------
 set(MODULE_NAME SkeletalRepresentationRefiner)
-set(MODULE_TITLE ${MODULE_NAME})
+set(MODULE_TITLE "Skeletal Representation Refiner")
 
 string(TOUPPER ${MODULE_NAME} MODULE_NAME_UPPER)
 
