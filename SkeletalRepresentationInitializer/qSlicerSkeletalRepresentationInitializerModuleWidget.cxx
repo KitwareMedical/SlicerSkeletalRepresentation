@@ -85,7 +85,7 @@ void qSlicerSkeletalRepresentationInitializerModuleWidget::setup()
   //QObject::connect(d->btn_match_ell, SIGNAL(clicked()), this, SLOT(pullUpFittingEllipsoid()));
   QObject::connect(d->btn_inkling_flow, SIGNAL(clicked()), this, SLOT(inklingFlow()));
   QObject::connect(d->btn_back_flow, SIGNAL(clicked()), this, SLOT(backwardFlow()));
-  
+
 }
 
 void qSlicerSkeletalRepresentationInitializerModuleWidget::pullUpFittingEllipsoid()
@@ -134,7 +134,7 @@ void qSlicerSkeletalRepresentationInitializerModuleWidget::inklingFlow()
     int maxIter = int(d->sl_max_iter->value());
     int freq_output = int(d->sl_freq_output->value());
 //    double threshold = d->sl_threshold->value();
-    double threshold = 13.0;// for test 
+    double threshold = 13.0;// for test
     d->logic()->InklingFlow(fileName, dt, smoothAmount, maxIter, freq_output, threshold);
 }
 

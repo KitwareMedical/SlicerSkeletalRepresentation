@@ -157,7 +157,7 @@ class legacyTransformer(object):
         """
         Construct crest vtp
           1. read points, direction, and length in clockwise
-          2. write it as a curve  
+          2. write it as a curve
         """
         # \TODO: There is a lot repeating of the same code. Need to think if I can abstract the repetition into a function
         # first row
@@ -298,5 +298,5 @@ if __name__ == '__main__':
 
     m3d_filename = sys.argv[1]
     outPrefix = sys.argv[2]
-    
+
     transformLegacySrep(m3d_filename, outPrefix, epsilon)

@@ -104,12 +104,12 @@ void qSlicerSkeletalRepresentationRefinerModuleWidget::StartRefinement()
     double stepSize = d->sl_stepSize->value();
     double tol = d->sl_tol->value();
     int maxIter = static_cast<int>(d->sl_maxIter->value());
-    
+
     double wtImageMatch = d->sl_wtImageMatch->value();
     double wtNormalMatch = d->sl_wtNormal->value();
     double wtSrad = d->sl_wtSrad->value();
     int interpLevel = static_cast<int>(d->sl_interp->value());
-    
+
     d->logic()->SetWeights(wtImageMatch, wtNormalMatch, wtSrad);
     d->logic()->Refine(stepSize, tol, maxIter, interpLevel);
 }
@@ -155,7 +155,7 @@ void qSlicerSkeletalRepresentationRefinerModuleWidget::setup()
   QObject::connect(d->btn_submit, SIGNAL(clicked()), this, SLOT(StartRefinement()));
   QObject::connect(d->btn_interp, SIGNAL(clicked()), this, SLOT(StartInterpolate()));
   QObject::connect(d->btn_initial_bdry, SIGNAL(clicked()), this, SLOT(showImpliedBoundary()));
-  
+
   //QObject::connect(d->btn_image, SIGNAL(clicked()), this, SLOT(GenerateImage()));
   //QObject::connect(d->btn_transform, SIGNAL(clicked()), this, SLOT(TransformSrep()));
 }

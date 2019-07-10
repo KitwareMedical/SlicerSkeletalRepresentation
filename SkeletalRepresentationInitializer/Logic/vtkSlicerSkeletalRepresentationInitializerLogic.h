@@ -85,7 +85,7 @@ public:
   //
   // output: files and srep of initial object
   void BackwardFlow(int totalNum);
-  
+
 protected:
   vtkSlicerSkeletalRepresentationInitializerLogic();
   virtual ~vtkSlicerSkeletalRepresentationInitializerLogic();
