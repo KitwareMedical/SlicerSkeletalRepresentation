@@ -83,9 +83,9 @@ void qSlicerSkeletalRepresentationInitializerModuleWidget::setup()
   QObject::connect(d->btn_flow, SIGNAL(clicked()), this, SLOT(flow()));
   QObject::connect(d->btn_one_step_flow, SIGNAL(clicked()), this, SLOT(flowOneStep()));
   //QObject::connect(d->btn_match_ell, SIGNAL(clicked()), this, SLOT(pullUpFittingEllipsoid()));
-  QObject::connect(d->btn_inkling_flow, SIGNAL(clicked()), this, SLOT(inklingFlow()));
+  //QObject::connect(d->btn_inkling_flow, SIGNAL(clicked()), this, SLOT(inklingFlow()));
   QObject::connect(d->btn_back_flow, SIGNAL(clicked()), this, SLOT(backwardFlow()));
-
+  QObject::connect(d->btn_output, SIGNAL(clicked()), this, SLOT(outputPath()));
 }
 
 void qSlicerSkeletalRepresentationInitializerModuleWidget::pullUpFittingEllipsoid()
@@ -101,6 +101,14 @@ void qSlicerSkeletalRepresentationInitializerModuleWidget::selectInput()
     QString fileName = QFileDialog::getOpenFileName(this, "Select input mesh");
     d->lb_input_file_path->setText(fileName.toUtf8().constData());
     d->logic()->SetInputFileName(fileName.toUtf8().constData());
+}
+
+void qSlicerSkeletalRepresentationInitializerModuleWidget::outputPath()
+{
+    Q_D(qSlicerSkeletalRepresentationInitializerModuleWidget);
+    QString fileName = QFileDialog::getExistingDirectory(this, "Select refinement output folder");
+    d->lb_output_path->setText(fileName.toUtf8().constData());
+    d->logic()->SetOutputPath(fileName.toUtf8().constData());
 }
 
 void qSlicerSkeletalRepresentationInitializerModuleWidget::flow()

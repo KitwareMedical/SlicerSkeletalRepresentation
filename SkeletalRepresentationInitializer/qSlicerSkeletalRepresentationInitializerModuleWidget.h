@@ -54,6 +54,9 @@ public slots:
     // connect the button backward flow
     void backwardFlow();
 
+    // set output path for s-rep
+    void outputPath();
+
 protected:
   QScopedPointer<qSlicerSkeletalRepresentationInitializerModuleWidgetPrivate> d_ptr;
 
