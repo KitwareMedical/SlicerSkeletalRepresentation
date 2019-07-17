@@ -153,7 +153,7 @@
         <item>
          <widget class="QLabel" name="label_5">
           <property name="text">
-           <string>Step size:</string>
+           <string>Initial region size:</string>
           </property>
          </widget>
         </item>
@@ -183,7 +183,7 @@
         <item>
          <widget class="QLabel" name="label_6">
           <property name="text">
-           <string>Tolerance:</string>
+           <string>Final region size:</string>
           </property>
          </widget>
         </item>
@@ -256,7 +256,7 @@
            <double>0.001000000000000</double>
           </property>
           <property name="minimum" stdset="0">
-           <double>0.000100000000000</double>
+           <double>0.000000000000000</double>
           </property>
           <property name="maximum" stdset="0">
            <double>1000.000000000000000</double>
@@ -286,7 +286,7 @@
            <double>0.010000000000000</double>
           </property>
           <property name="minimum" stdset="0">
-           <double>0.000100000000000</double>
+           <double>0.000000000000000</double>
           </property>
           <property name="maximum" stdset="0">
            <double>1000.000000000000000</double>
@@ -303,7 +303,7 @@
         <item>
          <widget class="QLabel" name="label_10">
           <property name="text">
-           <string>Regularity weight:</string>
+           <string>Geometric illegality weight:</string>
           </property>
          </widget>
         </item>
@@ -316,7 +316,7 @@
            <double>0.010000000000000</double>
           </property>
           <property name="minimum" stdset="0">
-           <double>0.000100000000000</double>
+           <double>0.000000000000000</double>
           </property>
           <property name="maximum" stdset="0">
            <double>1000.000000000000000</double>
