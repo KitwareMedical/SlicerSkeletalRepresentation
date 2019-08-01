@@ -108,11 +108,9 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::SetOutputPath(const string &ou
     mOutputPath = outputPath;
 }
 
-static int iterNum = 0;
 void vtkSlicerSkeletalRepresentationRefinerLogic::Refine(double stepSize, double endCriterion, int maxIter, int interpolationLevel)
 {
     mFirstCost = true;
-    iterNum = 0;
     // 1. parse file
     const std::string headerFileName = mSrepFilePath;
     int nRows = 0, nCols = 0;
