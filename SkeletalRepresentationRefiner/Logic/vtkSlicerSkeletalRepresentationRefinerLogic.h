@@ -206,6 +206,7 @@ private:
                            vtkSrep* input,
                            std::vector<vtkSpoke *> &neighborU,
                            std::vector<vtkSpoke *> &neighborV);
+  void ParseCrest(const std::string &crestFileName, std::vector<vtkSpoke*> &crestSpokes);
 private:
   std::string mTargetMeshFilePath;
   std::string mSrepFilePath;

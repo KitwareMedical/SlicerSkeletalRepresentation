@@ -2020,3 +2020,39 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::FindBotRightNeigbors(int r, in
     interpolater.Interpolate(1, 1-stepV, cornerSpokes, in2);
     neighborV.push_back(in2);
 }
+void vtkSlicerSkeletalRepresentationRefinerLogic::ParseCrest(const string &crestFileName, std::vector<vtkSpoke*> &crestSpokes)
+{
+    vtkSmartPointer<vtkXMLPolyDataReader> reader = vtkSmartPointer<vtkXMLPolyDataReader>::New();
+    reader->SetFileName(crestFileName.c_str());
+    reader->Update();
+
+    vtkSmartPointer<vtkPolyData> spokesPolyData = reader->GetOutput();
+    vtkSmartPointer<vtkPointData> spokesPointData = spokesPolyData->GetPointData();
+    int numOfArrays = spokesPointData->GetNumberOfArrays();
+    vtkIdType numOfSpokes = spokesPolyData->GetNumberOfPoints();
+
+    if(numOfSpokes == 0 || numOfArrays == 0)
+    {
+        return;
+    }
+
+    // including Ux, Uy, Uz, r
+    vtkSmartPointer<vtkDoubleArray> spokeRadii = vtkDoubleArray::SafeDownCast(spokesPointData->GetArray("spokeLength"));
+    vtkSmartPointer<vtkDoubleArray> spokeDirs = vtkDoubleArray::SafeDownCast(spokesPointData->GetArray("spokeDirection"));
+
+    for(int i = 0; i < numOfSpokes; ++i)
+    {
+        int idxDir = i * 3; // Ux, Uy, Uz
+
+        vtkSmartPointer<vtkSpoke> crestSpoke = vtkSmartPointer<vtkSpoke>::New();
+        crestSpoke->SetRadius(spokeRadii->GetValue(i));
+        double u[3];
+        u[0] = spokeDirs->GetValue(idxDir+0); u[1] = spokeDirs->GetValue(idxDir+1); u[2] = spokeDirs->GetValue(idxDir+2);
+        crestSpoke->SetDirection(u);
+
+        double tempSkeletalPoint[3];
+        spokesPolyData->GetPoint(i, tempSkeletalPoint);
+        crestSpoke->SetSkeletalPoint(tempSkeletalPoint[0], tempSkeletalPoint[1], tempSkeletalPoint[2]);
+        crestSpokes.push_back(crestSpoke);
+    }
+}
