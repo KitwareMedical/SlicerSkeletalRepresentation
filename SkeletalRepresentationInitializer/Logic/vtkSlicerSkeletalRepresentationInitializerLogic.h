@@ -107,14 +107,12 @@ private:
   void AddPointToScene(double x, double y, double z, int glyphType, double r = 1, double g = 0, double b = 0);
 
   void ComputePairwiseTps(int totalNum);
-  int ApplyTps(int totalNum);
   void DisplayResultSrep();
   void TransformNOutput(itkThinPlateSplineExtended::Pointer tps,
                        vtkPolyData* spokes, const std::string& outputFileName);
   void TransformPoints(itkThinPlateSplineExtended::Pointer tps,
                        vtkPolyData* poly, const std::string& outputFileName);
   double CalculateSpokeLength(PointType tail, PointType tip);
-  void CalculateSpokeDirection(PointType tail, PointType tip, double *x, double *y, double *z);
   void GetNeighborCells(vtkPolyData* mesh, int ptId, int newId, vtkCellArray* output, vtkPoints* morePts);
   void CompletePolyData(vtkPolyData *poly, vtkPolyData *output, bool isCrest = false);
 
