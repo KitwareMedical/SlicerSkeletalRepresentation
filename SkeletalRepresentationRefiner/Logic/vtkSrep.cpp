@@ -18,26 +18,16 @@
 #include "vtkSrep.h"
 #include <math.h>
 #include "vtkSpoke.h"
-
+#include <vtkNew.h>
 // STD includes
 #include <cstddef>
+#include "vtkObjectFactory.h" //for new() macro
+
+vtkStandardNewMacro(vtkSrep);
 
 vtkSrep::vtkSrep()
 {
 
-}
-
-vtkSrep::vtkSrep(int r, int c,  std::vector<double> &radii, std::vector<double> &dirs, std::vector<double> &skeletalPoints)
-{
-    nRows = r;
-    nCols = c;
-    for(int i = 0; i < r * c; ++i)
-    {
-        int idTuple = i * 3;
-        vtkSpoke *s = new vtkSpoke(radii[i], skeletalPoints[idTuple], skeletalPoints[idTuple + 1], skeletalPoints[idTuple + 2],
-                dirs[idTuple], dirs[idTuple + 1], dirs[idTuple + 2]);
-        spokes.push_back(s);
-    }
 }
 
 vtkSrep::~vtkSrep()
@@ -52,13 +42,27 @@ vtkSrep::~vtkSrep()
     }
 }
 
+void vtkSrep::SetParameters(int r, int c, std::vector<double> &radii, std::vector<double> &dirs, std::vector<double> &skeletalPoints)
+{
+    nRows = r;
+    nCols = c;
+    for(unsigned long i = 0; i < static_cast<unsigned long>(r * c); ++i)
+    {
+        unsigned long idTuple = i * 3;
+        vtkNew<vtkSpoke> s;
+        s->SetParameters(radii[i], skeletalPoints[idTuple], skeletalPoints[idTuple + 1], skeletalPoints[idTuple + 2],
+                dirs[idTuple], dirs[idTuple + 1], dirs[idTuple + 2]);
+        spokes.push_back(s);
+    }
+}
+
 vtkSpoke *vtkSrep::GetSpoke(int r, int c) const
 {
     if(spokes.empty())
     {
         return nullptr;
     }
-    int id = r * nCols + c;
+    size_t id = static_cast<size_t>(r * nCols + c);
     return spokes[id];
 }
 
@@ -114,7 +118,8 @@ void vtkSrep::AddSpokes(std::vector<double> &radii, std::vector<double> &dirs, s
 {
     for (size_t i = 0; i < radii.size(); ++i) {
         size_t idTuple = i * 3;
-        vtkSpoke *s = new vtkSpoke(radii[i], skeletalPoints[idTuple], skeletalPoints[idTuple + 1], skeletalPoints[idTuple + 2],
+        vtkNew<vtkSpoke> s;
+        s->SetParameters(radii[i], skeletalPoints[idTuple], skeletalPoints[idTuple + 1], skeletalPoints[idTuple + 2],
                 dirs[idTuple], dirs[idTuple + 1], dirs[idTuple + 2]);
         spokes.push_back(s);
     }

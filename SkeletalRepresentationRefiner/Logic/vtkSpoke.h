@@ -30,13 +30,13 @@ class vtkSpoke : public vtkObject
 public:
     static vtkSpoke* New();
 
-    vtkSpoke(double radius, double px, double py, double pz, double ux, double uy, double uz);
-
     // copy constructor implements deep copy
     vtkSpoke(const vtkSpoke& src);
 
     // deep copy in assignment
     vtkSpoke& operator=(const vtkSpoke& other);
+
+    void SetParameters(double radius, double px, double py, double pz, double ux, double uy, double uz);
 
     void SetRadius(double r);
 

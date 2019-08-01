@@ -18,7 +18,7 @@
 #ifndef VTKSREP_H
 #define VTKSREP_H
 #include <vector>
-
+#include <vtkObject.h>
 class vtkSpoke;
 
 /**
@@ -27,17 +27,12 @@ class vtkSpoke;
  * E.g., convert from vectors of direction, skeletal points and radii into spokes
  * OR shift spokes along their own directions.
  */
-class vtkSrep
+class vtkSrep : public vtkObject
 {
 public:
-    vtkSrep();
+    static vtkSrep *New();
 
-    // new points
-    vtkSrep(int r, int c, std::vector<double> &radii, std::vector<double> &dirs, std::vector<double> &skeletalPoints);
-
-    // delete points
-    ~vtkSrep();
-
+    void SetParameters(int r, int c, std::vector<double> &radii, std::vector<double> &dirs, std::vector<double> &skeletalPoints);
     // look for spoke at row = r, col = c
     vtkSpoke *GetSpoke(int r, int c) const;
 
@@ -66,6 +61,11 @@ public:
     int GetNumRows() const;
 
     int GetNumCols() const;
+
+protected:
+    vtkSrep();
+    // delete points
+    ~vtkSrep();
 
 private:
     int nRows;

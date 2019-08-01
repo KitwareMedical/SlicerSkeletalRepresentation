@@ -169,12 +169,11 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::Refine(double stepSize, double
     std::vector<double> radii, dirs, skeletalPoints;
     Parse(crest, mCoeffArray, radii, dirs, skeletalPoints);
 
-    vtkSrep *crestS = new vtkSrep(mNumRows, mNumCols, radii, dirs, skeletalPoints);
+    vtkNew<vtkSrep> crestS;
+    crestS->SetParameters(mNumRows, mNumCols, radii, dirs, skeletalPoints);
     if(crestS->IsEmpty())
     {
         std::cerr << "The s-rep model is empty." << std::endl;
-        delete crestS;
-        crestS = nullptr;
         return;
     }
     vtkSmartPointer<vtkPolyData> crestSrep = vtkSmartPointer<vtkPolyData>::New();
@@ -208,12 +207,11 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::InterpolateSrep(int interpolat
         return;
     }
 
-    vtkSrep *srep = new vtkSrep(nRows, nCols, radiiUp, dirsUp, skeletalPointsUp);
+    vtkNew<vtkSrep> srep;
+    srep->SetParameters(nRows, nCols, radiiUp, dirsUp, skeletalPointsUp);
     if(srep->IsEmpty())
     {
         std::cerr << "The s-rep model is empty." << std::endl;
-        delete srep;
-        srep = nullptr;
         return;
     }
     // 1.1 interpolate and visualize for verification
@@ -306,8 +304,6 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::InterpolateSrep(int interpolat
     ConvertSpokes2PolyData(crestSpokes, crestSpokes_poly);
     Visualize(crestSpokes_poly, "Crest Spokes", 0, 0, 0);
 
-    // delete pointers
-    delete srep;
 }
 
 void vtkSlicerSkeletalRepresentationRefinerLogic::SetWeights(double wtImageMatch, double wtNormal, double wtSrad)
@@ -336,7 +332,7 @@ double vtkSlicerSkeletalRepresentationRefinerLogic::EvaluateObjectiveFunction(do
 
     // this temporary srep is constructed to compute the cost function value
     // The original srep should not be changed by each iteration
-    vtkSrep *tempSrep = new vtkSrep();
+    vtkNew<vtkSrep> tempSrep;
     tempSrep->DeepCopy(*mSrep);
     tempSrep->Refine(coeff);
     double imageDist = 0.0, normal = 0.0, srad = 0.0;
@@ -429,7 +425,6 @@ double vtkSlicerSkeletalRepresentationRefinerLogic::EvaluateObjectiveFunction(do
         mFirstCost = false;
     }
 
-    delete tempSrep;
     return mWtImageMatch * imageDist + mWtNormalMatch * normal + mWtSrad * srad;
 }
 
@@ -469,12 +464,11 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::TransformSrep(const std::strin
     std::vector<double> radiiUp, dirsUp, skeletalPointsUp, coeffUp;
     Parse(up, coeffUp, radiiUp, dirsUp, skeletalPointsUp);
 
-    vtkSrep *srep = new vtkSrep(nRows, nCols, radiiUp, dirsUp, skeletalPointsUp);
+    vtkNew<vtkSrep> srep;
+    srep->SetParameters(nRows, nCols, radiiUp, dirsUp, skeletalPointsUp);
     if(srep->IsEmpty())
     {
         std::cerr << "The s-rep model is empty." << std::endl;
-        delete srep;
-        srep = nullptr;
         return;
     }
 
@@ -487,7 +481,6 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::TransformSrep(const std::strin
     srep->AddSpokes(radiiCrest, dirsCrest, skeletalPointsCrest);
 
     TransformSrep2ImageCS(srep, mTransformationMat);
-    delete srep;
 }
 
 void vtkSlicerSkeletalRepresentationRefinerLogic::ShowImpliedBoundary(int interpolationLevel,
@@ -1274,12 +1267,11 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::ConnectImpliedBoundaryPts(int 
         return;
     }
 
-    vtkSrep *srep = new vtkSrep(nRows, nCols, radii, dirs, skeletalPoints);
+    vtkNew<vtkSrep> srep;
+    srep->SetParameters(nRows, nCols, radii, dirs, skeletalPoints);
     if(srep->IsEmpty())
     {
         std::cerr << "The s-rep model is empty." << std::endl;
-        delete srep;
-        srep = nullptr;
         return;
     }
     std::vector<vtkSpoke *> pSpokes = srep->GetAllSpokes();
@@ -1402,8 +1394,6 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::ConnectImpliedBoundaryPts(int 
 
         }
     }
-    delete srep;
-    srep = nullptr;
 }
 
 void vtkSlicerSkeletalRepresentationRefinerLogic::ConnectCrestRegion(int vtkNotUsed(interpolationLevel),
@@ -1419,10 +1409,10 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::ConnectCrestRegion(int vtkNotU
         std::cerr << "The s-rep model is empty." << std::endl;
         return;
     }
-    vtkSrep srep;
-    srep.AddSpokes(radii, dirs, skeletalPoints);
-    srep.ShiftSpokes(-crestShift);
-    std::vector<vtkSpoke *> crestSpokes = srep.GetAllSpokes();
+    vtkNew<vtkSrep> srep;
+    srep->AddSpokes(radii, dirs, skeletalPoints);
+    srep->ShiftSpokes(-crestShift);
+    std::vector<vtkSpoke *> crestSpokes = srep->GetAllSpokes();
     if(crestSpokes.empty()) return;
 
     // 1. circumferencial + radial connection
@@ -1588,12 +1578,11 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::RefinePartOfSpokes(const strin
     std::vector<double> radii, dirs, skeletalPoints;
     Parse(srepFileName, mCoeffArray, radii, dirs, skeletalPoints);
 
-    vtkSrep *srep = new vtkSrep(mNumRows, mNumCols, radii, dirs, skeletalPoints);
+    vtkNew<vtkSrep> srep;
+    srep->SetParameters(mNumRows, mNumCols, radii, dirs, skeletalPoints);
     if(srep->IsEmpty())
     {
         std::cerr << "The s-rep model is empty." << std::endl;
-        delete srep;
-        srep = nullptr;
         return;
     }
 
@@ -1630,11 +1619,6 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::RefinePartOfSpokes(const strin
     std::string fileName = vtksys::SystemTools::GetFilenameName(srepFileName);
     outputFile = outputFile + newFilePrefix + fileName;
     SaveSpokes2Vtp(srep->GetAllSpokes(), outputFile);
-    if(mSrep != nullptr)
-    {
-        delete mSrep;
-        mSrep = nullptr;
-    }
 }
 
 double vtkSlicerSkeletalRepresentationRefinerLogic::TotalDistOfLeftTopSpoke(vtkSrep *tempSrep,

@@ -31,18 +31,6 @@ vtkSpoke::~vtkSpoke()
 {
 
 }
-vtkSpoke::vtkSpoke(double radius, double px, double py, double pz, double ux, double uy, double uz)
-{
-    mR = radius;
-    mPx = px;
-    mPy = py;
-    mPz = pz;
-
-    double r = sqrt(ux * ux + uy * uy + uz * uz);
-    mUx = ux / r;
-    mUy = uy / r;
-    mUz = uz / r;
-}
 
 vtkSpoke::vtkSpoke(const vtkSpoke &other)
 {
@@ -77,6 +65,19 @@ vtkSpoke &vtkSpoke::operator=(const vtkSpoke &other)
     mUy = u[1];
     mUz = u[2];
     return *this;
+}
+
+void vtkSpoke::SetParameters(double radius, double px, double py, double pz, double ux, double uy, double uz)
+{
+    mR = radius;
+    mPx = px;
+    mPy = py;
+    mPz = pz;
+
+    double r = sqrt(ux * ux + uy * uy + uz * uz);
+    mUx = ux / r;
+    mUy = uy / r;
+    mUz = uz / r;
 }
 
 void vtkSpoke::SetRadius(double r)
