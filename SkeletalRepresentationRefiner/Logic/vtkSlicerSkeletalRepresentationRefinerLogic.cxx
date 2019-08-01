@@ -2044,7 +2044,7 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::ParseCrest(const string &crest
     {
         int idxDir = i * 3; // Ux, Uy, Uz
 
-        vtkSmartPointer<vtkSpoke> crestSpoke = vtkSmartPointer<vtkSpoke>::New();
+        vtkSpoke* crestSpoke = new vtkSpoke;
         crestSpoke->SetRadius(spokeRadii->GetValue(i));
         double u[3];
         u[0] = spokeDirs->GetValue(idxDir+0); u[1] = spokeDirs->GetValue(idxDir+1); u[2] = spokeDirs->GetValue(idxDir+2);
