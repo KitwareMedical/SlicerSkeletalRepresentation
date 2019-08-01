@@ -124,6 +124,9 @@ private:
   void ParseHeader(const std::string &headerFileName, int *nRows, int *nCols, double *shift,
                    std::string* upFileName, std::string* downFileName, std::string* crestFileName);
 
+  // parse the crest spokes
+  void ParseCrest(const std::string &crestFileName, std::vector<vtkSpoke*> &crestSpokes);
+
   // update header file after refinement
   void UpdateHeader(const std::string &headerFileName, const std::string &outputFileName, std::string *newHeaderFileName);
 

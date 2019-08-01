@@ -18,16 +18,18 @@
 #define VTKSPOKE_H
 
 #include <vector>
+#include <vtkObject.h>
 
 /**
  * @brief The vtkSpoke class
  * Each spoke consists of skeletal point, radius and direction.
  * The boundary point implied by a spoke is computed every time according to those three components above.
  */
-class vtkSpoke
+class vtkSpoke : public vtkObject
 {
 public:
-    vtkSpoke();
+    static vtkSpoke* New();
+
     vtkSpoke(double radius, double px, double py, double pz, double ux, double uy, double uz);
 
     // copy constructor implements deep copy
@@ -71,6 +73,9 @@ public:
     // output rSrad penalty
     double GetRSradPenalty(double delta);
 
+protected:
+    vtkSpoke();
+    ~vtkSpoke();
 private:
     void ComputeDerivatives(std::vector<vtkSpoke*> neibors, bool isForward, double stepSize, // input
                             double *dxdu, double *dSdu, double *drdu);

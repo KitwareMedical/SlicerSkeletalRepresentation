@@ -233,6 +233,7 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::InterpolateSrep(int interpolat
     steps.push_back(1.0);
 
     std::vector<vtkSpoke*> interpolatedSpokes;
+    std::vector<vtkSpoke *> topEdgeSpokes, botEdgeSpokes, leftEdgeSpokes, rightEdgeSpokes;
     for(int r = 0; r < nRows-1; ++r)
     {
         for(int c = 0; c < nCols-1; ++c)
@@ -267,9 +268,25 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::InterpolateSrep(int interpolat
                                                dXdv22,
                                                dXdv12);
 
-                    vtkSpoke* in1 = new vtkSpoke;
+                    vtkSmartPointer<vtkSpoke> in1 = vtkSmartPointer<vtkSpoke>::New();
                     interpolater.Interpolate(double(steps[i]), double(steps[j]), cornerSpokes, in1);
                     interpolatedSpokes.push_back(in1);
+                    if(r == 0 && i == 0)
+                    {
+                        topEdgeSpokes.push_back(in1);
+                    }
+                    if(c == 0 && j == 0)
+                    {
+                        leftEdgeSpokes.push_back(in1);
+                    }
+                    if(r == nRows - 2 && i == steps.size() - 1)
+                    {
+                        botEdgeSpokes.push_back(in1);
+                    }
+                    if(c == nCols - 2 && j == steps.size() - 1)
+                    {
+                        rightEdgeSpokes.push_back(in1);
+                    }
 
                 }
             }
@@ -283,6 +300,13 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::InterpolateSrep(int interpolat
     vtkSmartPointer<vtkPolyData> primarySpokes = vtkSmartPointer<vtkPolyData>::New();
     ConvertSpokes2PolyData(srep->GetAllSpokes(), primarySpokes);
     Visualize(primarySpokes, "Primary", 1, 0, 0);
+
+    // interpolate crest
+    std::vector<vtkSpoke*> crestSpokes;
+    ParseCrest(crest, crestSpokes);
+    vtkSmartPointer<vtkPolyData> crestSpokes_poly = vtkSmartPointer<vtkPolyData>::New();
+    ConvertSpokes2PolyData(crestSpokes, crestSpokes_poly);
+    Visualize(crestSpokes_poly, "Crest Spokes", 0, 0, 0);
 
     // delete pointers
     delete srep;
@@ -465,14 +489,6 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::TransformSrep(const std::strin
     srep->AddSpokes(radiiCrest, dirsCrest, skeletalPointsCrest);
 
     TransformSrep2ImageCS(srep, mTransformationMat);
-
-//    vtkSmartPointer<vtkPolyData> primarySpokes = vtkSmartPointer<vtkPolyData>::New();
-//    ConvertSpokes2PolyData(srep->GetAllSpokes(), primarySpokes);
-//    Visualize(primarySpokes, "Primary", 1, 0, 0);
-
-//    vtkSmartPointer<vtkPolyData> transUpPrimary = vtkSmartPointer<vtkPolyData>::New();
-//    TransSpokes2PolyData(srep->GetAllSpokes(), transUpPrimary);
-//    Visualize(transUpPrimary, "Transformed primary", 1, 0, 0);
     delete srep;
 }
 
@@ -900,6 +916,43 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::ParseHeader(const std::string 
 
 }
 
+void vtkSlicerSkeletalRepresentationRefinerLogic::ParseCrest(const string &crestFileName, std::vector<vtkSpoke*> &crestSpokes)
+{
+    vtkSmartPointer<vtkXMLPolyDataReader> reader = vtkSmartPointer<vtkXMLPolyDataReader>::New();
+    reader->SetFileName(crestFileName.c_str());
+    reader->Update();
+
+    vtkSmartPointer<vtkPolyData> spokesPolyData = reader->GetOutput();
+    vtkSmartPointer<vtkPointData> spokesPointData = spokesPolyData->GetPointData();
+    int numOfArrays = spokesPointData->GetNumberOfArrays();
+    vtkIdType numOfSpokes = spokesPolyData->GetNumberOfPoints();
+
+    if(numOfSpokes == 0 || numOfArrays == 0)
+    {
+        return;
+    }
+
+    // including Ux, Uy, Uz, r
+    vtkSmartPointer<vtkDoubleArray> spokeRadii = vtkDoubleArray::SafeDownCast(spokesPointData->GetArray("spokeLength"));
+    vtkSmartPointer<vtkDoubleArray> spokeDirs = vtkDoubleArray::SafeDownCast(spokesPointData->GetArray("spokeDirection"));
+
+    for(int i = 0; i < numOfSpokes; ++i)
+    {
+        int idxDir = i * 3; // Ux, Uy, Uz
+
+        vtkSmartPointer<vtkSpoke> crestSpoke = vtkSmartPointer<vtkSpoke>::New();
+        crestSpoke->SetRadius(spokeRadii->GetValue(i));
+        double u[3];
+        u[0] = spokeDirs->GetValue(idxDir+0); u[1] = spokeDirs->GetValue(idxDir+1); u[2] = spokeDirs->GetValue(idxDir+2);
+        crestSpoke->SetDirection(u);
+
+        double tempSkeletalPoint[3];
+        spokesPolyData->GetPoint(i, tempSkeletalPoint);
+        crestSpoke->SetSkeletalPoint(tempSkeletalPoint[0], tempSkeletalPoint[1], tempSkeletalPoint[2]);
+        crestSpokes.push_back(crestSpoke);
+    }
+}
+
 void vtkSlicerSkeletalRepresentationRefinerLogic::UpdateHeader(const string &headerFileName,
                                                                const string &outputFilePath,
                                                                std::string *newHeaderFileName)
@@ -1285,7 +1338,7 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::ConnectImpliedBoundaryPts(int 
             {
                 for(size_t j = 0; j < steps.size(); ++j)
                 {
-                    vtkSpoke* in1 = new vtkSpoke;
+                    vtkSmartPointer<vtkSpoke> in1 = vtkSmartPointer<vtkSpoke>::New();
                     interpolater.Interpolate(double(steps[i]), double(steps[j]), cornerSpokes, in1);
                     interpolatedSpokes.push_back(in1);
                     innerQuadSpokes.push_back(in1);
@@ -1342,6 +1395,7 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::ConnectImpliedBoundaryPts(int 
 
             }
 
+            // These four edges are top view of up or down spokes grid
             ConnectFoldCurve(topEdgeSpokes, foldCurvePts, foldCurveCell);
             ConnectFoldCurve(botEdgeSpokes, foldCurvePts, foldCurveCell);
             ConnectFoldCurve(leftEdgeSpokes, foldCurvePts, foldCurveCell);
@@ -1617,11 +1671,11 @@ double vtkSlicerSkeletalRepresentationRefinerLogic::TotalDistOfLeftTopSpoke(vtkS
                                dXdv21,
                                dXdv22,
                                dXdv12);
-    vtkSpoke interpolatedSpoke;
-    interpolater.Interpolate(u, v, cornerSpokes, &interpolatedSpoke);
+    vtkSmartPointer<vtkSpoke> interpolatedSpoke;
+    interpolater.Interpolate(u, v, cornerSpokes, interpolatedSpoke);
 
     // compute the ssd for this interpolated spoke
-    imageDist += ComputeDistance(&interpolatedSpoke, normalMatch);
+    imageDist += ComputeDistance(interpolatedSpoke, normalMatch);
 
     return imageDist;
 }
@@ -1658,11 +1712,11 @@ double vtkSlicerSkeletalRepresentationRefinerLogic::TotalDistOfRightTopSpoke(vtk
                                dXdv21,
                                dXdv22,
                                dXdv12);
-    vtkSpoke interpolatedSpoke;
-    interpolater.Interpolate(u, v, cornerSpokes, &interpolatedSpoke);
+    vtkSmartPointer<vtkSpoke> interpolatedSpoke = vtkSmartPointer<vtkSpoke>::New();
+    interpolater.Interpolate(u, v, cornerSpokes, interpolatedSpoke);
 
     // compute the ssd & normal match for this interpolated spoke
-    imageDist += ComputeDistance(&interpolatedSpoke, normalMatch);
+    imageDist += ComputeDistance(interpolatedSpoke, normalMatch);
     return imageDist;
 }
 
@@ -1698,11 +1752,11 @@ double vtkSlicerSkeletalRepresentationRefinerLogic::TotalDistOfLeftBotSpoke(vtkS
                                dXdv21,
                                dXdv22,
                                dXdv12);
-    vtkSpoke interpolatedSpoke;
-    interpolater.Interpolate(u, v, cornerSpokes, &interpolatedSpoke);
+    vtkSmartPointer<vtkSpoke> interpolatedSpoke = vtkSmartPointer<vtkSpoke>::New();
+    interpolater.Interpolate(u, v, cornerSpokes, interpolatedSpoke);
 
     // compute the ssd for this interpolated spoke
-    imageDist += ComputeDistance(&interpolatedSpoke, normalMatch);
+    imageDist += ComputeDistance(interpolatedSpoke, normalMatch);
     return imageDist;
 }
 
@@ -1738,11 +1792,11 @@ double vtkSlicerSkeletalRepresentationRefinerLogic::TotalDistOfRightBotSpoke(vtk
                                dXdv21,
                                dXdv22,
                                dXdv12);
-    vtkSpoke interpolatedSpoke;
-    interpolater.Interpolate(u, v, cornerSpokes, &interpolatedSpoke);
+    vtkSmartPointer<vtkSpoke> interpolatedSpoke = vtkSmartPointer<vtkSpoke>::New();
+    interpolater.Interpolate(u, v, cornerSpokes, interpolatedSpoke);
 
     // compute the ssd for this interpolated spoke
-    imageDist += ComputeDistance(&interpolatedSpoke, normalMatch);
+    imageDist += ComputeDistance(interpolatedSpoke, normalMatch);
     return imageDist;
 }
 
@@ -1890,8 +1944,8 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::FindTopLeftNeigbors(int r, int
                                dXdv22,
                                dXdv12);
 
-    vtkSpoke* in1 = new vtkSpoke;
-    vtkSpoke* in2 = new vtkSpoke;
+    vtkSmartPointer<vtkSpoke> in1 = vtkSmartPointer<vtkSpoke>::New();
+    vtkSmartPointer<vtkSpoke> in2 = vtkSmartPointer<vtkSpoke>::New();
     double stepV = mInterpolatePositions[0].second;
     double stepU = stepV;
     interpolater.Interpolate(stepU, 0, cornerSpokes, in1);
@@ -1929,8 +1983,8 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::FindTopRightNeigbors(int r, in
                                dXdv22,
                                dXdv12);
 
-    vtkSpoke* in1 = new vtkSpoke;
-    vtkSpoke* in2 = new vtkSpoke;
+    vtkSmartPointer<vtkSpoke> in1 = vtkSmartPointer<vtkSpoke>::New();
+    vtkSmartPointer<vtkSpoke> in2 = vtkSmartPointer<vtkSpoke>::New();
     double stepV = mInterpolatePositions[0].second;
     double stepU = stepV;
     interpolater.Interpolate(stepU, 1, cornerSpokes, in1);
@@ -1971,8 +2025,8 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::FindBotLeftNeigbors(int r, int
                                dXdv22,
                                dXdv12);
 
-    vtkSpoke* in1 = new vtkSpoke;
-    vtkSpoke* in2 = new vtkSpoke;
+    vtkSmartPointer<vtkSpoke> in1 = vtkSmartPointer<vtkSpoke>::New();
+    vtkSmartPointer<vtkSpoke> in2 = vtkSmartPointer<vtkSpoke>::New();
     double stepV = mInterpolatePositions[0].second;
     double stepU = stepV;
     interpolater.Interpolate(1-stepU, 0, cornerSpokes, in1);
@@ -2013,8 +2067,8 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::FindBotRightNeigbors(int r, in
                                dXdv22,
                                dXdv12);
 
-    vtkSpoke* in1 = new vtkSpoke;
-    vtkSpoke* in2 = new vtkSpoke;
+    vtkSmartPointer<vtkSpoke> in1 = vtkSmartPointer<vtkSpoke>::New();
+    vtkSmartPointer<vtkSpoke> in2 = vtkSmartPointer<vtkSpoke>::New();
     double stepV = mInterpolatePositions[0].second;
     double stepU = stepV;
     interpolater.Interpolate(1-stepU, 1, cornerSpokes, in1);

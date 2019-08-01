@@ -20,8 +20,17 @@
 // Eigen includes
 #include <Eigen/Dense>
 #include <Eigen/Eigenvalues>
-vtkSpoke::vtkSpoke(){}
+#include "vtkObjectFactory.h" //for new() macro
 
+vtkStandardNewMacro(vtkSpoke);
+vtkSpoke::vtkSpoke()
+{
+
+}
+vtkSpoke::~vtkSpoke()
+{
+
+}
 vtkSpoke::vtkSpoke(double radius, double px, double py, double pz, double ux, double uy, double uz)
 {
     mR = radius;
@@ -221,7 +230,7 @@ double vtkSpoke::GetRSradPenalty(double stepSize)
     double detRSrad = rSradMat.determinant();
     if(detRSrad < 0) return 100;
     else if(detRSrad < 1) return 0.0;
-    else return (abs(detRSrad)-1);
+    else return (std::abs(detRSrad)-1);
 }
 
 void vtkSpoke::ComputeDerivatives(std::vector<vtkSpoke*> neibors, bool isForward, double stepSize, // input

@@ -48,7 +48,6 @@ vtkSrep::~vtkSrep()
         {
             continue;
         }
-        delete spokes[i];
         spokes[i] = nullptr;
     }
 }

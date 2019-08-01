@@ -621,15 +621,15 @@ class SkeletalRepresentationVisualizerLogic(ScriptedLoadableModuleLogic):
                 if r == 0:
                     # 1st rows
                     crest_index = i
-                elif c == nCols - 1:
-                    # last col
-                    crest_index = nCols + r - 1
+                elif c == nCols - 1 and r < nRows - 1:
+                    # last col excluding first and last row
+                    crest_index = nCols + r * 2 - 1
                 elif r == nRows - 1:
                     # last row: the last parenthesis is about the dist from last col to current col
-                    crest_index = nCols - 1 + nRows - 1 + (nCols - 1 - c)
+                    crest_index = nCols + (nRows - 2) * 2 + c
                 else:
-                    # first col
-                    crest_index = nCols - 1 + nRows - 1 + nCols - 1 + (nRows - 1 - r)
+                    # first col excluding top and bottom rows
+                    crest_index = nCols + (r - 1) * 2
                 crest_spoke_length = crestSpokeLengths.GetValue(crest_index)
 
                 crestBase = crest_index * 3;
