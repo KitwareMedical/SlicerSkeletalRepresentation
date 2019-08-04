@@ -219,6 +219,11 @@ private:
                          int currentSpokeId, int nRows, int nCols, double *dxdu, double *dxdu1);
   void ComputeDxDvBotRow(std::vector<vtkSpoke*> &crestSpoke, std::vector<vtkSpoke*> &interiorSpokes,
                          int currentSpokeId, int nRows, int nCols, double *dxdv, double *dxdv1);
+  void ComputeDxDv(std::vector<vtkSpoke*> &crestSpoke, std::vector<vtkSpoke*> &interiorSpokes,
+                         size_t crestSpokeId, size_t interiorSpokeId, double *dxdvCrest, double *dxdvInterior);
+  void ComputeDxDu(std::vector<vtkSpoke*> &crestSpoke, std::vector<vtkSpoke*> &interiorSpokes,
+                         size_t crestSpokeId, size_t interiorSpokeId, size_t nextCrestId,
+                   double *dxduCrest, double *dxduInterior);
 private:
   std::string mTargetMeshFilePath;
   std::string mSrepFilePath;

@@ -2096,7 +2096,7 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::InterpolateCrest(std::vector<v
             dXdu12[3], dXdv12[3],
             dXdu21[3], dXdv21[3],
             dXdu22[3], dXdv22[3];
-
+    size_t snCols = static_cast<size_t>(nCols);
     // top row
     for(int i = 0; i < nCols-1; ++i)
     {
@@ -2172,6 +2172,27 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::InterpolateCrest(std::vector<v
             cornerSpokes[1] = crestSpoke[sti + 2];
             cornerSpokes[2] = interiorSpokes[interiorId + nCols];
             cornerSpokes[3] = interiorSpokes[interiorId];
+            ComputeDxDv(crestSpoke, interiorSpokes, sti, interiorId, dXdv11, dXdv12);
+            ComputeDxDv(crestSpoke, interiorSpokes, sti + 2, interiorId + snCols, dXdv21, dXdv22);
+            ComputeDxDu(crestSpoke, interiorSpokes, sti, interiorId, sti + 2, dXdu11, dXdu12);
+            ComputeDxDu(crestSpoke, interiorSpokes, sti + 2, interiorId + snCols, r == nRows - 2 ? sti:sti+4, dXdu21, dXdu22);
+            interpolater.SetCornerDxdu(dXdu11,
+                                       dXdu21,
+                                       dXdu22,
+                                       dXdu12);
+            interpolater.SetCornerDxdv(dXdv11,
+                                       dXdv21,
+                                       dXdv22,
+                                       dXdv12);
+            for(size_t si = 0; si < steps.size(); ++si)
+            {
+                for(size_t sj = 0; sj < steps.size(); ++sj)
+                {
+                    vtkSpoke* in1 = new vtkSpoke;
+                    interpolater.Interpolate(double(steps[si]), double(steps[sj]), cornerSpokes, in1);
+                    result.push_back(in1);
+                }
+            }
         }
         else {
             // right col
@@ -2233,6 +2254,35 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::ComputeDxDvBotRow(std::vector<
     ComputeDiff(head, tail, factor, dxdv);
     interiorSpokes[interiorId]->GetDxdv(dxdv1);
 
+}
+
+void vtkSlicerSkeletalRepresentationRefinerLogic::ComputeDxDv(std::vector<vtkSpoke *> &crestSpoke,
+                                                              std::vector<vtkSpoke *> &interiorSpokes,
+                                                              size_t crestSpokeId, size_t interiorSpokeId,
+                                                              double *dxdvCrest, double *dxdvInterior)
+{
+    double head[3], tail[3];
+    double factor = 1.0;
+    interiorSpokes[interiorSpokeId]->GetSkeletalPoint(head);
+    crestSpoke[crestSpokeId]->GetSkeletalPoint(tail);
+    ComputeDiff(head, tail, factor, dxdvCrest);
+
+    interiorSpokes[interiorSpokeId]->GetDxdv(dxdvInterior);
+}
+
+void vtkSlicerSkeletalRepresentationRefinerLogic::ComputeDxDu(std::vector<vtkSpoke *> &crestSpoke,
+                                                              std::vector<vtkSpoke *> &interiorSpokes,
+                                                              size_t crestSpokeId, size_t interiorSpokeId,
+                                                              size_t nextCrestId,
+                                                              double *dxduCrest, double *dxduInterior)
+{
+    double head[3], tail[3];
+    double factor = 1.0;
+    crestSpoke[nextCrestId]->GetSkeletalPoint(head);
+    crestSpoke[crestSpokeId]->GetSkeletalPoint(tail);
+    ComputeDiff(head, tail, factor, dxduCrest);
+
+    interiorSpokes[interiorSpokeId]->GetDxdu(dxduInterior);
 }
 
 void vtkSlicerSkeletalRepresentationRefinerLogic::ComputeDxDvTopRow(std::vector<vtkSpoke *> &crestSpoke,
