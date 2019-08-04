@@ -161,6 +161,11 @@ private:
                                  vtkPoints *foldCurvePts, vtkCellArray *foldCurveCell,
                                  std::vector<vtkSpoke*>& interpolated, std::vector<vtkSpoke*>& primary);
 
+  // Interpolate crest region and connect them with quads
+  void ConnectImpliedCrest(int interpolationLevel, int nRows, int nCols,
+                           const std::string &crest, std::vector<vtkSpoke*> &interiorSpokes,
+                           vtkPoints *pts, vtkCellArray *quads);
+
   // connect crest position
   void ConnectCrestRegion(int interpolationLevel, int nRows, int nCols,
                           const std::string &srepFileName,
@@ -211,6 +216,8 @@ private:
   void InterpolateCrest(std::vector<vtkSpoke*> &crestSpoke, std::vector<vtkSpoke*> &interiorSpokes,
                         int interpolationLevel,
                         int nRows, int nCols, std::vector<vtkSpoke*> &result);
+
+  // Note that the direction of du and dv depends on the quads defination, du pointing downward and dv pointing rightward
   void ComputeDxDuTopRow(std::vector<vtkSpoke*> &crestSpoke, std::vector<vtkSpoke*> &interiorSpokes, int currentSpokeId,
                         double *dxdu, double *dxdu1);
   void ComputeDxDvTopRow(std::vector<vtkSpoke *> &crestSpoke, std::vector<vtkSpoke*> &interiorSpokes,
@@ -219,6 +226,7 @@ private:
                          int currentSpokeId, int nRows, int nCols, double *dxdu, double *dxdu1);
   void ComputeDxDvBotRow(std::vector<vtkSpoke*> &crestSpoke, std::vector<vtkSpoke*> &interiorSpokes,
                          int currentSpokeId, int nRows, int nCols, double *dxdv, double *dxdv1);
+  // input orient: true crest spoke is to the right of the corresponding interior spoke
   void ComputeDxDv(std::vector<vtkSpoke*> &crestSpoke, std::vector<vtkSpoke*> &interiorSpokes,
                          size_t crestSpokeId, size_t interiorSpokeId, bool orient, double *dxdvCrest, double *dxdvInterior);
   void ComputeDxDu(std::vector<vtkSpoke*> &crestSpoke, std::vector<vtkSpoke*> &interiorSpokes,
