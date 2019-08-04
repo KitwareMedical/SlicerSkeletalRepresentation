@@ -224,6 +224,34 @@ double vtkSpoke::GetRSradPenalty(double stepSize)
     else return (abs(detRSrad)-1);
 }
 
+void vtkSpoke::SetDxdu(double *dxdu)
+{
+    m_dxdu[0] = dxdu[0];
+    m_dxdu[1] = dxdu[1];
+    m_dxdu[2] = dxdu[2];
+}
+
+void vtkSpoke::SetDxdv(double *dxdv)
+{
+    m_dxdv[0] = dxdv[0];
+    m_dxdv[1] = dxdv[1];
+    m_dxdv[2] = dxdv[2];
+}
+
+void vtkSpoke::GetDxdu(double *dxdu)
+{
+    dxdu[0] = m_dxdu[0];
+    dxdu[1] = m_dxdu[1];
+    dxdu[2] = m_dxdu[2];
+}
+
+void vtkSpoke::GetDxdv(double *dxdv)
+{
+    dxdv[0] = m_dxdv[0];
+    dxdv[1] = m_dxdv[1];
+    dxdv[2] = m_dxdv[2];
+}
+
 void vtkSpoke::ComputeDerivatives(std::vector<vtkSpoke*> neibors, bool isForward, double stepSize, // input
                                   double *dxdu, double *dSdu, double *drdu) // output
 {

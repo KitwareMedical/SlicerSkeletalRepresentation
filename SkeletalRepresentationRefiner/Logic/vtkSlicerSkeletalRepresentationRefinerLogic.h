@@ -207,6 +207,18 @@ private:
                            std::vector<vtkSpoke *> &neighborU,
                            std::vector<vtkSpoke *> &neighborV);
   void ParseCrest(const std::string &crestFileName, std::vector<vtkSpoke*> &crestSpokes);
+
+  void InterpolateCrest(std::vector<vtkSpoke*> &crestSpoke, std::vector<vtkSpoke*> &interiorSpokes,
+                        int interpolationLevel,
+                        int nRows, int nCols, std::vector<vtkSpoke*> &result);
+  void ComputeDxDuTopRow(std::vector<vtkSpoke*> &crestSpoke, std::vector<vtkSpoke*> &interiorSpokes, int currentSpokeId,
+                        double *dxdu, double *dxdu1);
+  void ComputeDxDvTopRow(std::vector<vtkSpoke *> &crestSpoke, std::vector<vtkSpoke*> &interiorSpokes,
+                        int currentSpokeId, int nRows, int nCols, double *dxdv, double *dxdv1);
+  void ComputeDxDuBotRow(std::vector<vtkSpoke*> &crestSpoke, std::vector<vtkSpoke*> &interiorSpokes,
+                         int currentSpokeId, int nRows, int nCols, double *dxdu, double *dxdu1);
+  void ComputeDxDvBotRow(std::vector<vtkSpoke*> &crestSpoke, std::vector<vtkSpoke*> &interiorSpokes,
+                         int currentSpokeId, int nRows, int nCols, double *dxdv, double *dxdv1);
 private:
   std::string mTargetMeshFilePath;
   std::string mSrepFilePath;

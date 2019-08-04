@@ -71,6 +71,11 @@ public:
     // output rSrad penalty
     double GetRSradPenalty(double delta);
 
+    void SetDxdu(double *dxdu);
+    void SetDxdv(double *dxdv);
+    void GetDxdu(double *dxdu);
+    void GetDxdv(double *dxdv);
+
 private:
     void ComputeDerivatives(std::vector<vtkSpoke*> neibors, bool isForward, double stepSize, // input
                             double *dxdu, double *dSdu, double *drdu);
@@ -82,6 +87,8 @@ private:
     double mUx;
     double mUy;
     double mUz;
+    double m_dxdu[3];
+    double m_dxdv[3];
     bool mIsForwardU, mIsForwardV;
     std::vector<vtkSpoke*> mNeighborsU;
     std::vector<vtkSpoke*> mNeighborsV;
