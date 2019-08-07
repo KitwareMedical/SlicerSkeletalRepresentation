@@ -217,21 +217,6 @@ private:
                         int interpolationLevel,
                         int nRows, int nCols, std::vector<vtkSpoke*> &result);
 
-  // Note that the direction of du and dv depends on the quads defination, du pointing downward and dv pointing rightward
-  void ComputeDxDuTopRow(std::vector<vtkSpoke*> &crestSpoke, std::vector<vtkSpoke*> &interiorSpokes, int currentSpokeId,
-                        double *dxdu, double *dxdu1);
-  void ComputeDxDvTopRow(std::vector<vtkSpoke *> &crestSpoke, std::vector<vtkSpoke*> &interiorSpokes,
-                        int currentSpokeId, int nRows, int nCols, double *dxdv, double *dxdv1);
-  void ComputeDxDuBotRow(std::vector<vtkSpoke*> &crestSpoke, std::vector<vtkSpoke*> &interiorSpokes,
-                         int currentSpokeId, int nRows, int nCols, double *dxdu, double *dxdu1);
-  void ComputeDxDvBotRow(std::vector<vtkSpoke*> &crestSpoke, std::vector<vtkSpoke*> &interiorSpokes,
-                         int currentSpokeId, int nRows, int nCols, double *dxdv, double *dxdv1);
-  // input orient: true crest spoke is to the right of the corresponding interior spoke
-  void ComputeDxDv(std::vector<vtkSpoke*> &crestSpoke, std::vector<vtkSpoke*> &interiorSpokes,
-                         size_t crestSpokeId, size_t interiorSpokeId, bool orient, double *dxdvCrest, double *dxdvInterior);
-  void ComputeDxDu(std::vector<vtkSpoke*> &crestSpoke, std::vector<vtkSpoke*> &interiorSpokes,
-                         size_t crestSpokeId, size_t interiorSpokeId, size_t nextCrestId,
-                   double *dxduCrest, double *dxduInterior);
 private:
   std::string mTargetMeshFilePath;
   std::string mSrepFilePath;
