@@ -163,7 +163,7 @@ private:
 
   // Interpolate crest region and connect them with quads
   void ConnectImpliedCrest(int interpolationLevel, int nRows, int nCols,
-                           const std::string &crest, std::vector<vtkSpoke*> &interiorSpokes,
+                           const std::string &crest, std::vector<vtkSpoke*> &upSpokes,std::vector<vtkSpoke*> &downSpokes,
                            vtkPoints *pts, vtkCellArray *quads);
 
   // connect crest position
@@ -215,7 +215,8 @@ private:
 
   void InterpolateCrest(std::vector<vtkSpoke*> &crestSpoke, std::vector<vtkSpoke*> &interiorSpokes,
                         int interpolationLevel,
-                        int nRows, int nCols, std::vector<vtkSpoke*> &result);
+                        int nRows, int nCols,
+                        std::vector<vtkSpoke*> &crest, std::vector<vtkSpoke*> &interior);
 
 private:
   std::string mTargetMeshFilePath;

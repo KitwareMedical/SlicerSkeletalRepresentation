@@ -62,7 +62,7 @@
 #include "vtkPolyData2ImageData.h"
 #include "vtkApproximateSignedDistanceMap.h"
 #include "vtkGradientDistanceFilter.h"
-
+#include <vtkBoundingBox.h>
 // STD includes
 #include <cassert>
 const double voxelSpacing = 0.005;
@@ -223,12 +223,11 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::InterpolateSrep(int interpolat
     int shares = static_cast<int>(pow(2, interpolationLevel));
     double interval = static_cast<double>(1.0/ shares);
     std::vector<double> steps;
-    steps.push_back(0.0);
-    for(int i = 1; i <= shares; ++i)
+
+    for(int i = 0; i <= shares; ++i)
     {
         steps.push_back(i * interval);
     }
-    steps.push_back(1.0);
 
     std::vector<vtkSpoke*> interpolatedSpokes;
     for(int r = 0; r < nRows-1; ++r)
@@ -281,10 +280,10 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::InterpolateSrep(int interpolat
     ConvertSpokes2PolyData(srep->GetAllSpokes(), primarySpokes);
     Visualize(primarySpokes, "Primary", 1, 0, 0);
 
-    std::vector<vtkSpoke*> crestSpokes, topCrest;
+    std::vector<vtkSpoke*> crestSpokes, topCrest, crestInterpolate;
     ParseCrest(crest, crestSpokes);
 
-    InterpolateCrest(crestSpokes, srep->GetAllSpokes(), interpolationLevel, nRows, nCols, topCrest);
+    InterpolateCrest(crestSpokes, srep->GetAllSpokes(), interpolationLevel, nRows, nCols, crestInterpolate, topCrest);
     vtkSmartPointer<vtkPolyData> crestSpokes_poly = vtkSmartPointer<vtkPolyData>::New();
     ConvertSpokes2PolyData(topCrest, crestSpokes_poly);
     Visualize(crestSpokes_poly, "Crest", 0, 0, 1);
@@ -518,11 +517,9 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::ShowImpliedBoundary(int interp
                               pts, quads, foldCurvePts, foldCurveCell,
                               interpolatedSpokes, downSpokes);
 
-    ConnectImpliedCrest(interpolationLevel, nRows, nCols, crest, upSpokes, pts,
+    ConnectImpliedCrest(interpolationLevel, nRows, nCols, crest, upSpokes, downSpokes, pts,
                         quads);
 
-//    ConnectImpliedCrest(interpolationLevel, nRows, nCols, crest, downSpokes, pts,
-//                        quads);
     // connect implied boundary around fold
     //ConnectCrestRegion(interpolationLevel, nRows, nCols, crest, crestShift, upSpokes, downSpokes);
 
@@ -1287,15 +1284,7 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::ConnectImpliedBoundaryPts(int 
                                        dXdv21,
                                        dXdv22,
                                        dXdv12);
-//            cornerSpokes[0]->SetDxdu(dXdu11);
-//            cornerSpokes[1]->SetDxdu(dXdu21);
-//            cornerSpokes[2]->SetDxdu(dXdu22);
-//            cornerSpokes[3]->SetDxdu(dXdu12);
 
-//            cornerSpokes[0]->SetDxdv(dXdv11);
-//            cornerSpokes[1]->SetDxdv(dXdv21);
-//            cornerSpokes[2]->SetDxdv(dXdv22);
-//            cornerSpokes[3]->SetDxdv(dXdv12);
             std::vector<vtkSpoke *> innerQuadSpokes;
             std::vector<vtkSpoke *> topEdgeSpokes, botEdgeSpokes, leftEdgeSpokes, rightEdgeSpokes;
             for(size_t i = 0; i < steps.size(); ++i)
@@ -1378,57 +1367,138 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::ConnectImpliedBoundaryPts(int 
 void vtkSlicerSkeletalRepresentationRefinerLogic::ConnectImpliedCrest(int interpolationLevel,
                                                                       int nRows, int nCols,
                                                                       const std::string &crest,
-                                                                      std::vector<vtkSpoke*> &interiorSpokes,
-                                                                      vtkPoints *pts, vtkCellArray *quads)
+                                                                      std::vector<vtkSpoke*> &upSpokes,
+                                                                      std::vector<vtkSpoke*> &downSpokes,
+                                                                      vtkPoints *vtkNotUsed(pts), vtkCellArray *vtkNotUsed(quads))
 {
     std::vector<vtkSpoke*> crestSpokes, topCrest;
     ParseCrest(crest, crestSpokes);
 
-    std::vector<vtkSpoke *> interpolatedCrestSpokes;
-//    if(isDownCrest)
-//    {
-//        std::reverse(std::begin(interiorSpokes), std::end(interiorSpokes));
-//    }
+    std::vector<vtkSpoke *> upInterpSpokes, downInterpSpokes, crestInterpSpokes, tempInterp;
 
-    InterpolateCrest(crestSpokes, interiorSpokes, interpolationLevel, nRows, nCols, interpolatedCrestSpokes);
+    InterpolateCrest(crestSpokes, upSpokes, interpolationLevel, nRows, nCols, crestInterpSpokes, upInterpSpokes);
 
-    int shares = static_cast<int>(pow(2, interpolationLevel));
-    // primary unit quad
-    int numSpokesPerQuad = (shares + 1) * (shares + 1);
-    int numPrimaryQuads = 2 * (nCols + nRows - 2);
+    InterpolateCrest(crestSpokes, downSpokes, interpolationLevel, nRows, nCols, tempInterp, downInterpSpokes);
 
-    // devide interpolated crest spokes into primary quads and connect spokes in them individually
-    for(int i = 0; i < numPrimaryQuads; ++i)
+    vtkSmartPointer<vtkPolyData> upInterpSpokesPoly = vtkSmartPointer<vtkPolyData>::New();
+    ConvertSpokes2PolyData(upInterpSpokes, upInterpSpokesPoly);
+    Visualize(upInterpSpokesPoly, "up spokes", 0, 0,0, false);
+
+    vtkSmartPointer<vtkPolyData> downInterpSpokesPoly = vtkSmartPointer<vtkPolyData>::New();
+    ConvertSpokes2PolyData(downInterpSpokes, downInterpSpokesPoly);
+    Visualize(downInterpSpokesPoly, "down spokes", 0, 0,0, false);
+
+    vtkSmartPointer<vtkPolyData> crestInterpSpokesPoly = vtkSmartPointer<vtkPolyData>::New();
+    ConvertSpokes2PolyData(crestInterpSpokes, crestInterpSpokesPoly);
+    Visualize(crestInterpSpokesPoly, "crest spokes", 0, 0,0, false);
+
+    // shares between up spoke to resp. down spoke
+    int shares = 2 * static_cast<int>(pow(2, interpolationLevel));
+    double interval = static_cast<double>((1.0/ shares));
+
+    vtkSmartPointer<vtkPoints> crestPoints = vtkSmartPointer<vtkPoints>::New();
+    vtkSmartPointer<vtkAppendPolyData> appendFilter =
+      vtkSmartPointer<vtkAppendPolyData>::New();
+    double ptCrest[3], ptUp[3], ptDown[3], ptInterp[3], ptSkeletal[3], du[9];
+
+    vtkSmartPointer<vtkPolyData> interpS = vtkSmartPointer<vtkPolyData>::New();
+    vtkSmartPointer<vtkCellArray> interpCell = vtkSmartPointer<vtkCellArray>::New();
+
+    vtkSmartPointer<vtkPolyData> interpDownS = vtkSmartPointer<vtkPolyData>::New();
+    vtkSmartPointer<vtkCellArray> interpDownCell = vtkSmartPointer<vtkCellArray>::New();
+
+    vtkSmartPointer<vtkPolyData> interpCrestS = vtkSmartPointer<vtkPolyData>::New();
+    vtkSmartPointer<vtkCellArray> interpCrestCell = vtkSmartPointer<vtkCellArray>::New();
+    vtkSmartPointer<vtkPoints> interpSPts = vtkSmartPointer<vtkPoints>::New();
+    vtkSmartPointer<vtkPoints> interpSBrdy = vtkSmartPointer<vtkPoints>::New();
+    for(size_t i = 0; i < crestInterpSpokes.size(); ++i)
     {
-        int offset = numSpokesPerQuad * i;
-        for(int j = 0; j < numSpokesPerQuad; ++j)
-        {
-            int currentId = offset + j;
-            int vRow = j / (shares + 1);
-            int vCol = j - vRow * (shares + 1);
-            if(vRow >= 1 && vCol >= 1)
-            {
-                // add a quad into quads at this time
-                // The new quad consists of two points in the row above and one point in the same row
-                double pt11[3], pt12[3], pt21[3], pt22[3];
-                interpolatedCrestSpokes[currentId - (shares + 1) - 1]->GetBoundaryPoint(pt11); // top left
-                interpolatedCrestSpokes[currentId-1]->GetBoundaryPoint(pt21); // bot left
-                interpolatedCrestSpokes[currentId]->GetBoundaryPoint(pt22); // bot right
-                interpolatedCrestSpokes[currentId-(shares+1)]->GetBoundaryPoint(pt12); // top right
-                vtkIdType id11 = pts->InsertNextPoint(pt11);
-                vtkIdType id21 = pts->InsertNextPoint(pt21);
-                vtkIdType id22 = pts->InsertNextPoint(pt22);
-                vtkIdType id12 = pts->InsertNextPoint(pt12);
+        crestInterpSpokes[i]->GetBoundaryPoint(ptCrest);
+        crestPoints->InsertNextPoint(ptCrest);
+        vtkSmartPointer<vtkPoints> radialCurve = vtkSmartPointer<vtkPoints>::New();
+        upInterpSpokes[i]->GetBoundaryPoint(ptUp);
+        downInterpSpokes[i]->GetBoundaryPoint(ptDown);
+        radialCurve->InsertNextPoint(ptUp);
+        radialCurve->InsertNextPoint(ptCrest);
+        radialCurve->InsertNextPoint(ptDown);
+        vtkSmartPointer<vtkParametricSpline> splineRadial =
+                vtkSmartPointer<vtkParametricSpline>::New();
+        splineRadial->SetPoints(radialCurve);
+        vtkSmartPointer<vtkParametricFunctionSource> functionSourceRadial =
+                vtkSmartPointer<vtkParametricFunctionSource>::New();
+        functionSourceRadial->SetParametricFunction(splineRadial);
+        functionSourceRadial->Update();
+        // share the base point among all other interpolated spokes
+        crestInterpSpokes[i]->GetSkeletalPoint(ptSkeletal);
 
-                vtkSmartPointer<vtkQuad> quad = vtkSmartPointer<vtkQuad>::New();
-                quad->GetPointIds()->SetId(0, id11);
-                quad->GetPointIds()->SetId(1, id21);
-                quad->GetPointIds()->SetId(2, id22);
-                quad->GetPointIds()->SetId(3, id12);
-                quads->InsertNextCell(quad);
-            }
+        // interpolate along the spline
+        for(int j = 1; j < shares; ++j)
+        {
+            double uInterp = j * interval;
+            double u[3] = {uInterp, uInterp, uInterp};
+            splineRadial->Evaluate(u, ptInterp, du);
+            vtkIdType id0 = interpSPts->InsertNextPoint(ptInterp);
+            vtkIdType id1 = interpSPts->InsertNextPoint(ptSkeletal);
+            interpSBrdy->InsertNextPoint(ptInterp);
+            vtkSmartPointer<vtkLine> interpSLine = vtkSmartPointer<vtkLine>::New();
+            interpSLine->GetPointIds()->SetId(0, id0);
+            interpSLine->GetPointIds()->SetId(1, id1);
+            interpCell->InsertNextCell(interpSLine);
         }
+        appendFilter->AddInputData(functionSourceRadial->GetOutput());
     }
+    interpS->SetPoints(interpSPts);
+    interpS->SetPolys(interpCell);
+    Visualize(interpS, "Interpolated", 0, 0, 1);
+
+    double bounds[6];
+    interpS->GetBounds(bounds);
+
+    // connect points along crest. There should be #share-1 curves in total
+    for(int i = 0; i < shares; ++i)
+    {
+        vtkSmartPointer<vtkParametricSpline> splineAlongCrest =
+                vtkSmartPointer<vtkParametricSpline>::New();
+        vtkSmartPointer<vtkPoints> crestSplinePts = vtkSmartPointer<vtkPoints>::New();
+
+        for(int j = 0; j < interpSBrdy->GetNumberOfPoints(); ++j)
+        {
+            if((j+1) % (shares-1) != i)
+            {
+                continue;
+            }
+            double pt[3];
+            interpSBrdy->GetPoint(j, pt);
+            crestSplinePts->InsertNextPoint(pt);
+        }
+        if(crestSplinePts->GetNumberOfPoints() > 0)
+        {
+            splineAlongCrest->SetPoints(crestSplinePts);
+            vtkSmartPointer<vtkParametricFunctionSource> functionSourceAlong =
+                    vtkSmartPointer<vtkParametricFunctionSource>::New();
+            functionSourceAlong->SetParametricFunction(splineAlongCrest);
+            functionSourceAlong->Update();
+            appendFilter->AddInputData(functionSourceAlong->GetOutput());
+        }
+
+    }
+    vtkSmartPointer<vtkParametricSpline> splineCrest =
+            vtkSmartPointer<vtkParametricSpline>::New();
+    splineCrest->SetPoints(crestPoints);
+    vtkSmartPointer<vtkParametricFunctionSource> functionSourceCrest =
+            vtkSmartPointer<vtkParametricFunctionSource>::New();
+    functionSourceCrest->SetParametricFunction(splineCrest);
+    functionSourceCrest->Update();
+    appendFilter->AddInputData(functionSourceCrest->GetOutput());
+    appendFilter->Update();
+
+    // Remove any duplicate points.
+    vtkSmartPointer<vtkCleanPolyData> cleanFilter =
+            vtkSmartPointer<vtkCleanPolyData>::New();
+    cleanFilter->SetInputConnection(appendFilter->GetOutputPort());
+    cleanFilter->Update();
+    Visualize(cleanFilter->GetOutput(), "Implied crest", 0, 1, 1);
+
 }
 
 void vtkSlicerSkeletalRepresentationRefinerLogic::ConnectCrestRegion(int vtkNotUsed(interpolationLevel),
@@ -2136,8 +2206,12 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::ParseCrest(const string &crest
     }
 }
 
-void vtkSlicerSkeletalRepresentationRefinerLogic::InterpolateCrest(std::vector<vtkSpoke *> &crestSpoke, std::vector<vtkSpoke *> &interiorSpokes,
-                                                                   int interpolationLevel, int nRows, int nCols, std::vector<vtkSpoke *> &result)
+// interpolate the crest along clock-wise direction
+void vtkSlicerSkeletalRepresentationRefinerLogic::InterpolateCrest(std::vector<vtkSpoke *> &crestSpoke,
+                                                                   std::vector<vtkSpoke *> &interiorSpokes,
+                                                                   int interpolationLevel, int nRows,
+                                                                   int nCols, std::vector<vtkSpoke*> &crest,
+                                                                   std::vector<vtkSpoke*> &interior)
 {
     std::vector<double> skeletalPts;
     for(size_t i = 0; i < interiorSpokes.size(); ++i)
@@ -2197,88 +2271,83 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::InterpolateCrest(std::vector<v
         cornerSpokes[1] = interiorSpokes[sti];
         cornerSpokes[2] = interiorSpokes[sti+1];
         cornerSpokes[3] = crestSpoke[sti+1];
-        for(size_t si = 0; si < steps.size(); ++si)
+//        for(size_t si = 0; si < steps.size(); ++si)
         {
             for(size_t sj = 0; sj < steps.size(); ++sj)
             {
                 vtkSpoke* in1 = new vtkSpoke;
-                interpolater.Interpolate(double(steps[si]), double(steps[sj]), cornerSpokes, in1);
-                result.push_back(in1);
+                interpolater.Interpolate(0.0, double(steps[sj]), cornerSpokes, in1);
+                crest.push_back(in1);
 
-//                vtkSpoke* in2 = new vtkSpoke;
-//                interpolater.Interpolate(1.0, double(steps[sj]), cornerSpokes, in2);
-//                result.push_back(in2);
+                vtkSpoke* in2 = new vtkSpoke;
+                interpolater.Interpolate(1.0, double(steps[sj]), cornerSpokes, in2);
+                interior.push_back(in2);
             }
         }
 
     }
-    // Bottom row
-    for(int i = nCols + 2 * (nRows - 2); i < static_cast<int>(crestSpoke.size()-1); ++i)
+    // top right  edge
+    cornerSpokes[0] = interiorSpokes[snCols-1];
+    cornerSpokes[1] = interiorSpokes[snCols-1 + snCols];
+    cornerSpokes[2] = crestSpoke[snCols+1];
+    cornerSpokes[3] = crestSpoke[snCols-1];
+    ComputeDerivative(skeletalPts, 0, nCols - 1, nRows, nCols, dXdu11, dXdv11);
+    ComputeDerivative(skeletalPts, 1, nCols - 1, nRows, nCols, dXdu21, dXdv21);
+    // revert dXdv
+    dXdv11[0] *= -1;
+    dXdv11[1] *= -1;
+    dXdv11[2] *= -1;
+    dXdv21[0] *= -1;
+    dXdv21[1] *= -1;
+    dXdv21[2] *= -1;
+    dXdu12[0] = dXdu11[0];
+    dXdu12[1] = dXdu11[1];
+    dXdu12[2] = dXdu11[2];
+    dXdv12[0] = dXdv11[0];
+    dXdv12[1] = dXdv11[1];
+    dXdv12[2] = dXdv11[2];
+
+    dXdu22[0] = dXdu21[0];
+    dXdu22[1] = dXdu21[1];
+    dXdu22[2] = dXdu21[2];
+    dXdv22[0] = dXdv21[0];
+    dXdv22[1] = dXdv21[1];
+    dXdv22[2] = dXdv21[2];
+    interpolater.SetCornerDxdu(dXdu11,
+                               dXdu21,
+                               dXdu22,
+                               dXdu12);
+    interpolater.SetCornerDxdv(dXdv11,
+                               dXdv21,
+                               dXdv22,
+                               dXdv12);
+
+    for(size_t sj = 0; sj < steps.size(); ++sj)
     {
-        ComputeDerivative(skeletalPts, nRows-1, i-(nCols + 2 * (nRows - 2)), nRows, nCols, dXdu11, dXdv11);
-        ComputeDerivative(skeletalPts, nRows-1, i-(nCols + 2 * (nRows - 2))+1, nRows, nCols, dXdu12, dXdv12);
-        dXdu21[0] = dXdu11[0];
-        dXdu21[1] = dXdu11[1];
-        dXdu21[2] = dXdu11[2];
-        dXdv21[0] = dXdv11[0];
-        dXdv21[1] = dXdv11[1];
-        dXdv21[2] = dXdv11[2];
+        vtkSpoke* in1 = new vtkSpoke;
+        interpolater.Interpolate(double(steps[sj]), 0.0,  cornerSpokes, in1);
+        interior.push_back(in1);
 
-        dXdu22[0] = dXdu12[0];
-        dXdu22[1] = dXdu12[1];
-        dXdu22[2] = dXdu12[2];
-        dXdv22[0] = dXdv12[0];
-        dXdv22[1] = dXdv12[1];
-        dXdv22[2] = dXdv12[2];
-        interpolater.SetCornerDxdu(dXdu11,
-                                   dXdu21,
-                                   dXdu22,
-                                   dXdu12);
-        interpolater.SetCornerDxdv(dXdv11,
-                                   dXdv21,
-                                   dXdv22,
-                                   dXdv12);
-        size_t sti = static_cast<size_t>(i);
-        size_t c = static_cast<size_t>(i - nCols - 2 * (nRows - 2));
-        size_t interiorId = static_cast<size_t>((nRows - 1) * nCols) + c;
-        cornerSpokes[0] = interiorSpokes[interiorId];
-        cornerSpokes[1] = crestSpoke[sti];
-        cornerSpokes[2] = crestSpoke[sti+1];
-        cornerSpokes[3] = interiorSpokes[interiorId+1];
-        for(size_t sj = 0; sj < steps.size(); ++sj)
-        {
-            vtkSpoke* in1 = new vtkSpoke;
-            interpolater.Interpolate(0.0, double(steps[sj]), cornerSpokes, in1);
-            result.push_back(in1);
-
-            vtkSpoke* in2 = new vtkSpoke;
-            interpolater.Interpolate(1.0, double(steps[sj]), cornerSpokes, in2);
-            result.push_back(in2);
-        }
+        vtkSpoke* in2 = new vtkSpoke;
+        interpolater.Interpolate(double(steps[sj]), 1.0, cornerSpokes, in2);
+        crest.push_back(in2);
     }
 
-    // left col and right col excluding 3 special places
-    for(int i = nCols; i < nCols + 2 * (nRows - 2); ++i)
+    // right col
+    for(int i = nCols+1; i < nCols + 2 * (nRows - 2); i+=2)
     {
         size_t sti = static_cast<size_t>(i);
         int r = (i-nCols) / 2 + 1;
-        int c = 0;
+        int c = nCols - 1;
         size_t interiorId = static_cast<size_t>(nCols * r);
 
         if((i - nCols) % 2 == 0)
         {
             // left col
-            c = 0;
-            cornerSpokes[0] = crestSpoke[sti];
-            cornerSpokes[1] = crestSpoke[sti+2];
-            cornerSpokes[2] = interiorSpokes[interiorId + snCols];
-            cornerSpokes[3] = interiorSpokes[interiorId];
-            ComputeDerivative(skeletalPts, r, c, nRows, nCols, dXdu12, dXdv12);
-            ComputeDerivative(skeletalPts, r+1, c, nRows, nCols, dXdu22, dXdv22);
+            continue;
         }
         else {
             // right col
-            c = nCols - 1;
             interiorId = static_cast<size_t>(nCols * (r+1) - 1);
             cornerSpokes[0] = interiorSpokes[interiorId];
             cornerSpokes[1] = interiorSpokes[interiorId + snCols];
@@ -2323,12 +2392,124 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::InterpolateCrest(std::vector<v
         {
             vtkSpoke* in1 = new vtkSpoke;
             interpolater.Interpolate(double(steps[sj]), 0.0,  cornerSpokes, in1);
-            result.push_back(in1);
 
             vtkSpoke* in2 = new vtkSpoke;
             interpolater.Interpolate(double(steps[sj]), 1.0, cornerSpokes, in2);
-            result.push_back(in2);
+            crest.push_back(in2);
+            interior.push_back(in1);
         }
+    }
+
+    // Bottom row from right to left
+    for(int i = static_cast<int>(crestSpoke.size()-2); i >= nCols + 2 * (nRows - 2); --i)
+    {
+        ComputeDerivative(skeletalPts, nRows-1, i-(nCols + 2 * (nRows - 2)), nRows, nCols, dXdu11, dXdv11);
+        ComputeDerivative(skeletalPts, nRows-1, i-(nCols + 2 * (nRows - 2))+1, nRows, nCols, dXdu12, dXdv12);
+        dXdu21[0] = dXdu11[0];
+        dXdu21[1] = dXdu11[1];
+        dXdu21[2] = dXdu11[2];
+        dXdv21[0] = dXdv11[0];
+        dXdv21[1] = dXdv11[1];
+        dXdv21[2] = dXdv11[2];
+
+        dXdu22[0] = dXdu12[0];
+        dXdu22[1] = dXdu12[1];
+        dXdu22[2] = dXdu12[2];
+        dXdv22[0] = dXdv12[0];
+        dXdv22[1] = dXdv12[1];
+        dXdv22[2] = dXdv12[2];
+        interpolater.SetCornerDxdu(dXdu11,
+                                   dXdu21,
+                                   dXdu22,
+                                   dXdu12);
+        interpolater.SetCornerDxdv(dXdv11,
+                                   dXdv21,
+                                   dXdv22,
+                                   dXdv12);
+        size_t sti = static_cast<size_t>(i);
+        size_t c = static_cast<size_t>(i - nCols - 2 * (nRows - 2));
+        size_t interiorId = static_cast<size_t>((nRows - 1) * nCols) + c;
+        cornerSpokes[0] = interiorSpokes[interiorId];
+        cornerSpokes[1] = crestSpoke[sti];
+        cornerSpokes[2] = crestSpoke[sti+1];
+        cornerSpokes[3] = interiorSpokes[interiorId+1];
+
+        size_t beginInteriorIndex = interior.size();
+        size_t beginCrestIndex = crest.size();
+        for(size_t sj = 0; sj < steps.size(); ++sj)
+        {
+            vtkSpoke* in1 = new vtkSpoke;
+            interpolater.Interpolate(0.0, double(steps[sj]), cornerSpokes, in1);
+            interior.push_back(in1);
+
+            vtkSpoke* in2 = new vtkSpoke;
+            interpolater.Interpolate(1.0, double(steps[sj]), cornerSpokes, in2);
+            crest.push_back(in2);
+        }
+        std::reverse(std::begin(interior) + beginInteriorIndex, std::end(interior));
+        std::reverse(std::begin(crest) + beginCrestIndex, std::end(crest));
+    }
+
+
+    // left col from down up
+    for(int i = nCols + 2 * (nRows - 2) - 2; i >= nCols; i -= 2)
+    {
+        size_t sti = static_cast<size_t>(i);
+        int r = (i-nCols) / 2 + 1;
+        int c = 0;
+        size_t interiorId = static_cast<size_t>(nCols * r);
+
+        if((i - nCols) % 2 == 0)
+        {
+            // left col
+            c = 0;
+            cornerSpokes[0] = crestSpoke[sti];
+            cornerSpokes[1] = crestSpoke[sti+2];
+            cornerSpokes[2] = interiorSpokes[interiorId + snCols];
+            cornerSpokes[3] = interiorSpokes[interiorId];
+            ComputeDerivative(skeletalPts, r, c, nRows, nCols, dXdu12, dXdv12);
+            ComputeDerivative(skeletalPts, r+1, c, nRows, nCols, dXdu22, dXdv22);
+        }
+        else {
+            // right col
+            continue;
+        }
+
+        dXdu11[0] = dXdu12[0];
+        dXdu11[1] = dXdu12[1];
+        dXdu11[2] = dXdu12[2];
+        dXdv11[0] = dXdv12[0];
+        dXdv11[1] = dXdv12[1];
+        dXdv11[2] = dXdv12[2];
+
+        dXdu21[0] = dXdu22[0];
+        dXdu21[1] = dXdu22[1];
+        dXdu21[2] = dXdu22[2];
+        dXdv21[0] = dXdv22[0];
+        dXdv21[1] = dXdv22[1];
+        dXdv21[2] = dXdv22[2];
+        interpolater.SetCornerDxdu(dXdu11,
+                                   dXdu21,
+                                   dXdu22,
+                                   dXdu12);
+        interpolater.SetCornerDxdv(dXdv11,
+                                   dXdv21,
+                                   dXdv22,
+                                   dXdv12);
+        size_t beginInteriorIndex = interior.size();
+        size_t beginCrestIndex = crest.size();
+        for(size_t sj = 0; sj < steps.size(); ++sj)
+        {
+            vtkSpoke* in1 = new vtkSpoke;
+            interpolater.Interpolate(double(steps[sj]), 0.0,  cornerSpokes, in1);
+
+            vtkSpoke* in2 = new vtkSpoke;
+            interpolater.Interpolate(double(steps[sj]), 1.0, cornerSpokes, in2);
+            crest.push_back(in1);
+            interior.push_back(in2);
+        }
+        std::reverse(std::begin(interior) + beginInteriorIndex, std::end(interior));
+        std::reverse(std::begin(crest) + beginCrestIndex, std::end(crest));
         if(i == nCols)
         {
             cornerSpokes[0] = crestSpoke[0];
@@ -2358,57 +2539,20 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::InterpolateCrest(std::vector<v
                                        dXdv21,
                                        dXdv22,
                                        dXdv12);
+            beginInteriorIndex = interior.size();
+            beginCrestIndex = crest.size();
             for(size_t sj = 0; sj < steps.size(); ++sj)
             {
                 vtkSpoke* in1 = new vtkSpoke;
                 interpolater.Interpolate(double(steps[sj]), 0.0,  cornerSpokes, in1);
-                result.push_back(in1);
+                crest.push_back(in1);
 
                 vtkSpoke* in2 = new vtkSpoke;
                 interpolater.Interpolate(double(steps[sj]), 1.0, cornerSpokes, in2);
-                result.push_back(in2);
+                interior.push_back(in2);
             }
-        }
-        else if(i == nCols + 1)
-        {
-            c = nCols - 1;
-            cornerSpokes[0] = interiorSpokes[snCols-1];
-            cornerSpokes[1] = interiorSpokes[snCols-1 + snCols];
-            cornerSpokes[2] = crestSpoke[sti];
-            cornerSpokes[3] = crestSpoke[sti - 2];
-            ComputeDerivative(skeletalPts, 0, c, nRows, nCols, dXdu12, dXdv12);
-            ComputeDerivative(skeletalPts, 1, c, nRows, nCols, dXdu22, dXdv22);
-            dXdu11[0] = dXdu12[0];
-            dXdu11[1] = dXdu12[1];
-            dXdu11[2] = dXdu12[2];
-            dXdv11[0] = dXdv12[0];
-            dXdv11[1] = dXdv12[1];
-            dXdv11[2] = dXdv12[2];
-
-            dXdu21[0] = dXdu22[0];
-            dXdu21[1] = dXdu22[1];
-            dXdu21[2] = dXdu22[2];
-            dXdv21[0] = dXdv22[0];
-            dXdv21[1] = dXdv22[1];
-            dXdv21[2] = dXdv22[2];
-            interpolater.SetCornerDxdu(dXdu11,
-                                       dXdu21,
-                                       dXdu22,
-                                       dXdu12);
-            interpolater.SetCornerDxdv(dXdv11,
-                                       dXdv21,
-                                       dXdv22,
-                                       dXdv12);
-            for(size_t sj = 0; sj < steps.size(); ++sj)
-            {
-                vtkSpoke* in1 = new vtkSpoke;
-                interpolater.Interpolate(double(steps[sj]), 0.0,  cornerSpokes, in1);
-                result.push_back(in1);
-
-                vtkSpoke* in2 = new vtkSpoke;
-                interpolater.Interpolate(double(steps[sj]), 1.0, cornerSpokes, in2);
-                result.push_back(in2);
-            }
+            std::reverse(std::begin(interior) + beginInteriorIndex, std::end(interior));
+            std::reverse(std::begin(crest) + beginCrestIndex, std::end(crest));
         }
     }
 
