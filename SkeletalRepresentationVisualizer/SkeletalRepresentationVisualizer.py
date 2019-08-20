@@ -86,7 +86,7 @@ class SkeletalRepresentationVisualizerWidget(ScriptedLoadableModuleWidget):
         self.outputFolderLabelHeader = qt.QLabel()
         self.outputFolderLabelHeader.text = "Output folder: "
         self.outputFolderLabelFile = qt.QLabel()
-        self.outputFolderLabelFile.text = "Folder to save the new xml format"
+        self.outputFolderLabelFile.text = "/tmp"
         self.outputFolderButton = qt.QPushButton()
         self.outputFolderButton.text = "Browse"
         self.outputFolderLayout.addWidget(self.outputFolderLabelHeader)
@@ -621,15 +621,15 @@ class SkeletalRepresentationVisualizerLogic(ScriptedLoadableModuleLogic):
                 if r == 0:
                     # 1st rows
                     crest_index = i
-                elif c == nCols - 1:
-                    # last col
-                    crest_index = nCols + r - 1
                 elif r == nRows - 1:
-                    # last row: the last parenthesis is about the dist from last col to current col
-                    crest_index = nCols - 1 + nRows - 1 + (nCols - 1 - c)
-                else:
+                    # last row
+                    crest_index = nCols + 2 * (nRows - 2) + c
+                elif c == nCols - 1:
+                    # right col
+                    crest_index = nCols - 1 + 2 * r
+                elif c == 0:
                     # first col
-                    crest_index = nCols - 1 + nRows - 1 + nCols - 1 + (nRows - 1 - r)
+                    crest_index = nCols + 2 * (r-1)
                 crest_spoke_length = crestSpokeLengths.GetValue(crest_index)
 
                 crestBase = crest_index * 3;
@@ -641,7 +641,7 @@ class SkeletalRepresentationVisualizerLogic(ScriptedLoadableModuleLogic):
             currAtom.setLocation(r, c)
             legacySrep.addAtom(r, c, currAtom)
 
-        outputFileName = outputFolder + '/legacy.m3d'
+        outputFileName = os.path.join(outputFolder, "legacy.m3d")
         srep_io.writeSrepToM3D(outputFileName, legacySrep)
         logging.info('Processing completed')
     def run(self, filename, dist, outputFolder):
