@@ -49,7 +49,7 @@ public:
   typedef double CoordinateRepType;
   typedef itk::Point< CoordinateRepType, 3 > PointType;
   static vtkSlicerSkeletalRepresentationInitializerLogic *New();
-  vtkTypeMacro(vtkSlicerSkeletalRepresentationInitializerLogic, vtkSlicerModuleLogic);
+  vtkTypeMacro(vtkSlicerSkeletalRepresentationInitializerLogic, vtkSlicerModuleLogic)
   void PrintSelf(ostream& os, vtkIndent indent);
 
   // flow surface to the end: either it's ellipsoidal enough or reach max_itre
@@ -89,6 +89,11 @@ public:
   // set output path for initialized s-rep
   void SetOutputPath(const std::string &outputPath);
 
+  // set rows and cols (resolution) of s-rep
+  void SetRows(int r);
+
+  void SetCols(int c);
+
 protected:
   vtkSlicerSkeletalRepresentationInitializerLogic();
   virtual ~vtkSlicerSkeletalRepresentationInitializerLogic();
@@ -123,6 +128,8 @@ private:
 
 private:
   int forwardCount = 0;
+  int mRows;
+  int mCols;
   std::string mOutputPath;
 };
 

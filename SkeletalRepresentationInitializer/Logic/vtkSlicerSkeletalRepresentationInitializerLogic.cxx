@@ -313,9 +313,6 @@ void vtkSlicerSkeletalRepresentationInitializerLogic::SetInputFileName(const std
     writer->Update();
 }
 
-#define ROWS  5
-#define COLS 5
-
 // flow surface to the end: either it's ellipsoidal enough or reach max_iter
 int vtkSlicerSkeletalRepresentationInitializerLogic::FlowSurfaceMesh(const std::string &filename, double dt, double smooth_amount, int max_iter, int freq_output)
 {
@@ -453,7 +450,7 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::FlowSurfaceMesh(const std::
     ShowFittingEllipsoid(mesh, rx, ry, rz);
 
 
-    GenerateSrepForEllipsoid(mesh, ROWS, COLS, forwardCount);
+    GenerateSrepForEllipsoid(mesh, mRows, mCols, forwardCount);
     return 1;
 }
 
@@ -625,7 +622,6 @@ void vtkSlicerSkeletalRepresentationInitializerLogic::GenerateSrepForEllipsoid(v
     using namespace Eigen;
     // the number of rows should be odd number
     double shift = 0.02; // shift fold curve off the inner spokes
-    nRows = 5; nCols = 5; // TODO: accept input values from user interface
 
     // 1. derive the best fitting ellipsoid from the deformed mesh
     vtkSmartPointer<vtkPoints> points = mesh->GetPoints();
@@ -972,8 +968,8 @@ void vtkSlicerSkeletalRepresentationInitializerLogic::GenerateSrepForEllipsoid(v
         double my = transformed_skeletal_points(i, 1);
         double mz = transformed_skeletal_points(i, 2);
         int current_id = static_cast<int>(skeletal_sheet->InsertNextPoint(mx, my, mz));
-        int current_row = static_cast<int>(floor(i / nRows));
-        int current_col = i - current_row * nRows;
+        int current_row = static_cast<int>(floor(i / nCols));
+        int current_col = i - current_row * nCols;
         if(current_col >= 0 && current_row >= 0
                 && current_row < nRows-1 && current_col < nCols - 1)
         {
@@ -1554,6 +1550,18 @@ void vtkSlicerSkeletalRepresentationInitializerLogic::SetOutputPath(const std::s
     mOutputPath = outputPath;
 }
 
+void vtkSlicerSkeletalRepresentationInitializerLogic::SetRows(int r)
+{
+
+    mRows = r;
+}
+
+void vtkSlicerSkeletalRepresentationInitializerLogic::SetCols(int c)
+{
+
+    mCols = c;
+}
+
 void vtkSlicerSkeletalRepresentationInitializerLogic::DisplayResultSrep()
 {
     // Hide other nodes.
@@ -1626,8 +1634,8 @@ void vtkSlicerSkeletalRepresentationInitializerLogic::DisplayResultSrep()
     std::stringstream output;
 
     output<<"<s-rep>"<<std::endl;
-    output<<"  <nRows>"<<ROWS<<"</nRows>"<<std::endl;
-    output<<"  <nCols>"<<COLS<<"</nCols>"<<std::endl;
+    output<<"  <nRows>"<<mRows<<"</nRows>"<<std::endl;
+    output<<"  <nCols>"<<mCols<<"</nCols>"<<std::endl;
     output<<"  <meshType>Quad</meshType>"<< std::endl;
     output<<"  <color>"<<std::endl;
     output<<"    <red>0</red>"<<std::endl;
@@ -1828,7 +1836,7 @@ void vtkSlicerSkeletalRepresentationInitializerLogic::CompletePolyData(vtkPolyDa
         vtkSmartPointer<vtkCellArray> curve = vtkSmartPointer<vtkCellArray>::New();
         for(int i = 0; i < skeletalPts->GetNumberOfPoints() - 1; ++i)
         {
-            if(i < COLS-1)
+            if(i < mCols-1)
             {
                 // Horizontal connection for top row
                 vtkSmartPointer<vtkLine> line = vtkSmartPointer<vtkLine>::New();
@@ -1836,21 +1844,21 @@ void vtkSlicerSkeletalRepresentationInitializerLogic::CompletePolyData(vtkPolyDa
                 line->GetPointIds()->SetId(1, i+1);
                 curve->InsertNextCell(line);
             }
-            else if(i > COLS + 2 * (ROWS-2)-1){
+            else if(i > mCols + 2 * (mRows-2)-1){
                 // Backward horizontal connection for bot row
                 vtkSmartPointer<vtkLine> line = vtkSmartPointer<vtkLine>::New();
                 line->GetPointIds()->SetId(0, i+1);
                 line->GetPointIds()->SetId(1, i);
                 curve->InsertNextCell(line);
             }
-            else if((i - COLS) % 2 == 0){
+            else if((i - mCols) % 2 == 0){
                 // vertical connection for left side points
                 vtkSmartPointer<vtkLine> line1 = vtkSmartPointer<vtkLine>::New();
                 line1->GetPointIds()->SetId(0, i+2);
                 line1->GetPointIds()->SetId(1, i);
                 curve->InsertNextCell(line1);
             }
-            else if(i > COLS-1 && (i - COLS - 1) % 2 == 0){
+            else if(i > mCols-1 && (i - mCols - 1) % 2 == 0){
                 // vertical connection for right side points
                 vtkSmartPointer<vtkLine> line2 = vtkSmartPointer<vtkLine>::New();
                 line2->GetPointIds()->SetId(0, i);
@@ -1860,12 +1868,12 @@ void vtkSlicerSkeletalRepresentationInitializerLogic::CompletePolyData(vtkPolyDa
 
         }
         vtkSmartPointer<vtkLine> lineEnd = vtkSmartPointer<vtkLine>::New();
-        lineEnd->GetPointIds()->SetId(0, COLS);
+        lineEnd->GetPointIds()->SetId(0, mCols);
         lineEnd->GetPointIds()->SetId(1, 0);
 
         curve->InsertNextCell(lineEnd);
         lineEnd->GetPointIds()->SetId(0, skeletalPts->GetNumberOfPoints() - 1);
-        lineEnd->GetPointIds()->SetId(1, skeletalPts->GetNumberOfPoints() - 1 - COLS);
+        lineEnd->GetPointIds()->SetId(1, skeletalPts->GetNumberOfPoints() - 1 - mCols);
 
         curve->InsertNextCell(lineEnd);
         output->SetLines(curve);
@@ -1873,13 +1881,13 @@ void vtkSlicerSkeletalRepresentationInitializerLogic::CompletePolyData(vtkPolyDa
     else {
         vtkSmartPointer<vtkCellArray> quads = vtkSmartPointer<vtkCellArray>::New();
 
-        for(int i = 0; i < ROWS - 1; ++i)
+        for(int i = 0; i < mRows - 1; ++i)
         {
-            for(int j = 0; j < COLS-1; ++j)
+            for(int j = 0; j < mCols-1; ++j)
             {
-                int id0 = i * COLS + j;
+                int id0 = i * mCols + j;
                 int id1 = id0 + 1;
-                int id2 = id0 + COLS;
+                int id2 = id0 + mCols;
                 int id3 = id2 + 1;
                 vtkSmartPointer<vtkQuad> quad = vtkSmartPointer<vtkQuad>::New();
                 quad->GetPointIds()->SetId(0, id0);
