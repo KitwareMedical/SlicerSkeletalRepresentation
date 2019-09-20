@@ -30,6 +30,9 @@ public:
     vtkSpoke();
     vtkSpoke(double radius, double px, double py, double pz, double ux, double uy, double uz);
 
+    // constructor with skeletal point and boundary point
+    vtkSpoke(double *ptSkeletal, double *ptBoundary);
+
     // copy constructor implements deep copy
     vtkSpoke(const vtkSpoke& src);
 

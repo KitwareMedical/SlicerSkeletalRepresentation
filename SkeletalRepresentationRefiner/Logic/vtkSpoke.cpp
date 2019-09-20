@@ -35,6 +35,22 @@ vtkSpoke::vtkSpoke(double radius, double px, double py, double pz, double ux, do
     mUz = uz / r;
 }
 
+vtkSpoke::vtkSpoke(double *ptSkeletal, double *ptBoundary)
+{
+    mPx = ptSkeletal[0];
+    mPy = ptSkeletal[1];
+    mPz = ptSkeletal[2];
+
+    double diffX = ptBoundary[0] - ptSkeletal[0];
+    double diffY = ptBoundary[1] - ptSkeletal[1];
+    double diffZ = ptBoundary[2] - ptSkeletal[2];
+    mR = sqrt(diffX * diffX + diffY * diffY + diffZ * diffZ);
+
+    mUx = diffX / mR;
+    mUy = diffY / mR;
+    mUz = diffZ / mR;
+}
+
 vtkSpoke::vtkSpoke(const vtkSpoke &other)
 {
     double u[3], p[3], r;

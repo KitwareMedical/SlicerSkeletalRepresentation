@@ -46,6 +46,7 @@ class vtkPoints;
 class vtkCellArray;
 class vtkSpoke;
 class vtkSrep;
+class vtkImplicitPolyDataDistance;
 /// \ingroup Slicer_QtModules_ExtensionTemplate
 class VTK_SLICER_SKELETALREPRESENTATIONREFINER_MODULE_LOGIC_EXPORT vtkSlicerSkeletalRepresentationRefinerLogic :
   public vtkSlicerModuleLogic
@@ -111,7 +112,7 @@ protected:
   void OnMRMLSceneNodeAdded(vtkMRMLNode* node) override;
   void OnMRMLSceneNodeRemoved(vtkMRMLNode* node) override;
 
-private:
+protected:
   // interpolate s-rep
   void Interpolate();
 
@@ -166,17 +167,15 @@ private:
                            const std::string &crest, std::vector<vtkSpoke*> &upSpokes,std::vector<vtkSpoke*> &downSpokes,
                            vtkPoints *pts, vtkCellArray *quads);
 
-  // connect crest position
-  void ConnectCrestRegion(int interpolationLevel, int nRows, int nCols,
-                          const std::string &srepFileName,
-                          double crestShift, std::vector<vtkSpoke*>& upSpokes, std::vector<vtkSpoke*>& downSpokes);
-
   // connect fold curve macro
   void ConnectFoldCurve(const std::vector<vtkSpoke *>& edgeSpokes, vtkPoints *foldCurvePts, vtkCellArray *foldCurveCell);
 
   // e.g. Refine up spokes saved in upFileName
-  void RefinePartOfSpokes(const std::string& srepFileName, double stepSize, double endCriterion, int maxIter);
+  // return refined collection of spokes
+  std::vector<vtkSpoke*>& RefinePartOfSpokes(const std::string& srepFileName, double stepSize, double endCriterion, int maxIter);
 
+  void RefineCrestSpokes(const std::string &crest,
+                         double stepSize, double endCriterion, int maxIter);
   // compute total distance of left top spoke to the quad
   double TotalDistOfLeftTopSpoke(vtkSrep* input, double u, double v, int r, int c, double *normalMatch);
 
@@ -218,29 +217,39 @@ private:
                         int nRows, int nCols,
                         std::vector<vtkSpoke*> &crest, std::vector<vtkSpoke*> &interior);
 
+  void OptimizeCrestSpokeLength(vtkImplicitPolyDataDistance *distanceFunction, vtkSpoke *targetSpoke, double stepSize, int maxIter);
+
+  void Transform2ImageCS(double *ptInput, int *ptOutput);
+protected:
+  std::vector<std::pair<double, double> > mInterpolatePositions;
+  //vtkSmartPointer<vtkImageData> mAntiAliasedImage = vtkSmartPointer<vtkImageData>::New();
+
+
 private:
-  std::string mTargetMeshFilePath;
-  std::string mSrepFilePath;
-  std::string mOutputPath;
+  // when apply this transformation: [x, y, z, 1] * mTransformationMat
+  double mTransformationMat[4][4]; // homogeneous matrix transfrom from srep to unit cube cs.
+
+  RealImage::Pointer mAntiAliasedImage = RealImage::New();
+  VectorImage::Pointer mGradDistImage = VectorImage::New();
   // weights in optimization algorithm
   double mWtImageMatch;
   double mWtNormalMatch;
   double mWtSrad;
 
+  std::string mTargetMeshFilePath;
+  std::string mSrepFilePath;
+  std::string mOutputPath;
+  std::vector<vtkSpoke*> mUpSpokes;
+  std::vector<vtkSpoke*> mDownSpokes;
+  int mInterpolationLevel;
+  int mNumRows;
+  int mNumCols;
   // output the first terms in object func can help to set weights
   bool mFirstCost = true;
 
   // store the data at the beginning of refinement
-  int mNumRows;
-  int mNumCols;
   vtkSrep* mSrep;
-  // when apply this transformation: [x, y, z, 1] * mTransformationMat
-  double mTransformationMat[4][4]; // homogeneous matrix transfrom from srep to unit cube cs.
   std::vector<double> mCoeffArray;
-  std::vector<std::pair<double, double> > mInterpolatePositions;
-  //vtkSmartPointer<vtkImageData> mAntiAliasedImage = vtkSmartPointer<vtkImageData>::New();
-  RealImage::Pointer mAntiAliasedImage = RealImage::New();
-  VectorImage::Pointer mGradDistImage = VectorImage::New();
 private:
 
   vtkSlicerSkeletalRepresentationRefinerLogic(const vtkSlicerSkeletalRepresentationRefinerLogic&); // Not implemented
