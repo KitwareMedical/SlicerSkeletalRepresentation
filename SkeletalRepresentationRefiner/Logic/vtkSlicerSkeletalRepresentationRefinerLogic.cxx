@@ -953,7 +953,7 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::UpdateHeader(const string &hea
                 std::string oldFile(e->GetCharacterData());
                 // some file paths are relative path, others are absolute path
                 oldFile = vtksys::SystemTools::GetFilenameName(oldFile);
-                newCrestFileName = estimatePath + oldFile;
+                newCrestFileName = outputFilePath + newFilePrefix + oldFile;
             }
 
         }
