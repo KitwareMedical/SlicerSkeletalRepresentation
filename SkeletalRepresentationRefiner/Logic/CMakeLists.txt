@@ -23,8 +23,6 @@ set(${KIT}_SRCS
   vtkApproximateSignedDistanceMap.cpp
   vtkGradientDistanceFilter.cpp
   vtkGradientDistanceFilter.h
-  vtkCrestRefiner.cpp
-  vtkCrestRefiner.h
   )
 
 set(${KIT}_TARGET_LIBRARIES

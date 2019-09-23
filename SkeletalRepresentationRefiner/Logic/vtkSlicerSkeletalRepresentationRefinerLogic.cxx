@@ -64,7 +64,6 @@
 #include "vtkPolyData2ImageData.h"
 #include "vtkApproximateSignedDistanceMap.h"
 #include "vtkGradientDistanceFilter.h"
-#include "vtkCrestRefiner.h"
 #include <vtkBoundingBox.h>
 // STD includes
 #include <cassert>
@@ -1561,7 +1560,7 @@ std::vector<vtkSpoke*>& vtkSlicerSkeletalRepresentationRefinerLogic::RefinePartO
 }
 
 void vtkSlicerSkeletalRepresentationRefinerLogic::RefineCrestSpokes(const string &crest, double stepSize,
-                                                                    double endCriterion, int maxIter)
+                                                                    double vtkNotUsed(endCriterion), int maxIter)
 {
     // Show original crest spokes
     std::vector<vtkSpoke*> crestSpokes, topCrest;
