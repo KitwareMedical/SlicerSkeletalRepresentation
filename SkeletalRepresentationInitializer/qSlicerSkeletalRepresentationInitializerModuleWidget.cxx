@@ -86,6 +86,7 @@ void qSlicerSkeletalRepresentationInitializerModuleWidget::setup()
   //QObject::connect(d->btn_inkling_flow, SIGNAL(clicked()), this, SLOT(inklingFlow()));
   QObject::connect(d->btn_back_flow, SIGNAL(clicked()), this, SLOT(backwardFlow()));
   QObject::connect(d->btn_output, SIGNAL(clicked()), this, SLOT(outputPath()));
+  QObject::connect(d->btn_flip_srep, SIGNAL(clicked()), this, SLOT(flipSrep()));
 }
 
 void qSlicerSkeletalRepresentationInitializerModuleWidget::pullUpFittingEllipsoid()
@@ -109,6 +110,12 @@ void qSlicerSkeletalRepresentationInitializerModuleWidget::outputPath()
     QString fileName = QFileDialog::getExistingDirectory(this, "Select refinement output folder");
     d->lb_output_path->setText(fileName.toUtf8().constData());
     d->logic()->SetOutputPath(fileName.toUtf8().constData());
+}
+
+void qSlicerSkeletalRepresentationInitializerModuleWidget::flipSrep()
+{
+    Q_D(qSlicerSkeletalRepresentationInitializerModuleWidget);
+    d->logic()->DisplayResultSrep(true);
 }
 
 void qSlicerSkeletalRepresentationInitializerModuleWidget::flow()

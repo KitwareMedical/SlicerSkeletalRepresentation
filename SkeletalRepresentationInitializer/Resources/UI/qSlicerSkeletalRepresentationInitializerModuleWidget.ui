@@ -277,6 +277,13 @@
         </property>
        </widget>
       </item>
+      <item>
+       <widget class="QPushButton" name="btn_flip_srep">
+        <property name="text">
+         <string>Flip the S-Rep</string>
+        </property>
+       </widget>
+      </item>
      </layout>
     </widget>
    </item>

@@ -1562,16 +1562,20 @@ void vtkSlicerSkeletalRepresentationInitializerLogic::SetCols(int c)
     mCols = c;
 }
 
-void vtkSlicerSkeletalRepresentationInitializerLogic::DisplayResultSrep()
+void vtkSlicerSkeletalRepresentationInitializerLogic::DisplayResultSrep(bool flip)
 {
     // Hide other nodes.
     HideNodesByClass("vtkMRMLModelNode");
     const std::string tempFolder(this->GetApplicationLogic()->GetTemporaryPath());
-    const std::string upFileName = tempFolder + "/model/up1.vtk";
-    const std::string downFileName = tempFolder + "/model/down1.vtk";
+    std::string upFileName = tempFolder + "/model/up1.vtk";
+    std::string downFileName = tempFolder + "/model/down1.vtk";
     const std::string crestFileName = tempFolder +"/model/crest1.vtk";
     const std::string meshFileName = tempFolder + "/model/mesh1.vtk";;
     const std::string curveFileName = tempFolder + "/model/curve1.vtk";
+    if(flip) {
+        upFileName = downFileName;
+        downFileName = tempFolder + "/model/up1.vtk";
+    }
 
     vtkSmartPointer<vtkPolyDataReader> upSpokeReader = vtkSmartPointer<vtkPolyDataReader>::New();
     upSpokeReader->SetFileName(upFileName.c_str());

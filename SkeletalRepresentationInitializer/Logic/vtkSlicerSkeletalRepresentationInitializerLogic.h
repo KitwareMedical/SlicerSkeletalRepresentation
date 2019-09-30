@@ -94,6 +94,9 @@ public:
 
   void SetCols(int c);
 
+  // display and save current initial srep
+  // input: flip is true if users want to flip the orientation of the srep
+  void DisplayResultSrep(bool flip = false);
 protected:
   vtkSlicerSkeletalRepresentationInitializerLogic();
   virtual ~vtkSlicerSkeletalRepresentationInitializerLogic();
@@ -112,7 +115,7 @@ private:
   void AddPointToScene(double x, double y, double z, int glyphType, double r = 1, double g = 0, double b = 0);
 
   void ComputePairwiseTps(int totalNum);
-  void DisplayResultSrep();
+
   void TransformNOutput(itkThinPlateSplineExtended::Pointer tps,
                        vtkPolyData* spokes, const std::string& outputFileName);
   void TransformPoints(itkThinPlateSplineExtended::Pointer tps,
