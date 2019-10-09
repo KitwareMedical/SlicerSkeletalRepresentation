@@ -234,8 +234,12 @@ double vtkSpoke::GetRSradPenalty(double stepSize)
     rSradMat = leftSide * rightSide;
     rSradMat.transposeInPlace();
     // 3. compute rSrad penalty
+//    Eigen::SelfAdjointEigenSolver<Eigen::Matrix2d> eigensolver(rSradMat);
+//    double maxEigen = eigensolver.eigenvalues()[1];
+//    if(maxEigen > 1) return 1000;
+//    else return 0.0;
     double detRSrad = rSradMat.determinant();
-    if(detRSrad < 0) return 100;
+    if(detRSrad < 0) return 0.0;
     else if(detRSrad < 1) return 0.0;
     else return (abs(detRSrad)-1);
 }

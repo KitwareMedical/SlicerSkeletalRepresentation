@@ -639,6 +639,7 @@ void vtkSlicerSkeletalRepresentationInitializerLogic::GenerateSrepForEllipsoid(v
     SelfAdjointEigenSolver<Eigen::MatrixXd> es_obj(second_moment);
     VectorXd radii = es_obj.eigenvalues();
 
+    // notations consistent with wenqi's slides
     double rz = sqrt(radii(0));
     double ry = sqrt(radii(1));
     double rx = sqrt(radii(2));
@@ -653,8 +654,8 @@ void vtkSlicerSkeletalRepresentationInitializerLogic::GenerateSrepForEllipsoid(v
     ry *= volume_factor;
     rx *= volume_factor;
 
-    double mrx_o = (rx*rx-rz*rz)/rx;
-    double mry_o = (ry*ry-rz*rz)/ry;
+    double mrx_o = (rx*rx-rz*rz)/rx; // m_a
+    double mry_o = (ry*ry-rz*rz)/ry; // m_b
     double mrb = mry_o * ELLIPSE_SCALE;
     double mra = mrx_o * ELLIPSE_SCALE;
 
@@ -744,7 +745,7 @@ void vtkSlicerSkeletalRepresentationInitializerLogic::GenerateSrepForEllipsoid(v
             double sB = my * mrx_o;
             double cB = mx * mry_o;
             double l = sqrt(sB*sB + cB*cB);
-            double sB_n, cB_n;
+            double sB_n, cB_n; // sin(theta), cos(theta)
             if(l < EPS)
             {
                 sB_n = sB;
@@ -755,8 +756,8 @@ void vtkSlicerSkeletalRepresentationInitializerLogic::GenerateSrepForEllipsoid(v
                 sB_n = sB / l;
                 cB_n = cB / l;
             }
-            double cA = l / (mrx_o * mry_o);
-            double sA = sqrt(1 - cA*cA);
+            double cA = l / (mrx_o * mry_o); // cos(phi)
+            double sA = sqrt(1 - cA*cA); // sin(phi)
             double sx = rx * cA * cB_n - mx;
             double sy = ry * cA * sB_n - my;
             double sz = rz * sA;
