@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>525</width>
-    <height>369</height>
+    <height>400</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -217,6 +217,13 @@
        <widget class="QPushButton" name="btn_flow">
         <property name="text">
          <string>Flow to the end</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="btn_reorder_skeleton">
+        <property name="text">
+         <string>Rotate skeletal sheet</string>
         </property>
        </widget>
       </item>

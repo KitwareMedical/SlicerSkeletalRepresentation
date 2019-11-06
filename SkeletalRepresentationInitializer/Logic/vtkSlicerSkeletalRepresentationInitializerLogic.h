@@ -76,7 +76,7 @@ public:
   void ShowFittingEllipsoid(vtkPolyData* mesh, double &rx, double &ry, double &rz);
 
   // generate srep given an ellipsoid and expected rows and columns of medial sheet.
-  void GenerateSrepForEllipsoid(vtkPolyData* mesh, int rows, int cols, int forwardCount);
+  void GenerateSrepForEllipsoid(vtkPolyData* mesh, int rows, int cols, int forwardCount, bool reverse = false);
 
   int InklingFlow(const std::string &filename, double dt, double smooth_amount, int max_iter, int freq_output, double threshold);
 
@@ -97,6 +97,10 @@ public:
   // display and save current initial srep
   // input: flip is true if users want to flip the orientation of the srep
   void DisplayResultSrep(bool flip = false);
+
+  // reorder skeletal points
+  void RotateSkeleton();
+  void ReorderSpokes(vtkPolyData* input, vtkPoints* outputPts, vtkCellArray* outputPolys);
 protected:
   vtkSlicerSkeletalRepresentationInitializerLogic();
   virtual ~vtkSlicerSkeletalRepresentationInitializerLogic();

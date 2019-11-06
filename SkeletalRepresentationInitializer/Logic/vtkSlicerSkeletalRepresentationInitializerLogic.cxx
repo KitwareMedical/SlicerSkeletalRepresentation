@@ -48,12 +48,14 @@
 #include <vtkPolyDataNormals.h>
 #include <vtkPolyDataReader.h>
 #include <vtkPolyDataWriter.h>
+#include <vtkXMLPolyDataReader.h>
 #include <vtkXMLPolyDataWriter.h>
 #include <vtkQuad.h>
 #include <vtkSmoothPolyDataFilter.h>
 #include <vtkVector.h>
 #include <vtkWindowedSincPolyDataFilter.h>
-
+#include <vtkAppendPolyData.h>
+#include <vtkConeSource.h>
 // Eigen includes
 #include <Eigen/Dense>
 #include <Eigen/Eigenvalues>
@@ -449,7 +451,6 @@ int vtkSlicerSkeletalRepresentationInitializerLogic::FlowSurfaceMesh(const std::
     double rx, ry, rz;
     ShowFittingEllipsoid(mesh, rx, ry, rz);
 
-
     GenerateSrepForEllipsoid(mesh, mRows, mCols, forwardCount);
     return 1;
 }
@@ -600,7 +601,7 @@ void vtkSlicerSkeletalRepresentationInitializerLogic::ShowFittingEllipsoid(vtkPo
 const double ELLIPSE_SCALE = 0.9;
 const double EPS = 1e-6;
 void vtkSlicerSkeletalRepresentationInitializerLogic::GenerateSrepForEllipsoid(vtkPolyData *mesh,
-                                                                              int nRows, int nCols, int totalNum)
+                                                                              int nRows, int nCols, int totalNum, bool reverse)
 {
     // create folder if not exist
     const std::string tempFolder(this->GetApplicationLogic()->GetTemporaryPath());
@@ -803,6 +804,11 @@ void vtkSlicerSkeletalRepresentationInitializerLogic::GenerateSrepForEllipsoid(v
     Matrix3d rot_srep;
     rot_srep = es_srep.eigenvectors().transpose();
     rotation = rotation * rot_srep;
+    std::string arrowName = "Before rotation orientations";
+    if(reverse) {
+        rotation *= -1;
+        arrowName = "After rotation orientations";
+    }
 
     // all skeletal points
     MatrixXd trans_srep = (rotation * transpose_srep).transpose();
@@ -895,6 +901,13 @@ void vtkSlicerSkeletalRepresentationInitializerLogic::GenerateSrepForEllipsoid(v
         double by_up = transformed_up_pdm(i, 1);
         double bz_up = transformed_up_pdm(i, 2);
         int id1 = static_cast<int>(upSpokes_pts->InsertNextPoint(bx_up, by_up, bz_up));
+        if(i == nRows * nCols / 2) {
+            vtkSmartPointer<vtkConeSource> cone = vtkSmartPointer<vtkConeSource>::New();
+            cone->SetCenter(bx_up, by_up, bz_up);
+            cone->SetDirection(bx_up-mx, by_up-my, bz_up-mz);
+            cone->Update();
+            AddModelNodeToScene(cone->GetOutput(), arrowName.c_str(), true, 0, 0, 1);
+        }
 
         // spoke length and dir
         vtkVector3d upSpoke(bx_up-mx, by_up-my, bz_up-mz);
@@ -991,7 +1004,6 @@ void vtkSlicerSkeletalRepresentationInitializerLogic::GenerateSrepForEllipsoid(v
     meshWriter->SetFileName(meshFileName.c_str());
     meshWriter->SetInputData(srep_poly);
     meshWriter->Update();
-
     // deal with crest spokes
     for(int i = 0; i < nCrestPoints; ++i)
     {
@@ -1013,6 +1025,22 @@ void vtkSlicerSkeletalRepresentationInitializerLogic::GenerateSrepForEllipsoid(v
             cx_t += shift_x;
             cy_t += shift_y;
             cz_t += shift_z;
+        }
+        if(i == nCols + 2 * (nRows / 2 - 1)) {
+            vtkSmartPointer<vtkConeSource> cone = vtkSmartPointer<vtkConeSource>::New();
+            cone->SetCenter(cx_b, cy_b, cz_b);
+            cone->SetDirection(cx_b-cx_t, cy_b-cy_t, cz_b-cz_t);
+            cone->Update();
+            AddModelNodeToScene(cone->GetOutput(), arrowName.c_str(), true, 1, 0, 0);
+
+        }
+        if(i == nCols / 2) {
+            vtkSmartPointer<vtkConeSource> cone = vtkSmartPointer<vtkConeSource>::New();
+            cone->SetCenter(cx_b, cy_b, cz_b);
+            cone->SetDirection(cx_b-cx_t, cy_b-cy_t, cz_b-cz_t);
+            cone->Update();
+            AddModelNodeToScene(cone->GetOutput(), arrowName.c_str(), true, 0, 1, 0);
+
         }
 
         int id0 = static_cast<int>(crestSpokes_pts->InsertNextPoint(cx_t, cy_t, cz_t));
@@ -1559,7 +1587,6 @@ void vtkSlicerSkeletalRepresentationInitializerLogic::SetRows(int r)
 
 void vtkSlicerSkeletalRepresentationInitializerLogic::SetCols(int c)
 {
-
     mCols = c;
 }
 
@@ -1660,6 +1687,169 @@ void vtkSlicerSkeletalRepresentationInitializerLogic::DisplayResultSrep(bool fli
     out_file << output.rdbuf();
     out_file.close();
 }
+
+void vtkSlicerSkeletalRepresentationInitializerLogic::RotateSkeleton()
+{
+    const std::string tempFolder(this->GetApplicationLogic()->GetTemporaryPath());
+    const std::string newEllSurfaceFile = tempFolder + "/forward/" + std::to_string(forwardCount) + ".vtk";
+
+    vtkSmartPointer<vtkPolyDataReader> reader =
+        vtkSmartPointer<vtkPolyDataReader>::New();
+    reader->SetFileName(newEllSurfaceFile.c_str());
+    reader->Update();
+
+    vtkSmartPointer<vtkPolyData> mesh =
+        vtkSmartPointer<vtkPolyData>::New();
+    mesh = reader->GetOutput();
+    GenerateSrepForEllipsoid(mesh, mRows, mCols, forwardCount, true);
+//    HideNodesByClass("vtkMRMLModelNode");
+
+//    std::string upFileName = tempFolder + "/model/up1.vtk";
+//    std::string downFileName = tempFolder + "/model/down1.vtk";
+//    const std::string crestFileName = tempFolder +"/model/crest1.vtk";
+//    if(mOutputPath.empty()) {
+//        std::cout << "The output path is empty for rotating skeleton." << std::endl;
+//        return;
+//    }
+//    std::string outputUpFileName = mOutputPath + "/up.vtp";
+//    std::string outputDownFileName = mOutputPath + "/down.vtp";
+//    std::string outputCrestFileName = mOutputPath + "/crest.vtp";
+
+//    vtkSmartPointer<vtkPolyDataReader> upSpokeReader = vtkSmartPointer<vtkPolyDataReader>::New();
+//    upSpokeReader->SetFileName(outputUpFileName.c_str());
+//    upSpokeReader->Update();
+//    vtkSmartPointer<vtkPolyData> upSpoke_poly = upSpokeReader->GetOutput();
+
+//    vtkSmartPointer<vtkPolyDataReader> downSpokeReader = vtkSmartPointer<vtkPolyDataReader>::New();
+//    downSpokeReader->SetFileName(downFileName.c_str());
+//    downSpokeReader->Update();
+//    vtkSmartPointer<vtkPolyData> downSpoke_poly = downSpokeReader->GetOutput();
+
+//    vtkSmartPointer<vtkPolyDataReader> crestSpokeReader = vtkSmartPointer<vtkPolyDataReader>::New();
+//    crestSpokeReader->SetFileName(crestFileName.c_str());
+//    crestSpokeReader->Update();
+//    vtkSmartPointer<vtkPolyData> crestSpoke_poly = crestSpokeReader->GetOutput();
+
+//    vtkSmartPointer<vtkPolyData> reorderedUpSpokes = vtkSmartPointer<vtkPolyData>::New();
+//    vtkSmartPointer<vtkPoints> outputPts = vtkSmartPointer<vtkPoints>::New();
+//    vtkSmartPointer<vtkCellArray> outputPolys = vtkSmartPointer<vtkCellArray>::New();
+//    ReorderSpokes(upSpoke_poly, outputPts, outputPolys);
+//    reorderedUpSpokes->SetPoints(outputPts);
+//    reorderedUpSpokes->SetPolys(outputPolys);
+//    vtkSmartPointer<vtkPolyData> vtpUpSpoke = vtkSmartPointer<vtkPolyData>::New();
+//    vtkSmartPointer<vtkPolyData> vtpDownSpoke = vtkSmartPointer<vtkPolyData>::New();
+//    vtkSmartPointer<vtkPolyData> vtpCrestSpoke = vtkSmartPointer<vtkPolyData>::New();
+//    CompletePolyData(upSpoke_poly, vtpUpSpoke);
+//    // save to files
+//    AddModelNodeToScene(reorderedUpSpokes, "reordered spokes for initial object", true, 0, 1, 1);
+//    AddModelNodeToScene(vtpUpSpoke, "up spokes for initial object", true, 0, 1, 1);
+//    vtkSmartPointer<vtkXMLPolyDataWriter> vtpWriter = vtkSmartPointer<vtkXMLPolyDataWriter>::New();
+//    vtpWriter->SetDataModeToAscii();
+//    vtpWriter->SetFileName(outputUpFileName.c_str());
+//    vtpWriter->SetInputData(vtpUpSpoke);
+//    vtpWriter->Update();
+
+//    vtpWriter->SetFileName(outputDownFileName.c_str());
+//    vtpWriter->SetInputData(vtpDownSpoke);
+//    vtpWriter->Update();
+
+//    vtpWriter->SetFileName(outputCrestFileName.c_str());
+//    vtpWriter->SetInputData(vtpCrestSpoke);
+//    vtpWriter->Update();
+}
+
+void vtkSlicerSkeletalRepresentationInitializerLogic::ReorderSpokes(vtkPolyData *input, vtkPoints* outputPts, vtkCellArray* outputPolys)
+{
+    if(input->GetNumberOfPoints() == 0) return;
+    outputPts->SetDataTypeToDouble();
+
+    vtkSmartPointer<vtkPolyData> testPoly = vtkSmartPointer<vtkPolyData>::New();
+    vtkSmartPointer<vtkPoints> testPts = vtkSmartPointer<vtkPoints>::New();
+    vtkSmartPointer<vtkCellArray> testPolys = vtkSmartPointer<vtkCellArray>::New();
+    vtkSmartPointer<vtkPolyData> test2Poly = vtkSmartPointer<vtkPolyData>::New();
+    vtkSmartPointer<vtkPoints> test2Pts = vtkSmartPointer<vtkPoints>::New();
+    vtkSmartPointer<vtkCellArray> test2Polys = vtkSmartPointer<vtkCellArray>::New();
+
+
+    for(int i = 0; i < mRows; ++i) {
+        double mx[mCols];
+        double my[mCols];
+        double mz[mCols];
+        double bx[mCols];
+        double by[mCols];
+        double bz[mCols];
+        for(int j = 0; j < mCols; ++j) {
+            double skeletalPt[3];
+            double bdryPt[3];
+            int idx = i * mCols + j;
+            input->GetPoint(idx*2, skeletalPt);
+            input->GetPoint(idx*2+1, bdryPt);
+            mx[j] = skeletalPt[0];
+            my[j] = skeletalPt[1];
+            mz[j] = skeletalPt[2];
+            bx[j] = bdryPt[0];
+            by[j] = bdryPt[1];
+            bz[j] = bdryPt[2];
+        }
+
+        for(int j = mCols - 1; j >=0; --j) {
+            double newSkeletalPt[3], newBdryPt[3];
+            newSkeletalPt[0] = mx[j];
+            newSkeletalPt[1] = my[j];
+            newSkeletalPt[2] = mz[j];
+            vtkIdType id0 = outputPts->InsertNextPoint(newSkeletalPt);
+
+            newBdryPt[0] = bx[j];
+            newBdryPt[1] = by[j];
+            newBdryPt[2] = bz[j];
+            vtkIdType id1 = outputPts->InsertNextPoint(newBdryPt);
+
+            vtkSmartPointer<vtkLine> arrow = vtkSmartPointer<vtkLine>::New();
+            arrow->GetPointIds()->SetId(0, id0);
+            arrow->GetPointIds()->SetId(1, id1);
+            outputPolys->InsertNextCell(arrow);
+
+            if(i == 0 || i == mRows - 1) {
+                double skeletalPt[3];
+                double bdryPt[3];
+                int idx = i * mCols + j;
+                input->GetPoint(idx*2, skeletalPt);
+                input->GetPoint(idx*2+1, bdryPt);
+                vtkIdType id0Test = testPts->InsertNextPoint(skeletalPt);
+                vtkIdType id1Test = testPts->InsertNextPoint(bdryPt);
+                vtkSmartPointer<vtkLine> arrowTest = vtkSmartPointer<vtkLine>::New();
+                arrowTest->GetPointIds()->SetId(0, id0Test);
+                arrowTest->GetPointIds()->SetId(1, id1Test);
+                testPolys->InsertNextCell(arrowTest);
+
+                vtkIdType id0Test2 = test2Pts->InsertNextPoint(newSkeletalPt);
+                vtkIdType id1Test2 = test2Pts->InsertNextPoint(newBdryPt);
+
+                vtkSmartPointer<vtkLine> arrowTest2 = vtkSmartPointer<vtkLine>::New();
+                arrowTest2->GetPointIds()->SetId(0, id0Test2);
+                arrowTest2->GetPointIds()->SetId(1, id1Test2);
+                test2Polys->InsertNextCell(arrowTest2);
+
+            }
+        }
+    }
+    testPts->Modified();
+    testPoly->Modified();
+    test2Pts->Modified();
+    test2Polys->Modified();
+    testPoly->SetPoints(testPts);
+    testPoly->SetPolys(testPolys);
+    test2Poly->SetPoints(test2Pts);
+    test2Poly->SetPolys(test2Polys);
+
+    outputPts->Modified();
+    outputPolys->Modified();
+
+//    AddModelNodeToScene(testPoly, "up spokes for initial object", true, 0, 1, 1);
+//    AddModelNodeToScene(test2Poly, "reordered up spokes for initial object", true, 1, 0, 1);
+
+}
+
 void vtkSlicerSkeletalRepresentationInitializerLogic::TransformNOutput(itkThinPlateSplineExtended::Pointer tps, vtkPolyData* spokes, const std::string& outputFileName)
 {
     vtkPoints* newPoints = vtkPoints::New();
