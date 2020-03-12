@@ -35,6 +35,22 @@ vtkSpoke::vtkSpoke(double radius, double px, double py, double pz, double ux, do
     mUz = uz / r;
 }
 
+vtkSpoke::vtkSpoke(double *ptSkeletal, double *ptBoundary)
+{
+    mPx = ptSkeletal[0];
+    mPy = ptSkeletal[1];
+    mPz = ptSkeletal[2];
+
+    double diffX = ptBoundary[0] - ptSkeletal[0];
+    double diffY = ptBoundary[1] - ptSkeletal[1];
+    double diffZ = ptBoundary[2] - ptSkeletal[2];
+    mR = sqrt(diffX * diffX + diffY * diffY + diffZ * diffZ);
+
+    mUx = diffX / mR;
+    mUy = diffY / mR;
+    mUz = diffZ / mR;
+}
+
 vtkSpoke::vtkSpoke(const vtkSpoke &other)
 {
     double u[3], p[3], r;
@@ -218,10 +234,22 @@ double vtkSpoke::GetRSradPenalty(double stepSize)
     rSradMat = leftSide * rightSide;
     rSradMat.transposeInPlace();
     // 3. compute rSrad penalty
-    double detRSrad = rSradMat.determinant();
-    if(detRSrad < 0) return 100;
-    else if(detRSrad < 1) return 0.0;
-    else return (abs(detRSrad)-1);
+    Eigen::SelfAdjointEigenSolver<Eigen::Matrix2d> eigensolver(rSradMat);
+    double maxEigen = eigensolver.eigenvalues()[1];
+
+    if(maxEigen > 1) return maxEigen-1;
+    else return 0.0;
+//    double detRSrad = rSradMat.determinant();
+//    if(detRSrad < 0) return 0.0;
+//    else if(detRSrad < 1) return 0.0;
+//    else return (abs(detRSrad)-1);
+}
+
+bool vtkSpoke::IsValid()
+{
+    return !(std::isnan(mR) ||
+            std::isnan(mUx) || std::isnan(mUy) || std::isnan(mUz)/*
+            || std::isnan(mPx) || std::isnan(mPy) || std::isnan(mPz)*/);
 }
 
 void vtkSpoke::ComputeDerivatives(std::vector<vtkSpoke*> neibors, bool isForward, double stepSize, // input

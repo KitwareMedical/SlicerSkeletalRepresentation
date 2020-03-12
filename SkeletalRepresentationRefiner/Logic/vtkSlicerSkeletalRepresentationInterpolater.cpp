@@ -58,18 +58,41 @@ void vtkSlicerSkeletalRepresentationInterpolater::InterpolateQuad(vtkSpoke **cor
 
     // interpolate center spoke in this quad
     vtkSpoke centerA, centerB, center;
-    InterpolateMiddleSpoke(&topMiddle, &botMiddle, lambda, &centerA);
-    InterpolateMiddleSpoke(&leftMiddle, &rightMiddle, lambda, &centerB);
-    double rCenter = 0.5 * (centerA.GetRadius() + centerB.GetRadius());
+    bool retA = InterpolateMiddleSpoke(&topMiddle, &botMiddle, lambda, &centerA);
+    bool retB = InterpolateMiddleSpoke(&leftMiddle, &rightMiddle, lambda, &centerB);
+
+    double rCenter = 0.0;
+
     double uCenter[3], uCenterA[3], uCenterB[3];
     centerA.GetDirection(uCenterA);
     centerB.GetDirection(uCenterB);
-    uCenter[0] = 0.5 * (uCenterA[0] + uCenterB[0]);
-    uCenter[1] = 0.5 * (uCenterA[1] + uCenterB[1]);
-    uCenter[2] = 0.5 * (uCenterA[2] + uCenterB[2]);
+    if(retA && retB)
+    {
+        rCenter = 0.5 * (centerA.GetRadius() + centerB.GetRadius());
+        uCenter[0] = 0.5 * (uCenterA[0] + uCenterB[0]);
+        uCenter[1] = 0.5 * (uCenterA[1] + uCenterB[1]);
+        uCenter[2] = 0.5 * (uCenterA[2] + uCenterB[2]);
+    }
+    else if(retA)
+    {
+        rCenter = centerA.GetRadius();
+        uCenter[0] = uCenterA[0];
+        uCenter[1] = uCenterA[1];
+        uCenter[2] = uCenterA[2];
+    }
+    else if(retB)
+    {
+        rCenter = centerB.GetRadius();
+        uCenter[0] = uCenterB[0];
+        uCenter[1] = uCenterB[1];
+        uCenter[2] = uCenterB[2];
+    }
+    else {
+        return;
+    }
+
     center.SetDirection(uCenter);
     center.SetRadius(rCenter);
-
     double halfDist = lambda/2;
 
     double interpolatedU[3]; double interpolatedR;
@@ -237,12 +260,16 @@ void vtkSlicerSkeletalRepresentationInterpolater::InterpolateSegment(vtkSpoke **
     }
 }
 
-void vtkSlicerSkeletalRepresentationInterpolater::InterpolateMiddleSpoke(vtkSpoke *startS, vtkSpoke *endS, double d, vtkSpoke *interpolatedSpoke)
+bool vtkSlicerSkeletalRepresentationInterpolater::InterpolateMiddleSpoke(vtkSpoke *startS, vtkSpoke *endS, double d, vtkSpoke *interpolatedSpoke)
 {
     // 1. compute 2nd derivative
     double startU[3], endU[3];
     startS->GetDirection(startU);
     endS->GetDirection(endU);
+    if(!startS->IsValid() || !endS->IsValid())
+    {
+        return false;
+    }
 
     double Uvv_start[3],Uvv_end[3];
     compute2ndDerivative(startU, endU, endU, d, Uvv_end);
@@ -257,8 +284,24 @@ void vtkSlicerSkeletalRepresentationInterpolater::InterpolateMiddleSpoke(vtkSpok
 
     double halfDist = d / 2;
     double uMiddle[3];
-    slerp(startU, endU, halfDist, uMiddle);
-
+    // fix the bug if startU == endU, then uMiddle should be same with startU or endU
+    if(std::abs(startU[0] - endU[0] ) <= tolerance
+            && std::abs(startU[1] - endU[1] ) <= tolerance
+            && std::abs(startU[2] - endU[2] ) <= tolerance)
+    {
+        uMiddle[0] = startU[0];
+        uMiddle[1] = startU[1];
+        uMiddle[2] = startU[2];
+        Uvv_start[0] = 0.0;
+        Uvv_start[1] = 0.0;
+        Uvv_start[2] = 0.0;
+        Uvv_end[0] = 0.0;
+        Uvv_end[1] = 0.0;
+        Uvv_end[2] = 0.0;
+    }
+    else {
+        slerp(startU, endU, halfDist, uMiddle);
+    }
     double innerProd1 = uMiddle[0] * avg[0] +
                         uMiddle[1] * avg[1] +
                         uMiddle[2] * avg[2];
@@ -277,7 +320,7 @@ void vtkSlicerSkeletalRepresentationInterpolater::InterpolateMiddleSpoke(vtkSpok
     // 3. return the interpolated
     interpolatedSpoke->SetRadius(interpolatedR);
     interpolatedSpoke->SetDirection(uMiddle);
-
+    return true;
 }
 double h1(double s) { return 2*(s * s * s) - 3*(s * s) + 1; }
 double h2(double s) { return -2*(s * s * s) + 3*(s * s); }

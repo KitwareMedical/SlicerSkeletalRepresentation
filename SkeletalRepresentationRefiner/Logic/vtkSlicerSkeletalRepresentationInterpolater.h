@@ -53,7 +53,7 @@ public:
 
     // Interpolate the spoke between start spoke (startS) and end spoke(endS) given the distance (d) from
     // the start spoke to the end.
-    void InterpolateMiddleSpoke(vtkSpoke* startS, vtkSpoke* endS, double d, vtkSpoke* interpolatedSpoke);
+    bool InterpolateMiddleSpoke(vtkSpoke* startS, vtkSpoke* endS, double d, vtkSpoke* interpolatedSpoke);
 
     // interpolate skeletal point
     // Input corner spokes with radius, direction and base point
