@@ -32,7 +32,7 @@
 /// \ingroup Slicer_QtModules_ExtensionTemplate
 class qSlicerSkeletalRepresentationInitializerModuleWidgetPrivate: public Ui_qSlicerSkeletalRepresentationInitializerModuleWidget
 {
-    Q_DECLARE_PUBLIC(qSlicerSkeletalRepresentationInitializerModuleWidget);
+    Q_DECLARE_PUBLIC(qSlicerSkeletalRepresentationInitializerModuleWidget)
 protected:
     qSlicerSkeletalRepresentationInitializerModuleWidget* const q_ptr;
 public:
@@ -81,11 +81,12 @@ void qSlicerSkeletalRepresentationInitializerModuleWidget::setup()
   this->Superclass::setup();
   QObject::connect(d->SelectInputButton, SIGNAL(clicked()), this, SLOT(selectInput()));
   QObject::connect(d->btn_flow, SIGNAL(clicked()), this, SLOT(flow()));
-  QObject::connect(d->btn_one_step_flow, SIGNAL(clicked()), this, SLOT(flowOneStep()));
+  //QObject::connect(d->btn_one_step_flow, SIGNAL(clicked()), this, SLOT(flowOneStep()));
   //QObject::connect(d->btn_match_ell, SIGNAL(clicked()), this, SLOT(pullUpFittingEllipsoid()));
   //QObject::connect(d->btn_inkling_flow, SIGNAL(clicked()), this, SLOT(inklingFlow()));
   QObject::connect(d->btn_back_flow, SIGNAL(clicked()), this, SLOT(backwardFlow()));
   QObject::connect(d->btn_output, SIGNAL(clicked()), this, SLOT(outputPath()));
+  QObject::connect(d->btn_reorder_skeleton, SIGNAL(clicked()), this, SLOT(rotateSkeleton()));
 }
 
 void qSlicerSkeletalRepresentationInitializerModuleWidget::pullUpFittingEllipsoid()
@@ -111,6 +112,16 @@ void qSlicerSkeletalRepresentationInitializerModuleWidget::outputPath()
     d->logic()->SetOutputPath(fileName.toUtf8().constData());
 }
 
+void qSlicerSkeletalRepresentationInitializerModuleWidget::rotateSkeleton()
+{
+    Q_D(qSlicerSkeletalRepresentationInitializerModuleWidget);
+    int numCols = static_cast<int>(d->sl_num_cols->value());
+    int numRows = static_cast<int>(d->sl_num_rows->value());
+    d->logic()->SetRows(numRows);
+    d->logic()->SetCols(numCols);
+    d->logic()->RotateSkeleton(d->cb_flip_green->isChecked(),d->cb_flip_red->isChecked(), d->cb_flip_blue->isChecked());
+}
+
 void qSlicerSkeletalRepresentationInitializerModuleWidget::flow()
 {
     Q_D(qSlicerSkeletalRepresentationInitializerModuleWidget);
@@ -120,6 +131,24 @@ void qSlicerSkeletalRepresentationInitializerModuleWidget::flow()
     double smoothAmount = d->sl_smooth_amount->value();
     int maxIter = int(d->sl_max_iter->value());
     int freq_output = int(d->sl_freq_output->value());
+    int numCols = static_cast<int>(d->sl_num_cols->value());
+    int numRows = static_cast<int>(d->sl_num_rows->value());
+
+    // odd rows is required
+    if(numRows % 2 == 0)
+    {
+        numRows += 1;
+    }
+    // odd cols is required
+    if(numCols % 2 == 0)
+    {
+        numCols += 1;
+    }
+    d->sl_num_cols->setValue(numCols);
+    d->sl_num_rows->setValue(numRows);
+    d->logic()->SetRows(numRows);
+    d->logic()->SetCols(numCols);
+
     d->logic()->FlowSurfaceMesh(fileName, dt, smoothAmount, maxIter, freq_output);
 }
 
