@@ -15,8 +15,8 @@
 
 ==============================================================================*/
 
-#ifndef __qSlicerSkeletalRepresentationInitializerModule_h
-#define __qSlicerSkeletalRepresentationInitializerModule_h
+#ifndef _qSlicerSkeletalRepresentationInitializerModule_h
+#define _qSlicerSkeletalRepresentationInitializerModule_h
 
 // Slicer includes
 #include "qSlicerLoadableModule.h"
@@ -35,42 +35,42 @@ qSlicerSkeletalRepresentationInitializerModule
 #ifdef Slicer_HAVE_QT5
   Q_PLUGIN_METADATA(IID "org.slicer.modules.loadable.qSlicerLoadableModule/1.0");
 #endif
-  Q_INTERFACES(qSlicerLoadableModule);
+  Q_INTERFACES(qSlicerLoadableModule)
 
 public:
 
   typedef qSlicerLoadableModule Superclass;
-  explicit qSlicerSkeletalRepresentationInitializerModule(QObject *parent=0);
-  virtual ~qSlicerSkeletalRepresentationInitializerModule();
+  explicit qSlicerSkeletalRepresentationInitializerModule(QObject *parent=nullptr);
+  virtual ~qSlicerSkeletalRepresentationInitializerModule() override;
 
-  qSlicerGetTitleMacro(QTMODULE_TITLE);
+  qSlicerGetTitleMacro(QTMODULE_TITLE)
 
-  virtual QString helpText()const;
-  virtual QString acknowledgementText()const;
-  virtual QStringList contributors()const;
+  virtual QString helpText()const override;
+  virtual QString acknowledgementText()const override;
+  virtual QStringList contributors()const override;
 
-  virtual QIcon icon()const;
+  virtual QIcon icon()const override;
 
-  virtual QStringList categories()const;
-  virtual QStringList dependencies() const;
+  virtual QStringList categories()const override;
+  virtual QStringList dependencies() const override;
 
 protected:
 
   /// Initialize the module. Register the volumes reader/writer
-  virtual void setup();
+  virtual void setup() override;
 
   /// Create and return the widget representation associated to this module
-  virtual qSlicerAbstractModuleRepresentation * createWidgetRepresentation();
+  virtual qSlicerAbstractModuleRepresentation * createWidgetRepresentation() override;
 
   /// Create and return the logic associated to this module
-  virtual vtkMRMLAbstractLogic* createLogic();
+  virtual vtkMRMLAbstractLogic* createLogic() override;
 
 protected:
   QScopedPointer<qSlicerSkeletalRepresentationInitializerModulePrivate> d_ptr;
 
 private:
-  Q_DECLARE_PRIVATE(qSlicerSkeletalRepresentationInitializerModule);
-  Q_DISABLE_COPY(qSlicerSkeletalRepresentationInitializerModule);
+  Q_DECLARE_PRIVATE(qSlicerSkeletalRepresentationInitializerModule)
+  Q_DISABLE_COPY(qSlicerSkeletalRepresentationInitializerModule)
 
 };
 
