@@ -1545,7 +1545,7 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::RefinePartOfSpokes(const strin
 
     // total number of parameters that need to optimize
     size_t paramDim = mCoeffArray.size();
-    double coeff[paramDim];
+    double *coeff = new double[paramDim];
     for(size_t i = 0; i < paramDim; ++i)
     {
         coeff[i] = mCoeffArray[i];
@@ -1581,6 +1581,7 @@ void vtkSlicerSkeletalRepresentationRefinerLogic::RefinePartOfSpokes(const strin
         delete mSrep;
         mSrep = nullptr;
     }
+    delete [] coeff;
 }
 
 double vtkSlicerSkeletalRepresentationRefinerLogic::TotalDistOfLeftTopSpoke(vtkSrep *tempSrep,
