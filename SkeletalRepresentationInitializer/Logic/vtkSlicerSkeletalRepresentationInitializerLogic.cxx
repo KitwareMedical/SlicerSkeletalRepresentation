@@ -1736,12 +1736,12 @@ void vtkSlicerSkeletalRepresentationInitializerLogic::ReorderSpokes(vtkPolyData 
 
 
     for(int i = 0; i < mRows; ++i) {
-        double mx[mCols];
-        double my[mCols];
-        double mz[mCols];
-        double bx[mCols];
-        double by[mCols];
-        double bz[mCols];
+        double *mx = new double[mCols];
+        double *my = new double[mCols];
+        double *mz = new double[mCols];
+        double *bx = new double[mCols];
+        double *by = new double[mCols];
+        double *bz = new double[mCols];
         for(int j = 0; j < mCols; ++j) {
             double skeletalPt[3];
             double bdryPt[3];
@@ -1796,6 +1796,12 @@ void vtkSlicerSkeletalRepresentationInitializerLogic::ReorderSpokes(vtkPolyData 
 
             }
         }
+        delete [] mx;
+        delete [] my;
+        delete [] mz;
+        delete [] bx;
+        delete [] by;
+        delete [] bz;
     }
     testPts->Modified();
     testPoly->Modified();
