@@ -15,8 +15,8 @@
 
 ==============================================================================*/
 
-#ifndef __qSlicerSkeletalRepresentationInitializerModuleWidget_h
-#define __qSlicerSkeletalRepresentationInitializerModuleWidget_h
+#ifndef _qSlicerSkeletalRepresentationInitializerModuleWidget_h
+#define _qSlicerSkeletalRepresentationInitializerModuleWidget_h
 
 // Slicer includes
 #include <qSlicerAbstractModuleWidget.h>
@@ -36,26 +36,29 @@ class Q_SLICER_QTMODULES_SKELETALREPRESENTATIONINITIALIZER_EXPORT qSlicerSkeleta
 public:
 
   typedef qSlicerAbstractModuleWidget Superclass;
-  qSlicerSkeletalRepresentationInitializerModuleWidget(QWidget *parent=0);
+  qSlicerSkeletalRepresentationInitializerModuleWidget(QWidget *parent=nullptr);
   virtual ~qSlicerSkeletalRepresentationInitializerModuleWidget();
 
 public slots:
-    // for select input mesh
-    void selectInput();
-    // connect the button Flow to the end
-    void flow();
-    // connect the button Flow step by step
-    void flowOneStep();
-    // connect the button Match ellipsoid
-    void pullUpFittingEllipsoid();
-    // connect the button flow with laplacian curvature
-    void inklingFlow();
+  // for select input mesh
+  void selectInput();
+  // connect the button Flow to the end
+  void flow();
+  // connect the button Flow step by step
+  void flowOneStep();
+  // connect the button Match ellipsoid
+  void pullUpFittingEllipsoid();
+  // connect the button flow with laplacian curvature
+  void inklingFlow();
 
-    // connect the button backward flow
-    void backwardFlow();
+  // connect the button backward flow
+  void backwardFlow();
 
-    // set output path for s-rep
-    void outputPath();
+  // set output path for s-rep
+  void outputPath();
+
+  // reorder / rotate the skeleton
+  void rotateSkeleton();
 
 protected:
   QScopedPointer<qSlicerSkeletalRepresentationInitializerModuleWidgetPrivate> d_ptr;
@@ -63,8 +66,8 @@ protected:
   virtual void setup();
 
 private:
-  Q_DECLARE_PRIVATE(qSlicerSkeletalRepresentationInitializerModuleWidget);
-  Q_DISABLE_COPY(qSlicerSkeletalRepresentationInitializerModuleWidget);
+  Q_DECLARE_PRIVATE(qSlicerSkeletalRepresentationInitializerModuleWidget)
+  Q_DISABLE_COPY(qSlicerSkeletalRepresentationInitializerModuleWidget)
 };
 
 #endif

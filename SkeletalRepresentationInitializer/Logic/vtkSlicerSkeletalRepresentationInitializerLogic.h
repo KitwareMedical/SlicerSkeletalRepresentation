@@ -21,8 +21,8 @@
 // and changing propertied of the volumes
 
 
-#ifndef __vtkSlicerSkeletalRepresentationInitializerLogic_h
-#define __vtkSlicerSkeletalRepresentationInitializerLogic_h
+#ifndef _vtkSlicerSkeletalRepresentationInitializerLogic_h
+#define _vtkSlicerSkeletalRepresentationInitializerLogic_h
 
 // Slicer includes
 #include <vtkSlicerModuleLogic.h>
@@ -49,8 +49,8 @@ public:
   typedef double CoordinateRepType;
   typedef itk::Point< CoordinateRepType, 3 > PointType;
   static vtkSlicerSkeletalRepresentationInitializerLogic *New();
-  vtkTypeMacro(vtkSlicerSkeletalRepresentationInitializerLogic, vtkSlicerModuleLogic);
-  void PrintSelf(ostream& os, vtkIndent indent);
+  vtkTypeMacro(vtkSlicerSkeletalRepresentationInitializerLogic, vtkSlicerModuleLogic)
+  void PrintSelf(ostream& os, vtkIndent indent) override;
 
   // flow surface to the end: either it's ellipsoidal enough or reach max_itre
   // input[dt]: delta t in each move
@@ -76,7 +76,9 @@ public:
   void ShowFittingEllipsoid(vtkPolyData* mesh, double &rx, double &ry, double &rz);
 
   // generate srep given an ellipsoid and expected rows and columns of medial sheet.
-  void GenerateSrepForEllipsoid(vtkPolyData* mesh, int rows, int cols, int forwardCount);
+  void GenerateSrepForEllipsoid(vtkPolyData* mesh, int rows, int cols, int forwardCount,
+                                bool rotateX = false, bool rotateY = false,
+                                bool rotateZ = false);
 
   int InklingFlow(const std::string &filename, double dt, double smooth_amount, int max_iter, int freq_output, double threshold);
 
@@ -89,16 +91,28 @@ public:
   // set output path for initialized s-rep
   void SetOutputPath(const std::string &outputPath);
 
+  // set rows and cols (resolution) of s-rep
+  void SetRows(int r);
+
+  void SetCols(int c);
+
+  // display and save current initial srep
+  // input: flip is true if users want to flip the orientation of the srep
+  void DisplayResultSrep(bool flip = false);
+
+  // reorder skeletal points
+  void RotateSkeleton(bool rotateX, bool rotateY, bool rotateZ);
+  void ReorderSpokes(vtkPolyData* input, vtkPoints* outputPts, vtkCellArray* outputPolys);
 protected:
   vtkSlicerSkeletalRepresentationInitializerLogic();
-  virtual ~vtkSlicerSkeletalRepresentationInitializerLogic();
+  virtual ~vtkSlicerSkeletalRepresentationInitializerLogic() override;
 
-  virtual void SetMRMLSceneInternal(vtkMRMLScene* newScene);
+  virtual void SetMRMLSceneInternal(vtkMRMLScene* newScene) override;
   /// Register MRML Node classes to Scene. Gets called automatically when the MRMLScene is attached to this logic class.
-  virtual void RegisterNodes();
-  virtual void UpdateFromMRMLScene();
-  virtual void OnMRMLSceneNodeAdded(vtkMRMLNode* node);
-  virtual void OnMRMLSceneNodeRemoved(vtkMRMLNode* node);
+  virtual void RegisterNodes() override;
+  virtual void UpdateFromMRMLScene() override;
+  virtual void OnMRMLSceneNodeAdded(vtkMRMLNode* node) override;
+  virtual void OnMRMLSceneNodeRemoved(vtkMRMLNode* node) override;
 
 private:
   void AddModelNodeToScene(vtkPolyData* mesh, const char* modelName, bool isModelVisible, double r = 0.25, double g = 0.25, double b = 0.25);
@@ -107,7 +121,7 @@ private:
   void AddPointToScene(double x, double y, double z, int glyphType, double r = 1, double g = 0, double b = 0);
 
   void ComputePairwiseTps(int totalNum);
-  void DisplayResultSrep();
+
   void TransformNOutput(itkThinPlateSplineExtended::Pointer tps,
                        vtkPolyData* spokes, const std::string& outputFileName);
   void TransformPoints(itkThinPlateSplineExtended::Pointer tps,
@@ -123,6 +137,8 @@ private:
 
 private:
   int forwardCount = 0;
+  int mRows = 5;
+  int mCols = 9;
   std::string mOutputPath;
 };
 

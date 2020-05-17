@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>525</width>
-    <height>357</height>
+    <height>462</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -154,16 +154,101 @@
        </layout>
       </item>
       <item>
-       <widget class="QPushButton" name="btn_one_step_flow">
-        <property name="text">
-         <string>Flow step by step</string>
-        </property>
-       </widget>
+       <layout class="QHBoxLayout" name="horizontalLayout_7">
+        <item>
+         <widget class="QLabel" name="lb_rows">
+          <property name="text">
+           <string>Odd # of rows:</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="qMRMLSliderWidget" name="sl_num_rows" native="true">
+          <property name="decimals" stdset="0">
+           <number>0</number>
+          </property>
+          <property name="pageStep" stdset="0">
+           <double>1.000000000000000</double>
+          </property>
+          <property name="minimum" stdset="0">
+           <double>3.000000000000000</double>
+          </property>
+          <property name="maximum" stdset="0">
+           <double>15.000000000000000</double>
+          </property>
+          <property name="value" stdset="0">
+           <double>5.000000000000000</double>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout_8">
+        <item>
+         <widget class="QLabel" name="lb_col">
+          <property name="text">
+           <string>Odd # of columns:</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="qMRMLSliderWidget" name="sl_num_cols" native="true">
+          <property name="decimals" stdset="0">
+           <number>0</number>
+          </property>
+          <property name="pageStep" stdset="0">
+           <double>1.000000000000000</double>
+          </property>
+          <property name="minimum" stdset="0">
+           <double>3.000000000000000</double>
+          </property>
+          <property name="maximum" stdset="0">
+           <double>15.000000000000000</double>
+          </property>
+          <property name="value" stdset="0">
+           <double>9.000000000000000</double>
+          </property>
+         </widget>
+        </item>
+       </layout>
       </item>
       <item>
        <widget class="QPushButton" name="btn_flow">
         <property name="text">
          <string>Flow to the end</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout_111">
+        <item>
+         <widget class="QCheckBox" name="cb_flip_green">
+          <property name="text">
+           <string>Flip green</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QCheckBox" name="cb_flip_red">
+          <property name="text">
+           <string>Flip red</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QCheckBox" name="cb_flip_blue">
+          <property name="text">
+           <string>Flip blue</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <widget class="QPushButton" name="btn_reorder_skeleton">
+        <property name="text">
+         <string>Flip the skeletal sheet</string>
         </property>
        </widget>
       </item>

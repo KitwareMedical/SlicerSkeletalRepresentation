@@ -2,8 +2,8 @@
 // Created by jphong on 2/19/18.
 //
 
-#ifndef __itkThinPlateSplineExtended_H__
-#define __itkThinPlateSplineExtended_H__
+#ifndef _itkThinPlateSplineExtended_H_
+#define _itkThinPlateSplineExtended_H_
 
 // SkeletalRepresentationInitializer Logic includes
 #include "vtkSlicerSkeletalRepresentationInitializerModuleLogicExport.h"
@@ -34,21 +34,21 @@ public:
 //      Those are the coefficients that will multiply the
 //      Kernel function */
 //  DMatrixType m_DMatrix;
-    DMatrixType getDMatrix() {return m_DMatrix;};
-    void setDMatrix(DMatrixType D) {m_DMatrix = D;};
+    DMatrixType getDMatrix() {return m_DMatrix;}
+    void setDMatrix(DMatrixType D) {m_DMatrix = D;}
 //
 //  /** Rotatinoal/Shearing part of the Affine component of the Transformation */
 //  AMatrixType m_AMatrix;
-    AMatrixType getAMatrix() {return m_AMatrix;};
-    void setAMatrix(AMatrixType A) {m_AMatrix = A;};
+    AMatrixType getAMatrix() {return m_AMatrix;}
+    void setAMatrix(AMatrixType A) {m_AMatrix = A;}
 //
 //  /** Translational part of the Affine component of the Transformation */
 //  BMatrixType m_BVector;
-    BMatrixType getBVector() {return m_BVector;};
-    void setBVector(BMatrixType B) {m_BVector = B;};
+    BMatrixType getBVector() {return m_BVector;}
+    void setBVector(BMatrixType B) {m_BVector = B;}
 protected:
-    itkThinPlateSplineExtended() {};
-    virtual ~itkThinPlateSplineExtended() {}
+    itkThinPlateSplineExtended() {}
+    virtual ~itkThinPlateSplineExtended() override {}
 private:
     itkThinPlateSplineExtended(const Self&); //purposely not implemented
     void operator=(const Self&); //purposely not implemented
