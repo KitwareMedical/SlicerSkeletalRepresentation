@@ -861,6 +861,13 @@ void vtkSlicerSkeletalRepresentationInitializerLogic::GenerateSrepForEllipsoid(v
         double by_up = transformed_reformed_up(i, 1);
         double bz_up = transformed_reformed_up(i, 2);
         int id1 = static_cast<int>(upSpokes_pts->InsertNextPoint(bx_up, by_up, bz_up));
+        if(i == nRows * nCols / 2) {
+            vtkSmartPointer<vtkConeSource> cone = vtkSmartPointer<vtkConeSource>::New();
+            cone->SetCenter(bx_up, by_up, bz_up);
+            cone->SetDirection(bx_up-mx, by_up-my, bz_up-mz);
+            cone->Update();
+            AddModelNodeToScene(cone->GetOutput(), arrowName.c_str(), true, 0, 0, 1);
+        }
 
         if(i == (nCrestPoints / 4) * (numSteps+1)) {
             vtkSmartPointer<vtkConeSource> cone = vtkSmartPointer<vtkConeSource>::New();
@@ -1658,7 +1665,6 @@ void vtkSlicerSkeletalRepresentationInitializerLogic::ReorderSpokes(vtkPolyData 
         double *bx = new double[mCols];
         double *by = new double[mCols];
         double *bz = new double[mCols];
-
         for(int j = 0; j < mCols; ++j) {
             double skeletalPt[3];
             double bdryPt[3];
