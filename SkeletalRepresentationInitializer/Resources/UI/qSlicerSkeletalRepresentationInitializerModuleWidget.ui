@@ -158,7 +158,7 @@
         <item>
          <widget class="QLabel" name="lb_rows">
           <property name="text">
-           <string>Odd # of rows:</string>
+           <string># of radial sections of ellipse :</string>
           </property>
          </widget>
         </item>
@@ -171,13 +171,13 @@
            <double>1.000000000000000</double>
           </property>
           <property name="minimum" stdset="0">
-           <double>3.000000000000000</double>
+           <double>1.000000000000000</double>
           </property>
           <property name="maximum" stdset="0">
-           <double>15.000000000000000</double>
+           <double>5.000000000000000</double>
           </property>
           <property name="value" stdset="0">
-           <double>5.000000000000000</double>
+           <double>2.000000000000000</double>
           </property>
          </widget>
         </item>
@@ -188,7 +188,7 @@
         <item>
          <widget class="QLabel" name="lb_col">
           <property name="text">
-           <string>Odd # of columns:</string>
+           <string># of fold points:</string>
           </property>
          </widget>
         </item>
@@ -198,16 +198,16 @@
            <number>0</number>
           </property>
           <property name="pageStep" stdset="0">
-           <double>1.000000000000000</double>
+           <double>2.000000000000000</double>
           </property>
           <property name="minimum" stdset="0">
-           <double>3.000000000000000</double>
+           <double>6.000000000000000</double>
           </property>
           <property name="maximum" stdset="0">
-           <double>15.000000000000000</double>
+           <double>26.000000000000000</double>
           </property>
           <property name="value" stdset="0">
-           <double>9.000000000000000</double>
+           <double>24.000000000000000</double>
           </property>
          </widget>
         </item>

@@ -31,7 +31,7 @@
 /// \ingroup Slicer_QtModules_ExtensionTemplate
 class qSlicerSkeletalRepresentationRefinerModuleWidgetPrivate: public Ui_qSlicerSkeletalRepresentationRefinerModuleWidget
 {
-    Q_DECLARE_PUBLIC(qSlicerSkeletalRepresentationRefinerModuleWidget);
+    Q_DECLARE_PUBLIC(qSlicerSkeletalRepresentationRefinerModuleWidget)
 protected:
     qSlicerSkeletalRepresentationRefinerModuleWidget* const q_ptr;
 public:
@@ -140,7 +140,7 @@ void qSlicerSkeletalRepresentationRefinerModuleWidget::showImpliedBoundary()
     Q_D(qSlicerSkeletalRepresentationRefinerModuleWidget);
     int interpolationLevel = int(d->sl_interp->value());
     std::string srepFileName = d->lb_srepPath->text().toUtf8().constData();
-    d->logic()->ShowImpliedBoundary(interpolationLevel, srepFileName, "Initial ");
+    d->logic()->ShowImpliedBoundary(interpolationLevel, srepFileName);
 }
 
 //-----------------------------------------------------------------------------

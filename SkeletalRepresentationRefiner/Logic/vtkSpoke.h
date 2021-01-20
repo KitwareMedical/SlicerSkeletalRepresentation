@@ -30,6 +30,9 @@ public:
     vtkSpoke();
     vtkSpoke(double radius, double px, double py, double pz, double ux, double uy, double uz);
 
+    // constructor with skeletal point and boundary point
+    vtkSpoke(double *ptSkeletal, double *ptBoundary);
+
     // copy constructor implements deep copy
     vtkSpoke(const vtkSpoke& src);
 
@@ -70,6 +73,9 @@ public:
     // input delta: step size in finite difference
     // output rSrad penalty
     double GetRSradPenalty(double delta);
+
+    // return true if this spoke is valid
+    bool IsValid();
 
 private:
     void ComputeDerivatives(std::vector<vtkSpoke*> neibors, bool isForward, double stepSize, // input

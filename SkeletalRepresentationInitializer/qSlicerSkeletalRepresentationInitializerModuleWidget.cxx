@@ -115,8 +115,10 @@ void qSlicerSkeletalRepresentationInitializerModuleWidget::outputPath()
 void qSlicerSkeletalRepresentationInitializerModuleWidget::rotateSkeleton()
 {
     Q_D(qSlicerSkeletalRepresentationInitializerModuleWidget);
-    int numCols = static_cast<int>(d->sl_num_cols->value());
-    int numRows = static_cast<int>(d->sl_num_rows->value());
+    int numBdryPoints = static_cast<int>(d->sl_num_cols->value());
+    int numRadPoints = static_cast<int>(d->sl_num_rows->value());
+    int numRows = numRadPoints * 2 + 1;
+    int numCols = (numBdryPoints - 2 * numRows) / 2 + 2;
     d->logic()->SetRows(numRows);
     d->logic()->SetCols(numCols);
     d->logic()->RotateSkeleton(d->cb_flip_green->isChecked(),d->cb_flip_red->isChecked(), d->cb_flip_blue->isChecked());
@@ -131,9 +133,10 @@ void qSlicerSkeletalRepresentationInitializerModuleWidget::flow()
     double smoothAmount = d->sl_smooth_amount->value();
     int maxIter = int(d->sl_max_iter->value());
     int freq_output = int(d->sl_freq_output->value());
-    int numCols = static_cast<int>(d->sl_num_cols->value());
-    int numRows = static_cast<int>(d->sl_num_rows->value());
-
+    int numBdryPoints = static_cast<int>(d->sl_num_cols->value());
+    int numRadPoints = static_cast<int>(d->sl_num_rows->value());
+    int numRows = numRadPoints * 2 + 1;
+    int numCols = (numBdryPoints - 2 * numRows) / 2 + 2;
     // odd rows is required
     if(numRows % 2 == 0)
     {
@@ -144,8 +147,6 @@ void qSlicerSkeletalRepresentationInitializerModuleWidget::flow()
     {
         numCols += 1;
     }
-    d->sl_num_cols->setValue(numCols);
-    d->sl_num_rows->setValue(numRows);
     d->logic()->SetRows(numRows);
     d->logic()->SetCols(numCols);
 

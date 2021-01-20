@@ -47,6 +47,8 @@ public:
     // Get the vector of spokes
     std::vector<vtkSpoke *> &GetAllSpokes();
 
+    std::vector<vtkSpoke *> & copyFrom(std::vector<vtkSpoke *> &source);
+
     // Get all skeletal points
     std::vector<double> &GetAllSkeletalPoints();
 

@@ -17,6 +17,7 @@
 
 #include "vtkSrep.h"
 #include <math.h>
+#include <stdlib.h>
 #include "vtkSpoke.h"
 
 // STD includes
@@ -31,10 +32,18 @@ vtkSrep::vtkSrep(int r, int c,  std::vector<double> &radii, std::vector<double> 
 {
     nRows = r;
     nCols = c;
-    for(int i = 0; i < r * c; ++i)
+    int nCrestPoints = r * 2 + (c-2) * 2;
+    int numSteps = static_cast<int>(floor(r/2)); // steps from crest point to the skeletal point
+
+    for(int i = 0; i < nCrestPoints * (numSteps + 1); ++i)
     {
         int idTuple = i * 3;
-        vtkSpoke *s = new vtkSpoke(radii[i], skeletalPoints[idTuple], skeletalPoints[idTuple + 1], skeletalPoints[idTuple + 2],
+        int currRowNum = i / (numSteps + 1);
+        if(currRowNum > nCrestPoints / 2  && i % (numSteps + 1) == 0) {
+            // repeated middle spokes in bot half
+            idTuple = ((nCrestPoints/2 - (currRowNum - nCrestPoints/2)) * (numSteps + 1)) * 3;
+        }
+        vtkSpoke *s = new vtkSpoke(radii[idTuple / 3], skeletalPoints[idTuple], skeletalPoints[idTuple + 1], skeletalPoints[idTuple + 2],
                 dirs[idTuple], dirs[idTuple + 1], dirs[idTuple + 2]);
         spokes.push_back(s);
     }
@@ -59,7 +68,16 @@ vtkSpoke *vtkSrep::GetSpoke(int r, int c) const
     {
         return nullptr;
     }
-    int id = r * nCols + c;
+    int num_row = nRows * 2 + (nCols-2) * 2;
+    int num_col = 1+static_cast<int>(floor(nRows/2)); // steps from crest point to the skeletal point
+
+
+    int id = 0;
+    if(r > num_row - 1)
+        id = c; // last row connect with the first row, because it's a circle
+    else
+        id = r * num_col + c;
+
     return spokes[id];
 }
 
@@ -70,6 +88,14 @@ bool vtkSrep::IsEmpty() const
 
 std::vector<vtkSpoke *> &vtkSrep::GetAllSpokes()
 {
+    return spokes;
+}
+
+std::vector<vtkSpoke *> &vtkSrep::copyFrom(std::vector<vtkSpoke *> &source)
+{
+    for (int i = 0; i < source.size(); ++i) {
+        spokes[i] = source[i];
+    }
     return spokes;
 }
 
@@ -94,9 +120,18 @@ void vtkSrep::Refine(const double *coeff)
     {
         return;
     }
+    int nCrestPoints = nRows * 2 + (nCols-2) * 2;
+    int numSteps = static_cast<int>(floor(nRows/2)); // steps from crest point to the skeletal point
+
+    double epsilon = 1e-13;
     for(size_t i = 0; i < spokes.size(); ++i)
     {
         size_t idx = i * 4;
+        int currRowNum = i % (numSteps + 1);
+        if(i >= (nCrestPoints / 2 - 1) * (numSteps + 1) && i % (numSteps + 1) == 0) {
+            // repeated middle spokes in bot half
+            idx = ((nCrestPoints/2 - 1 - (currRowNum + 1 - nCrestPoints/2)) * (numSteps + 1)) * 4;
+        }
         double newU[3], newR, oldR;
         newU[0] = coeff[idx];
         newU[1] = coeff[idx+1];
@@ -106,6 +141,17 @@ void vtkSrep::Refine(const double *coeff)
         oldR = thisSpoke->GetRadius();
         newR = exp(coeff[idx+3]) * oldR;
 
+        double oldU[3];
+        thisSpoke->GetDirection(oldU);
+
+        if(abs(newR - oldR) < epsilon &&
+                abs(newU[0] - oldU[0]) < epsilon  &&
+                abs(newU[1] - oldU[1]) < epsilon  &&
+                abs(newU[2] - oldU[2]) < epsilon) {
+
+            //no changes for this spoke
+            continue;
+        }
         thisSpoke->SetDirection(newU);
         thisSpoke->SetRadius(newR);
     }
