@@ -19,9 +19,9 @@ include(${Slicer_USE_FILE})
 
 #-----------------------------------------------------------------------------
 # Extension modules
-add_subdirectory(SkeletalRepresentationVisualizer)
-add_subdirectory(SkeletalRepresentationInitializer)
-add_subdirectory(SkeletalRepresentationRefiner)
+add_subdirectory(SRepVisualizer)
+add_subdirectory(SRepInitializer)
+add_subdirectory(SRepRefiner)
 ## NEXT_MODULE
 
 #-----------------------------------------------------------------------------
