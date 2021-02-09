@@ -1581,9 +1581,9 @@ void vtkSlicerSRepInitializerLogic::DisplayResultSrep(bool flip)
     vtkSmartPointer<vtkPolyData> vtpUpSpoke = vtkSmartPointer<vtkPolyData>::New();
     vtkSmartPointer<vtkPolyData> vtpDownSpoke = vtkSmartPointer<vtkPolyData>::New();
     vtkSmartPointer<vtkPolyData> vtpCrestSpoke = vtkSmartPointer<vtkPolyData>::New();
-    CompletePolyData(upSpoke_poly, vtpUpSpoke);
-    CompletePolyData(downSpoke_poly, vtpDownSpoke);
-    CompletePolyData(crestSpoke_poly, vtpCrestSpoke, true);
+    CompletePolyData(upSpoke_poly, vtpUpSpoke, meshPoly);
+    CompletePolyData(downSpoke_poly, vtpDownSpoke, meshPoly);
+    CompletePolyData(crestSpoke_poly, vtpCrestSpoke, meshPoly, true);
     // save to files
     std::string outputUpFileName = mOutputPath + "/up.vtp";
     std::string outputDownFileName = mOutputPath + "/down.vtp";
@@ -1876,7 +1876,7 @@ void vtkSlicerSRepInitializerLogic::GetNeighborCells(vtkPolyData *mesh, int ptId
     }
 }
 
-void vtkSlicerSRepInitializerLogic::CompletePolyData(vtkPolyData *poly, vtkPolyData *output, bool isCrest)
+void vtkSlicerSRepInitializerLogic::CompletePolyData(vtkPolyData *poly, vtkPolyData *output, vtkPolyData *medialMesh, bool isCrest)
 {
     poly->GetLines()->InitTraversal();
     vtkNew<vtkIdList> idList;
@@ -1985,7 +1985,7 @@ void vtkSlicerSRepInitializerLogic::CompletePolyData(vtkPolyData *poly, vtkPolyD
                 quads->InsertNextCell(quad);
             }
         }
-        output->SetPolys(quads);
+        output->SetPolys(medialMesh->GetPolys());
     }
 
 
