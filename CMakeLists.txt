@@ -22,6 +22,7 @@ include(${Slicer_USE_FILE})
 add_subdirectory(SRepVisualizer)
 add_subdirectory(SRepInitializer)
 add_subdirectory(SRepRefiner)
+add_subdirectory(InitSRepFromSPHARM)
 ## NEXT_MODULE
 
 #-----------------------------------------------------------------------------

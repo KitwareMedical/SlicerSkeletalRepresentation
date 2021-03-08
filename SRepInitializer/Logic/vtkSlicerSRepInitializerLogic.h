@@ -128,7 +128,7 @@ private:
                        vtkPolyData* poly, const std::string& outputFileName);
   double CalculateSpokeLength(PointType tail, PointType tip);
   void GetNeighborCells(vtkPolyData* mesh, int ptId, int newId, vtkCellArray* output, vtkPoints* morePts);
-  void CompletePolyData(vtkPolyData *poly, vtkPolyData *output, bool isCrest = false);
+  void CompletePolyData(vtkPolyData *poly, vtkPolyData *output, vtkPolyData *medialMesh, bool isCrest = false);
 
 private:
 
