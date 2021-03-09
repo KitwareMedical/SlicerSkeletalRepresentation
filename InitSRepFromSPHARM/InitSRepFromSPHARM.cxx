@@ -21,6 +21,8 @@
 #include "vtkAppendPolyData.h"
 #include "vtkPointData.h"
 #include "vtkPolyData.h"
+#include "vtkPolyDataReader.h"
+#include "vtkPolyDataWriter.h"
 #include "vtkXMLDataElement.h"
 #include "vtkXMLDataParser.h"
 #include "vtkXMLPolyDataReader.h"
@@ -31,6 +33,7 @@
 #include <cstdlib>
 #include <fstream>
 #include <iostream>
+#include <type_traits>
 
 #include "InitSRepFromSPHARMCLP.h"
 
@@ -38,7 +41,7 @@
 // from colliding when module is used as shared object module.  Every
 // thing should be in an anonymous namespace except for the module
 // entry point, e.g. main()
-//
+
 namespace
 {
   const unsigned int Dimension = 3;
@@ -46,6 +49,31 @@ namespace
   using FixedPointSetType = itk::PointSet<float, Dimension>;
   using MeshType = itk::Mesh<float, Dimension>;
   using DisplacementFieldTransformType = itk::DisplacementFieldTransform<float, 3>;
+
+  struct srep
+  {
+    vtkSmartPointer<vtkPolyData> up;
+    vtkSmartPointer<vtkPolyData> down;
+    vtkSmartPointer<vtkPolyData> crest;
+  };
+
+  vtkSmartPointer<vtkPolyData> readMesh(std::string filename)
+  {
+    auto r = vtkSmartPointer<vtkXMLPolyDataReader>::New();
+    r->SetFileName(filename.c_str());
+    r->Update();
+    auto mesh = r->GetOutput();
+
+    return mesh;
+  }
+
+  void writeMesh(vtkSmartPointer<vtkPolyData> mesh, std::string filename)
+  {
+    auto w = vtkSmartPointer<vtkXMLPolyDataWriter>::New();
+    w->SetInputData(mesh);
+    w->SetFileName(filename.c_str());
+    w->Update();
+  }
 
   ImageType::Pointer meshToImage(MeshType::Pointer mesh)
   {
@@ -118,6 +146,27 @@ namespace
     return mesh;
   }
 
+  vtkSmartPointer<vtkPolyData> scaleSrepPart(vtkSmartPointer<vtkPolyData> pd, double scale_factor)
+  {
+    auto npoints = pd->GetNumberOfPoints();
+
+    auto scaled_pd = vtkSmartPointer<vtkPolyData>::New();
+    scaled_pd->DeepCopy(pd);
+    for (int i = 0; i < npoints; i++)
+    {
+      auto pt = scaled_pd->GetPoint(i);
+      pt[0] *= scale_factor;
+      pt[1] *= scale_factor;
+      pt[2] *= scale_factor;
+      scaled_pd->GetPoints()->SetPoint(i,pt);
+
+      auto val = scaled_pd->GetPointData()->GetArray("spokeLength")->GetComponent(i,0);
+      scaled_pd->GetPointData()->GetArray("spokeLength")->SetComponent(i,0,scale_factor*val);
+    }
+
+    return scaled_pd;
+  }
+
   vtkSmartPointer<vtkPolyData> warpSrepPart(vtkSmartPointer<vtkPolyData> pd, DisplacementFieldTransformType::Pointer transform)
   {
       auto num_arrays = pd->GetPointData()->GetNumberOfArrays();
@@ -133,17 +182,10 @@ namespace
           auto len = spoke_len_array->GetComponent(i, 0);
           auto dir = spoke_dir_array->GetTuple(i);
 
-          std::cout << i << std::endl;
-          std::cout << "pt: " << pt[0] << "," << pt[1] << "," << pt[2] << std::endl;
-          std::cout << "len: " << len << std::endl;
-          std::cout << "dir: " << dir[0] << "," << dir[1] << "," << dir[2] << std::endl;
-
           auto bdry_pt = new double[3];
           bdry_pt[0] = pt[0] + len * dir[0];
           bdry_pt[1] = pt[1] + len * dir[1];
           bdry_pt[2] = pt[2] + len * dir[2];
-
-          std::cout << "bdry_pt: " << bdry_pt[0] << "," << bdry_pt[1] << "," << bdry_pt[2] << std::endl;
 
           // Warp both points
           auto warped_pt = transform->TransformPoint(pt);
@@ -168,29 +210,113 @@ namespace
       return warped_pd;
   }
 
+  std::vector<double> computeCenter(vtkSmartPointer<vtkPolyData> mesh)
+  {
+    auto center = std::vector<double>(3);
+
+    auto npoints = mesh->GetNumberOfPoints();
+    for (int i = 0; i < npoints; i++)
+    {
+      auto pt = mesh->GetPoint(i);
+      center[0] += pt[0];
+      center[1] += pt[1];
+      center[2] += pt[2];
+    }
+    center[0] /= npoints;
+    center[1] /= npoints;
+    center[2] /= npoints;
+
+    return center;
+  }
+
+  vtkSmartPointer<vtkPolyData> translateMesh(vtkSmartPointer<vtkPolyData> mesh, std::vector<double> offset)
+  {
+    auto mesh_translated = vtkSmartPointer<vtkPolyData>::New();
+    mesh_translated->DeepCopy(mesh);
+
+    auto npoints = mesh->GetNumberOfPoints();
+    for (int i = 0; i < npoints; i++)
+    {
+      auto pt = mesh_translated->GetPoint(i);
+      pt[0] += offset[0];
+      pt[1] += offset[1];
+      pt[2] += offset[2];
+      mesh_translated->GetPoints()->SetPoint(i,pt);
+    }
+
+    return mesh_translated;
+  }
+
+  double computeNorm(vtkSmartPointer<vtkPolyData> mesh)
+  {
+    auto npoints = mesh->GetNumberOfPoints();
+
+    auto norm = 0.0;
+    for (int i = 0; i < npoints; i++)
+    {
+      auto pt = mesh->GetPoint(i);
+      norm += pt[0]*pt[0] + pt[1]*pt[1] + pt[2]*pt[2];
+    }
+    norm = sqrt(norm);
+
+    return norm;
+  }
+
+  vtkSmartPointer<vtkPolyData> scaleMesh(vtkSmartPointer<vtkPolyData> mesh, double scale_factor)
+  {
+    auto npoints = mesh->GetNumberOfPoints();
+
+    auto scaled_mesh = vtkSmartPointer<vtkPolyData>::New();
+    scaled_mesh->DeepCopy(mesh);
+    for (int i = 0; i < npoints; i++)
+    {
+      auto pt = scaled_mesh->GetPoint(i);
+      pt[0] *= scale_factor;
+      pt[1] *= scale_factor;
+      pt[2] *= scale_factor;
+      scaled_mesh->GetPoints()->SetPoint(i,pt);
+    }
+
+    return scaled_mesh;
+  }
+
   int DoIt(int argc, char * argv[])
   {
     PARSE_ARGS;
 
     // Read in template and target meshes
+    auto template_mesh = readMesh(ellipsoid);
+    auto target_mesh = readMesh(target);
 
-    auto template_reader = vtkSmartPointer<vtkXMLPolyDataReader>::New();
-    template_reader->SetFileName(ellipsoid.c_str());
-    template_reader->Update();
-    auto template_mesh = template_reader->GetOutput();
+    // Center each mesh at the origin and scale template mesh up to match target volume
+    auto template_center = computeCenter(template_mesh);
+    auto template_center_neg = std::vector<double>(3);
+    template_center_neg[0] = -1*template_center[0];
+    template_center_neg[1] = -1*template_center[1];
+    template_center_neg[2] = -1*template_center[2];
+    
+    auto template_centered = translateMesh(template_mesh,template_center_neg);
+    auto template_norm = computeNorm(template_centered);
 
-    auto target_reader = vtkSmartPointer<vtkXMLPolyDataReader>::New();
-    target_reader->SetFileName(target.c_str());
-    target_reader->Update();
-    auto target_mesh = target_reader->GetOutput();
+    auto target_center = computeCenter(target_mesh);
+    auto target_center_neg = std::vector<double>(3);
+    target_center_neg[0] = -1*target_center[0];
+    target_center_neg[1] = -1*target_center[1];
+    target_center_neg[2] = -1*target_center[2];
+
+    auto target_centered = translateMesh(target_mesh,target_center_neg);
+    auto target_norm = computeNorm(target_centered);
+
+    auto scale_factor = target_norm / template_norm;
+    auto template_scaled = scaleMesh(template_centered,scale_factor);
 
     const unsigned int Dimension = 3;
 
     // Combine meshes and set up bounding box image
 
     auto append = vtkSmartPointer<vtkAppendPolyData>::New();
-    append->AddInputData(template_mesh);
-    append->AddInputData(target_mesh);
+    append->AddInputData(template_scaled);
+    append->AddInputData(target_centered);
     append->Update();
 
     auto merged_mesh = polyDataToMesh(append->GetOutput());
@@ -208,11 +334,8 @@ namespace
     deformer->SetOutputRegion(bounding_image->GetLargestPossibleRegion());
     deformer->SetOutputDirection(bounding_image->GetDirection());
 
-    std::cout << deformer->GetKernelTransform()->GetNameOfClass() << std::endl;
-
     DisplacementSourceType::KernelTransformType::Pointer kernel = deformer->GetKernelTransform();
-    kernel->SetStiffness(0.1);
-    std::cout << "Stiffness: " << kernel->GetStiffness() << std::endl;
+    kernel->SetStiffness(0);
 
     typedef DisplacementSourceType::LandmarkContainer ContainerType;
     typedef DisplacementSourceType::LandmarkPointType PointType;
@@ -220,106 +343,31 @@ namespace
     ContainerType::Pointer sourcePointsContainer = ContainerType::New();
     ContainerType::Pointer targetPointsContainer = ContainerType::New();
 
-    for (size_t i = 0; i < template_mesh->GetNumberOfPoints(); i++)
+    for (size_t i = 0; i < template_scaled->GetNumberOfPoints(); i++)
     {
-      auto source_point = template_mesh->GetPoint(i);
+      auto source_point = template_scaled->GetPoint(i);
       PointType p;
-      p[0] = -1 * source_point[0];
-      p[1] = -1 * source_point[1];
+      p[0] = source_point[0];
+      p[1] = source_point[1];
       p[2] = source_point[2];
       sourcePointsContainer->push_back(p);
     }
 
-    for (size_t i = 0; i < target_mesh->GetNumberOfPoints(); i++)
+    for (size_t i = 0; i < target_centered->GetNumberOfPoints(); i++)
     {
-      auto target_point = target_mesh->GetPoint(i);
+      auto target_point = target_centered->GetPoint(i);
       PointType p;
-      p[0] = -1 * target_point[0];// + (rand() / double(RAND_MAX) ) - 0.5;
-      p[1] = -1 * target_point[1];// + (rand() / double(RAND_MAX) ) - 0.5;
-      p[2] = target_point[2];// + (rand() / double(RAND_MAX) ) - 0.5;
+      p[0] = target_point[0];
+      p[1] = target_point[1];
+      p[2] = target_point[2];
       targetPointsContainer->push_back(p);
     }
-
-    double minx, miny, minz;
-    double maxx, maxy, maxz;
-
-    minx = -1 * template_mesh->GetPoint(0)[0];
-    miny = -1 * template_mesh->GetPoint(0)[1];
-    minz = template_mesh->GetPoint(0)[2];
-
-    maxx = -1 * template_mesh->GetPoint(0)[0];
-    maxy = -1 * template_mesh->GetPoint(0)[1];
-    maxz = template_mesh->GetPoint(0)[2];
-
-    for (int i = 1; i < template_mesh->GetNumberOfPoints(); i++)
-    {
-      if (-1 * template_mesh->GetPoint(i)[0] < minx)
-        minx = -1 * template_mesh->GetPoint(i)[0];
-
-      if (-1 * template_mesh->GetPoint(i)[1] < miny)
-        miny = -1 * template_mesh->GetPoint(i)[1];
-
-      if (template_mesh->GetPoint(i)[2] < minz)
-        minz = template_mesh->GetPoint(i)[2];
-
-      if (-1 * template_mesh->GetPoint(i)[0] > maxx)
-        maxx = -1 * template_mesh->GetPoint(i)[0];
-
-      if (-1 * template_mesh->GetPoint(i)[1] > maxy)
-        maxy = -1 * template_mesh->GetPoint(i)[1];
-
-      if (template_mesh->GetPoint(i)[2] > maxz)
-        maxz = template_mesh->GetPoint(i)[2];
-    }
-
-    for (int i = 1; i < template_mesh->GetNumberOfPoints(); i++)
-    {
-      if (-1 * target_mesh->GetPoint(i)[0] < minx)
-        minx = -1 * target_mesh->GetPoint(i)[0];
-
-      if (-1 * target_mesh->GetPoint(i)[1] < miny)
-        miny = -1 * target_mesh->GetPoint(i)[1];
-
-      if (target_mesh->GetPoint(i)[2] < minz)
-        minz = target_mesh->GetPoint(i)[2];
-
-      if (-1 * target_mesh->GetPoint(i)[0] > maxx)
-        maxx = -1 * target_mesh->GetPoint(i)[0];
-
-      if (-1 * target_mesh->GetPoint(i)[1] > maxy)
-        maxy = -1 * target_mesh->GetPoint(i)[1];
-
-      if (target_mesh->GetPoint(i)[2] > maxz)
-        maxz = target_mesh->GetPoint(i)[2];
-    }
-
-    typename ImageType::IndexType minIndex, maxIndex;
-    PointType minPoint, maxPoint;
-
-    minPoint[0] = minx - 5 * bounding_image->GetSpacing()[0];
-    minPoint[1] = miny - 5 * bounding_image->GetSpacing()[1];
-    minPoint[2] = minz - 5 * bounding_image->GetSpacing()[2];
-
-    maxPoint[0] = maxx + 5 * bounding_image->GetSpacing()[0];
-    maxPoint[1] = maxy + 5 * bounding_image->GetSpacing()[1];
-    maxPoint[2] = maxz + 5 * bounding_image->GetSpacing()[2];
-
-    bounding_image->TransformPhysicalPointToIndex(minPoint, minIndex);
-    bounding_image->TransformPhysicalPointToIndex(maxPoint, maxIndex);
-
-    typename ImageType::RegionType region;
-    region.SetIndex(minIndex);
-    region.SetUpperIndex(maxIndex);
-
-    std::cout << minIndex << std::endl;
-    std::cout << maxIndex << std::endl;
 
     deformer->SetSourceLandmarks(sourcePointsContainer.GetPointer());
     deformer->SetTargetLandmarks(targetPointsContainer.GetPointer());
 
-    deformer->SetOutputRegion(region);
+    deformer->SetOutputRegion(bounding_image->GetLargestPossibleRegion());
     deformer->Update();
-    //  deformer->UpdateLargestPossibleRegion();
 
     DisplacementFieldType::Pointer field = deformer->GetOutput();
 
@@ -337,7 +385,7 @@ namespace
         warped_mesh->GetPoints()->SetPoint(i, p_t.GetDataPointer());
     }
 
-    auto outpath = out_dir + "/test.vtp";
+    auto outpath = out_dir + "/warped_template.vtp";
 
     std::cout << outpath << std::endl;
 
@@ -367,14 +415,13 @@ namespace
             double crestShift;
             char *pEnd;
             vtkXMLDataElement *e = root->GetNestedElement(i);
-            std::string estimatePath;
-            estimatePath = vtksys::SystemTools::GetFilenamePath(srep) + "/";
+
+            auto estimatePath = vtksys::SystemTools::GetFilenamePath(srep) + "/";
             std::vector<std::string> components;
             components.push_back(estimatePath);
-            auto out_estimatePath = vtksys::SystemTools::GetFilenamePath(outpath) + "/";
-            std::cout << "out_estimatePath: " << out_estimatePath << std::endl;
+            
             std::vector<std::string> out_components;
-            out_components.push_back(out_estimatePath);
+            out_components.push_back(out_dir + "/");
 
             char* eName = e->GetName();
             if (strcmp(eName, "nRows") == 0)
@@ -436,11 +483,6 @@ namespace
         }
     }
 
-    std::cout << upFileName << std::endl;
-    std::cout << downFileName << std::endl;
-    std::cout << crestFileName << std::endl;
-    std::cout << out_upFileName << std::endl;
-
     // Process spokes
     auto spokesReader = vtkSmartPointer<vtkXMLPolyDataReader>::New();
 
@@ -448,8 +490,11 @@ namespace
     spokesReader->SetFileName(upFileName.c_str());
     spokesReader->Update();
     auto up_pd = spokesReader->GetOutput();
-    auto warped_up = warpSrepPart(up_pd, transform);
+    auto up_pd_centered = translateMesh(up_pd,template_center_neg);
+    auto up_pd_scaled = scaleSrepPart(up_pd_centered,scale_factor);
+    auto warped_up = warpSrepPart(up_pd_scaled, transform);
 
+    // auto pdw = vtkSmartPointer<vtkXMLPolyDataWriter>::New();
     pdw->SetFileName(out_upFileName.c_str());
     pdw->SetInputData(warped_up);
     pdw->Update();
@@ -458,7 +503,9 @@ namespace
     spokesReader->SetFileName(downFileName.c_str());
     spokesReader->Update();
     auto down_pd = spokesReader->GetOutput();
-    auto warped_down = warpSrepPart(down_pd, transform);
+    auto down_pd_centered = translateMesh(down_pd,template_center_neg);
+    auto down_pd_scaled = scaleSrepPart(down_pd_centered,scale_factor);
+    auto warped_down = warpSrepPart(down_pd_scaled, transform);
 
     pdw->SetFileName(out_downFileName.c_str());
     pdw->SetInputData(warped_down);
@@ -468,14 +515,16 @@ namespace
     spokesReader->SetFileName(crestFileName.c_str());
     spokesReader->Update();
     auto crest_pd = spokesReader->GetOutput();
-    auto warped_crest = warpSrepPart(crest_pd, transform);
+    auto crest_pd_centered = translateMesh(crest_pd,template_center_neg);
+    auto crest_pd_scaled = scaleSrepPart(crest_pd_centered,scale_factor);
+    auto warped_crest = warpSrepPart(crest_pd_scaled, transform);
 
     pdw->SetFileName(out_crestFileName.c_str());
     pdw->SetInputData(warped_crest);
     pdw->Update();
 
     // Write warped srep header
-    auto warped_header_file = out_dir + "/header.xml";
+    auto warped_header_file = out_dir + "/header_final.xml";
 
     ofstream warped_header;
     warped_header.open(warped_header_file);
