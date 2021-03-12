@@ -526,7 +526,7 @@ namespace
     // Write warped srep header
     auto warped_header_file = out_dir + "/header_final.xml";
 
-    ofstream warped_header;
+    std::ofstream warped_header;
     warped_header.open(warped_header_file);
     warped_header << "<s-rep>" << std::endl;
     warped_header << "  <nRows>" << r << "</nRows>" << std::endl;
