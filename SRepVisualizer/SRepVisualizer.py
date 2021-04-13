@@ -24,13 +24,13 @@ class SRepVisualizer(ScriptedLoadableModule):
         self.parent.title = "Skeletal Representation Visualizer"
         self.parent.categories = ["Skeleton, topology"]
         self.parent.dependencies = []
-        self.parent.contributors = ["Zhiyuan Liu, Junpyo Hong, Pablo Hernandez-Cerdan"]
+        self.parent.contributors = ["Zhiyuan Liu, Junpyo Hong, Pablo Hernandez-Cerdan, Christian Herz (CHOP)"]
         self.parent.helpText = """
-    Given an header.xml or a .m3d (legacy) file with a Skeletal Representation, visualize it.
-    """
+            Given an header.xml or a .m3d (legacy) file with a Skeletal Representation, visualize it.
+            """
         self.parent.acknowledgementText = """
-    This file was originally developed by Zhiyuan Liu, Junpyo Hong, and currently maintained by the SlicerSALT team.
-"""  # replace with organization, grant and thanks.
+            This file was originally developed by Zhiyuan Liu, Junpyo Hong, and currently maintained by the SlicerSALT team.
+            """
 
 
 #
@@ -45,128 +45,46 @@ class SRepVisualizerWidget(ScriptedLoadableModuleWidget):
     def setup(self):
         ScriptedLoadableModuleWidget.setup(self)
 
-        # Instantiate and connect widgets ...
+        uiWidget = slicer.util.loadUI(self.resourcePath('UI/SRepVisualizer.ui'))
+        self.layout.addWidget(uiWidget)
+        self.ui = slicer.util.childWidgetVariables(uiWidget)
 
-        # Input file
-
-        # Text + Button invoking QFileDialog
-        self.inputFileLayout = qt.QHBoxLayout()
-        self.inputFileLabelHeader = qt.QLabel()
-        self.inputFileLabelHeader.text = "Input File: "
-        self.inputFileLabelFile = qt.QLabel()
-        self.inputFileLabelFile.text = "Input header.xml or .m3d"
-        self.inputFileButton = qt.QPushButton()
-        self.inputFileButton.text = "Browse"
-        self.inputFileLayout.addWidget(self.inputFileLabelHeader)
-        self.inputFileLayout.addWidget(self.inputFileLabelFile)
-        self.inputFileLayout.addWidget(self.inputFileButton)
-        self.layout.addLayout(self.inputFileLayout)
-
-        #
-        # Parameters Area
-        #
-        self.parametersCollapsibleButton = ctk.ctkCollapsibleButton()
-        self.parametersCollapsibleButton.collapsed = True
-        self.parametersCollapsibleButton.text = "Parameters for legacy m3d format"
-        self.layout.addWidget(self.parametersCollapsibleButton)
-
-        # Layout within the dummy collapsible button
-        parametersFormLayout = qt.QFormLayout(self.parametersCollapsibleButton)
-
-        # set distance of fold curve from interior points
-        self.distSlider = slicer.qMRMLSliderWidget()
-        self.distSlider.setProperty('maximum', 0.6)
-        self.distSlider.setProperty('minimum', 0.0)
-        self.distSlider.setProperty('singleStep', 0.01)
-
-        self.distSlider.setToolTip("Parameter used in transformation from legacy s-rep to new s-rep")
-        parametersFormLayout.addRow("Set distance to expand fold curve", self.distSlider)
-
-        self.outputFolderLayout = qt.QHBoxLayout()
-        self.outputFolderLabelHeader = qt.QLabel()
-        self.outputFolderLabelHeader.text = "Output folder: "
-        self.outputFolderLabelFile = qt.QLabel()
-        self.outputFolderLabelFile.text = "Folder to save the new xml format"
-        self.outputFolderButton = qt.QPushButton()
-        self.outputFolderButton.text = "Browse"
-        self.outputFolderLayout.addWidget(self.outputFolderLabelHeader)
-        self.outputFolderLayout.addWidget(self.outputFolderLabelFile)
-        self.outputFolderLayout.addWidget(self.outputFolderButton)
-        parametersFormLayout.addRow(self.outputFolderLayout)
-
-        #
-        # Apply Button
-        #
-        self.applyButton = qt.QPushButton("Visualize s-rep file")
-        self.applyButton.toolTip = "Parse and visualize s-rep."
-        self.layout.addWidget(self.applyButton)
-
-        #
-        # Convert SALT srep to legacy one
-        #
-        self.convertButton = qt.QPushButton("Convert s-rep")
-        self.convertButton.toolTip = "Convert the s-rep from SALT format to legacy"
-        self.layout.addWidget(self.convertButton)
+        uiWidget.setMRMLScene(slicer.mrmlScene)
 
         # connections
-        self.applyButton.connect('clicked(bool)', self.onApplyButton)
-        self.inputFileButton.connect('clicked(bool)', self.onInputFileButtonClicked)
-        self.outputFolderButton.connect('clicked(bool)', self.onOutputFolderButtonClicked)
-        self.convertButton.connect('clicked(bool)', self.onConvertSrep)
-        # Add vertical spacer
-        self.layout.addStretch(1)
+        self.ui.applyButton.clicked.connect(self.onApplyButton)
+        self.ui.inputHeaderFileSelector.currentPathChanged.connect(self.onInputFilePathChanged)
+        self.ui.convertButton.clicked.connect(self.onConvertSrep)
 
-    def cleanup(self):
-        pass
-
-    def onInputFileButtonClicked(self):
-        filename = qt.QFileDialog.getOpenFileName(
-            self.parent,
-            'Open File', '', 'Files (*.m3d *.xml)')
-        if filename == '':
-            return False
-
-        # Show the filename in the label.
-        self.inputFileLabelFile.text = filename
-
-        if filename.endswith('.m3d'):
-            self.parametersCollapsibleButton.collapsed = False
-            self.distSlider.setEnabled(True)
-            self.outputFolderButton.setEnabled(True)
-        elif filename.endswith('.xml'):
-            self.parametersCollapsibleButton.collapsed = True
-            self.distSlider.setEnabled(False)
-
-            # need to convert this format srep to legacy format
-#            self.outputFolderButton.setEnabled(False)
-        else:
-            logging.warning('Invalid input file')
-            return False
-
-    def onOutputFolderButtonClicked(self):
-        foldername = qt.QFileDialog.getExistingDirectory(
-            self.parent,
-            'Select folder to save xml files', '', qt.QFileDialog.ShowDirsOnly)
-        if foldername == '':
-            return False
-
-        # Show the filename in the label.
-        self.outputFolderLabelFile.text = foldername
+    def onInputFilePathChanged(self, path):
+        self.ui.applyButton.setEnabled(path is not None)
+        self.ui.convertButton.setEnabled(path.endswith('.xml'))
+        if path.endswith('.m3d'):
+            self.ui.parametersCollapsibleButton.collapsed = False
+            self.ui.distSlider.setEnabled(True)
+            self.ui.outputFolderButton.setEnabled(True)
+        elif path.endswith('.xml'):
+            self.ui.parametersCollapsibleButton.collapsed = True
+            self.ui.distSlider.setEnabled(False)
 
     def onConvertSrep(self):
         logic = SRepVisualizerLogic()
-        filename = self.inputFileLabelFile.text
-        outputFolder = self.outputFolderLabelFile.text
+        filename = self.ui.inputHeaderFileSelector.currentPath
+        outputFolder = self.ui.outputFolderButton.currentPath
+        if not outputFolder:
+            logging.error('No output folder selected')
+            return
         logic.convert(filename, outputFolder)
 
     def onApplyButton(self):
         logic = SRepVisualizerLogic()
-        # Unused
-        # flag = self.boundarySurfaceRendering.checked
-        filename = self.inputFileLabelFile.text
-        dist = self.distSlider.value
-        outputFolder = self.outputFolderLabelFile.text
-        logic.run(filename, dist, outputFolder)
+        filename = self.ui.inputHeaderFileSelector.currentPath
+        modelPath = self.ui.inputModelFileSelector.currentPath
+
+        dist = self.ui.distSlider.value
+        outputFolder = self.ui.outputFolderButton.currentPath
+        extendMedialAxis = self.ui.extendMedialAxisCheckbox.checked
+        logic.run(filename, dist, outputFolder, modelPath, extendMedialAxis)
 
 
 #
@@ -183,15 +101,32 @@ class SRepVisualizerLogic(ScriptedLoadableModuleLogic):
     https://github.com/Slicer/Slicer/blob/master/Base/Python/slicer/ScriptedLoadableModule.py
     """
 
-    # def computeIndex(self, i, j, numRows, numCols):
-    #     atomIndex = numCols * i  + j
-    #     numEndAtoms = 0
-    #     numStdAtoms = 0
+    def run(self, filename, dist, outputFolder, modelPath=None, extendMedialAxis=False):
+        """
+        Run the actual algorithm
+        """
+
+        if self.validateInputs(filename, dist, outputFolder) is False:
+            logging.error('Invalid input parameters')
+            return
+
+        logging.info('Processing started')
+        if filename.endswith('.m3d'):
+            newSrepFile = self.transformLegacySrep(filename, dist, outputFolder)
+            self.visualizeNewSrep(newSrepFile, modelPath, extendMedialAxis)
+        elif filename.endswith('.xml'):
+            self.visualizeNewSrep(filename, modelPath, extendMedialAxis)
+        logging.info('Processing completed')
+
+    def transformLegacySrep(self, filename, dist, outputFolder):
+        logging.info('The input is legacy s-rep, now converting to new s-rep')
+        transformer().transformLegacySrep(filename, outputFolder, dist)
+        return os.path.join(outputFolder, 'header.xml')
 
     def distance(self, p0, p1):
         return math.sqrt((p0[0] - p1[0]) ** 2 + (p0[1] - p1[1]) ** 2 + (p0[2] - p1[2]) ** 2)
 
-    def visualizeNewSrep(self, filename):
+    def visualizeNewSrep(self, filename, modelPath=None, extendMedialAxis=False):
         """ Parse header.xml file, create models from the data, and visualize it. """
         # 1. parse header file
         tree = ET.parse(filename)
@@ -297,6 +232,7 @@ class SRepVisualizerLogic(ScriptedLoadableModuleLogic):
         scene.AddNode(medial_model_display)
         medial_model.SetAndObserveDisplayNodeID(medial_model_display.GetID())
         scene.AddNode(medial_model)
+
 
         # model node for up spoke (poly data for arrows)
         upSpoke_polyData = vtk.vtkPolyData()
@@ -483,8 +419,71 @@ class SRepVisualizerLogic(ScriptedLoadableModuleLogic):
         connection_model.SetAndObserveDisplayNodeID(connection_model_display.GetID())
         scene.AddNode(connection_model)
 
+        if extendMedialAxis:
+            crest_spoke_points = slicer.util.arrayFromModelPoints(crestSpoke_model)
+            fold_curve_points = slicer.util.arrayFromModelPoints(connection_model)
+
+            polydata = vtk.vtkPolyData()
+
+            new = []
+
+            for pt1, pt2 in zip(crest_spoke_points[1::2], fold_curve_points[1::2]):
+                new.append(pt2)
+                new.append(pt1)
+
+            new.append(new[0])
+            new.append(new[1])
+
+            points = vtk.vtkPoints()
+            for p in new[::-1]:
+                points.InsertNextPoint(p)
+
+            quads = vtk.vtkCellArray()
+            for idx in range(len(new) // 2 - 1):
+                quad = vtk.vtkQuad()
+                const = 2
+                quad.GetPointIds().SetId(0, idx * const + 0)
+                quad.GetPointIds().SetId(1, idx * const + 1)
+                quad.GetPointIds().SetId(2, idx * const + 3)
+                quad.GetPointIds().SetId(3, idx * const + 2)
+
+                quads.InsertNextCell(quad)
+
+            polydata.SetPoints(points)
+            polydata.SetPolys(quads)
+
+            normAuto = vtk.vtkPolyDataNormals()
+            normAuto.FlipNormalsOn()
+            normAuto.SetInputData(polydata)
+            normAuto.Update()
+
+            tri = vtk.vtkTriangleFilter()
+            tri.SetInputData(normAuto.GetOutput())
+            tri.Update()
+
+            append = vtk.vtkAppendPolyData()
+            append.AddInputData(medial_model.GetPolyData())
+            append.AddInputData(tri.GetOutput())
+            append.Update()
+
+            tri = vtk.vtkTriangleFilter()
+            tri.SetInputData(append.GetOutput())
+            tri.Update()
+
+            medial_model.SetAndObservePolyData(tri.GetOutput())
+
+        if modelPath and os.path.exists(modelPath):
+            reader = vtk.vtkXMLPolyDataReader()
+            reader.SetFileName(modelPath)
+            reader.Update()
+
+            modelsLogic = slicer.modules.models.logic()
+            modelNode = modelsLogic.AddModel(reader.GetOutput())
+            modelNode.SetName("Model")
+            modelNode.GetDisplayNode().SetOpacity(0.5)
+
     def validateInputs(self, filename, dist, outputFolder):
-        if os.path.exists(filename) is False:
+        if not os.path.exists(filename):
             logging.error('Input filename: ' + filename + ' does not exist. Choose a valid filename.')
             return False
 
@@ -644,31 +643,6 @@ class SRepVisualizerLogic(ScriptedLoadableModuleLogic):
         outputFileName = outputFolder + '/legacy.m3d'
         srep_io.writeSrepToM3D(outputFileName, legacySrep)
         logging.info('Processing completed')
-    def run(self, filename, dist, outputFolder):
-
-        """
-        Run the actual algorithm
-        """
-
-        validInputs = self.validateInputs(filename, dist, outputFolder)
-        if validInputs is False:
-            logging.error('Invalid input parameters')
-            return False
-
-        logging.info('Processing started')
-        if filename.endswith('.m3d'):
-            newSrepFile = self.transformLegacySrep(filename, dist, outputFolder)
-            self.visualizeNewSrep(newSrepFile)
-
-        elif filename.endswith('.xml'):
-            self.visualizeNewSrep(filename)
-        logging.info('Processing completed')
-        return True
-
-    def transformLegacySrep(self, filename, dist, outputFolder):
-        logging.info('The input is legacy s-rep, now converting to new s-rep')
-        transformer().transformLegacySrep(filename, outputFolder, dist)
-        return os.path.join(outputFolder, 'header.xml')
 
 
 class SRepVisualizerTest(ScriptedLoadableModuleTest):
