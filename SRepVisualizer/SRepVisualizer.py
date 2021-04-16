@@ -473,7 +473,8 @@ class SRepVisualizerLogic(ScriptedLoadableModuleLogic):
             medial_model.SetAndObservePolyData(tri.GetOutput())
 
         if modelPath and os.path.exists(modelPath):
-            reader = vtk.vtkXMLPolyDataReader()
+            readerClass = self.getModelDataReader(modelPath)
+            reader = readerClass()
             reader.SetFileName(modelPath)
             reader.Update()
 
@@ -481,6 +482,16 @@ class SRepVisualizerLogic(ScriptedLoadableModuleLogic):
             modelNode = modelsLogic.AddModel(reader.GetOutput())
             modelNode.SetName("Model")
             modelNode.GetDisplayNode().SetOpacity(0.5)
+
+    def getModelDataReader(self, filename):
+        if filename.endswith(".vtp"):
+            return vtk.vtkXMLPolyDataReader
+        elif filename.endswith(".vtk"):
+            return vtk.vtkPolyDataReader
+        elif filename.endswith(".stl"):
+            return vtk.vtkSTLReader
+        else:
+            raise ValueError("Currently only .vtk, .vtp, and .stl model files are supported")
 
     def validateInputs(self, filename, dist, outputFolder):
         if not os.path.exists(filename):
