@@ -11,9 +11,7 @@
 
 #include <memory>
 
-namespace srep {
-  class SRep;
-}
+#include <srep/SRep.h>
 
 class VTK_SLICER_SREP_MODULE_MRML_EXPORT vtkMRMLSRepNode : public vtkMRMLDisplayableNode
 {
@@ -47,13 +45,7 @@ public:
 
   bool HasSRep() const;
 
-  /// @param append If true, will append to points. If false, will clear points before writing to them
-  void PopulateUpBoundaryPoints(vtkPoints* points, bool append = false) const;
-
-  /// @param append If true, will append to points. If false, will clear points before writing to them
-  void PopulateDownBoundaryPoints(vtkPoints* points, bool append = false) const;
-
-
+  const srep::SRep* GetSRep() const;
 
 private:
     std::unique_ptr<srep::SRep> SRep;

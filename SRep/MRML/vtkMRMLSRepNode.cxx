@@ -23,6 +23,12 @@ bool vtkMRMLSRepNode::HasSRep() const {
     return static_cast<bool>(this->SRep);
 }
 
+const srep::SRep* vtkMRMLSRepNode::GetSRep() const {
+  if (this->SRep) {
+    return this->SRep.get();
+  }
+  return nullptr;
+}
 
 void vtkMRMLSRepNode::PrintSelf(ostream& os, vtkIndent indent) {
   Superclass::PrintSelf(os,indent);
@@ -57,32 +63,4 @@ vtkMRMLSRepDisplayNode* vtkMRMLSRepNode::GetSRepDisplayNode() {
         return vtkMRMLSRepDisplayNode::SafeDownCast(dispNode);
     }
     return nullptr;
-}
-
-void vtkMRMLSRepNode::PopulateUpBoundaryPoints(vtkPoints* points, bool append) const {
-    if (!points || !this->SRep) {
-        return;
-    }
-
-    if (!append) {
-        points->Reset();
-    }
-
-    srep::foreachPoint(*(this->SRep), [&](const srep::SkeletalPoint& skeletalPoint) {
-        points->InsertNextPoint(skeletalPoint.GetUpSpoke().GetBoundaryPoint().AsArray().data());
-    });
-}
-
-void vtkMRMLSRepNode::PopulateDownBoundaryPoints(vtkPoints* points, bool append) const {
-    if (!points || !this->SRep) {
-        return;
-    }
-
-    if (!append) {
-        points->Reset();
-    }
-
-    srep::foreachPoint(*(this->SRep), [&](const srep::SkeletalPoint& skeletalPoint) {
-        points->InsertNextPoint(skeletalPoint.GetDownSpoke().GetBoundaryPoint().AsArray().data());
-    });
 }

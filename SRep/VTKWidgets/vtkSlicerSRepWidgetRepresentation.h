@@ -9,13 +9,16 @@
 
 #include <vtkSmartPointer.h>
 
-class vtkSphereSource;
+class vtkActor;
+class vtkCellArray;
 class vtkGlyph3D;
 class vtkPoints;
 class vtkPolyData;
-class vtkProperty;
 class vtkPolyDataMapper;
-class vtkActor;
+class vtkProperty;
+class vtkSphereSource;
+class vtkTubeFilter;
+class vtkUnsignedCharArray;
 
 class VTK_SLICER_SREP_MODULE_VTKWIDGETS_EXPORT vtkSlicerSRepWidgetRepresentation
   : public vtkMRMLAbstractWidgetRepresentation
@@ -49,22 +52,28 @@ protected:
   ~vtkSlicerSRepWidgetRepresentation();
 
 private:
-  struct SpokesRep {
-      vtkSmartPointer<vtkSphereSource>   GlyphSourceSphere;
-      vtkSmartPointer<vtkGlyph3D>        Glypher;
-      vtkSmartPointer<vtkPoints>         BoundaryPoints;
-      vtkSmartPointer<vtkPolyData>       BoundaryPointsPolyData;
-      vtkSmartPointer<vtkProperty>       Property;
-      vtkSmartPointer<vtkPolyDataMapper> Mapper;
-      vtkSmartPointer<vtkActor>          Actor;
+  struct PointsRep {
+      vtkSmartPointer<vtkSphereSource>      GlyphSourceSphere;
+      vtkSmartPointer<vtkGlyph3D>           Glypher;
+      vtkSmartPointer<vtkPoints>            Points;
+      vtkSmartPointer<vtkUnsignedCharArray> PointColors;
+      vtkSmartPointer<vtkCellArray>         Lines;
+      vtkSmartPointer<vtkUnsignedCharArray> LineColors;
+      vtkSmartPointer<vtkPolyData>          PointsPolyData;
+      vtkSmartPointer<vtkProperty>          Property;
+      vtkSmartPointer<vtkPolyDataMapper>    Mapper;
+      vtkSmartPointer<vtkActor>             Actor;
 
-      SpokesRep();
-      ~SpokesRep();
+      vtkSmartPointer<vtkTubeFilter>     TubeFilter;
+      vtkSmartPointer<vtkPolyDataMapper> TubeMapper;
+      vtkSmartPointer<vtkActor>          TubeActor;
+
+      PointsRep();
+      ~PointsRep();
   };
 
+  PointsRep Skeleton;
   vtkMRMLSRepDisplayNode* SRepDisplayNode;
-  SpokesRep UpSpokes;
-  SpokesRep DownSpokes;
 };
 
 #endif
