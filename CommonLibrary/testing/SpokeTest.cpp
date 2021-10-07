@@ -75,3 +75,13 @@ TEST(Spoke, GetSetDirection) {
         EXPECT_EQ(spoke.GetDirection(), expectedDirection);
     }
 }
+
+TEST(Spoke, Equality) {
+    const Point3d skeletalPoint(0.12345, 0.0009, 8970.);
+    const Vector3d direction(3.865, 2.872, 1.984686);
+
+    const Spoke spoke1(skeletalPoint, direction);
+    Spoke spoke2(skeletalPoint, direction);
+
+    EXPECT_EQ(spoke1, spoke2);
+}

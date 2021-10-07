@@ -101,7 +101,7 @@ size_t SRep::GetNumRows() const {
 }
 
 size_t SRep::GetNumCols() const {
-    return this->Skeleton.empty() ? 0 : this->Skeleton.size();
+    return this->Skeleton.empty() ? 0 : this->Skeleton.front().size();
 }
 
 const SRep::SkeletalGrid& SRep::GetSkeletalPoints() const {
@@ -179,6 +179,24 @@ SRep MakeSRep(const size_t rows,
     });
 
     return SRep(grid);
+}
+
+bool operator==(const SRep& a, const SRep& b) {
+    return a.GetSkeletalPoints() == b.GetSkeletalPoints();
+}
+
+std::ostream& operator<<(std::ostream& os, const SRep& srep) {
+    os << "SRep {" << std::endl
+       << "  rows: " << srep.GetNumRows() << std::endl
+       << "  cols: " << srep.GetNumCols() << std::endl;
+    const auto& grid = srep.GetSkeletalPoints();
+    for (size_t i = 0; i < grid.size(); ++i) {
+        for (size_t j = 0; j < grid[i].size(); ++j) {
+            os << "(" << i << ", " << j << ") " << grid[i][j] << "," << std::endl; 
+        }
+    }
+    os << "}";
+    return os;
 }
 
 }

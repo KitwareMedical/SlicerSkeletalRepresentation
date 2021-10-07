@@ -87,4 +87,57 @@ Point3d SkeletalPoint::GetPoint() const {
     return this->GetUpSpoke().GetSkeletalPoint();
 }
 
+bool operator==(const SkeletalPoint& a, const SkeletalPoint& b) {
+    bool ret = a.GetUpSpoke() == b.GetUpSpoke()
+        && a.GetDownSpoke() == b.GetDownSpoke()
+        && a.IsCrest() == b.IsCrest();
+
+    if (ret && a.IsCrest()) {
+        ret = ret && a.GetCrestSpoke() == b.GetCrestSpoke();
+    }
+    return ret;
+}
+bool operator!=(const SkeletalPoint& a, const SkeletalPoint& b) {
+    return !(a == b);
+}
+bool operator< (const SkeletalPoint& a, const SkeletalPoint& b) {
+    if (a.GetUpSpoke() != b.GetUpSpoke()) {
+        return a.GetUpSpoke() < b.GetUpSpoke();
+    }
+    if (a.GetDownSpoke() != b.GetDownSpoke()) {
+        return a.GetDownSpoke() < b.GetDownSpoke();
+    }
+    if (a.IsCrest() != b.IsCrest()) {
+        return a.IsCrest() ? true : false;
+    }
+    //if both are crest
+    if (a.IsCrest()) {
+        return a.GetCrestSpoke() < b.GetCrestSpoke();
+    }
+    //both are not crest and up and down are same, therefore a and b are equal
+    return false;
+}
+bool operator> (const SkeletalPoint& a, const SkeletalPoint& b) {
+    return b < a;
+}
+bool operator<=(const SkeletalPoint& a, const SkeletalPoint& b) {
+    return !(b < a);
+}
+bool operator>=(const SkeletalPoint& a, const SkeletalPoint& b) {
+    return !(a < b);
+}
+
+std::ostream& operator<<(std::ostream& os, const SkeletalPoint& point) {
+    os << "SkeletalPoint {" << std::endl
+       << "  Up:    " << point.GetUpSpoke() << std::endl
+       << "  Down:  " << point.GetDownSpoke() << std::endl;
+    if (point.IsCrest()) {
+        os << "  Crest: " << point.GetCrestSpoke() << std::endl;
+    } else {
+        os << "  Crest: None" << std::endl;
+    }
+    os << "}";
+    return os;
+}
+
 }

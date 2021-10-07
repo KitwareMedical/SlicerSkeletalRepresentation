@@ -8,9 +8,11 @@
 #include <string>
 #include <vector>
 
+#include <vtkDoubleArray.h>
 #include <vtkPolyData.h>
 #include <vtkPointData.h>
 #include <vtkXMLPolyDataReader.h>
+#include <vtkXMLPolyDataWriter.h>
 
 using namespace srep::io::detail;
 
@@ -65,6 +67,82 @@ std::vector<Spoke> readSpokeFile(const std::string& filename) {
     return spokes;
 }
 
+void writeHeaderFile(const SRep& srep,
+                     const std::string& headerFilename,
+                     const std::string& upFilename,
+                     const std::string& downFilename,
+                     const std::string& crestFilename)
+{
+    std::ofstream out(headerFilename);
+    out << "<s-rep>" << std::endl
+        << "  <nRows>" << srep.GetNumRows() << "</nRows>" << std::endl
+        << "  <nCols>" << srep.GetNumCols() << "</nCols>" << std::endl
+        << "  <meshType>Quad</meshType>" << std::endl
+        << "  <upSpoke>" << upFilename << "</upSpoke>" << std::endl
+        << "  <downSpoke>" << downFilename << "</downSpoke>" << std::endl
+        << "  <crestSpoke>" << crestFilename << "</crestSpoke>" << std::endl
+        << "</s-rep>" << std::endl
+    ;
+}
+
+void writeSpokeFiles(const SRep& srep,
+                     const std::string& upFilename,
+                     const std::string& downFilename,
+                     const std::string& crestFilename)
+{
+    vtkNew<vtkPolyData> upPolyData;
+    vtkNew<vtkPolyData> downPolyData;
+    vtkNew<vtkPolyData> crestPolyData;
+
+    const auto initPoly = [](vtkPolyData* poly) {
+        vtkSmartPointer<vtkDoubleArray> spokeDirection = vtkSmartPointer<vtkDoubleArray>::New();
+        spokeDirection->SetName(DirectionArrayName);
+        spokeDirection->SetNumberOfComponents(3);
+
+        vtkSmartPointer<vtkDoubleArray> spokeLengths = vtkSmartPointer<vtkDoubleArray>::New();
+        spokeLengths->SetName(RadiusArrayName);
+        spokeLengths->SetNumberOfComponents(1);
+
+        vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
+
+        poly->SetPoints(points);
+        poly->GetPointData()->AddArray(spokeDirection);
+        poly->GetPointData()->SetActiveVectors(DirectionArrayName);
+        poly->GetPointData()->AddArray(spokeLengths);
+        poly->GetPointData()->SetActiveScalars(RadiusArrayName);
+    };
+
+    initPoly(upPolyData);
+    initPoly(downPolyData);
+    initPoly(crestPolyData);
+
+    const auto insertSpoke = [](vtkPolyData* poly, const Spoke& spoke) {
+        poly->GetPoints()->InsertNextPoint(spoke.GetSkeletalPoint().AsArray().data());
+        poly->GetPointData()->GetArray(DirectionArrayName)->InsertNextTuple(spoke.GetDirection().Unit().AsArray().data());
+        poly->GetPointData()->GetArray(RadiusArrayName)->InsertNextTuple1(spoke.GetDirection().GetLength());
+    };
+
+    //relying on fact foreachPoint goes in row major order
+    foreachPoint(srep, [&](const SkeletalPoint& point) {
+        insertSpoke(upPolyData, point.GetUpSpoke());
+        insertSpoke(downPolyData, point.GetDownSpoke());
+        if (point.IsCrest()) {
+            insertSpoke(crestPolyData, point.GetCrestSpoke());
+        }
+    });
+
+    vtkNew<vtkXMLPolyDataWriter> writer;
+    writer->SetDataModeToAscii();
+    const auto writePoly = [&writer](const std::string& filename, vtkPolyData* poly) {
+        writer->SetFileName(filename.c_str());
+        writer->SetInputData(poly);
+        writer->Update();
+    };
+    writePoly(upFilename, upPolyData);
+    writePoly(downFilename, downPolyData);
+    writePoly(crestFilename, crestPolyData);
+}
+
 } // namespace {}
 
 SRep ReadSRep(const std::string& filename) {
@@ -78,8 +156,14 @@ SRep ReadSRep(const std::string& filename) {
     return MakeSRep(headerParams.nRows, headerParams.nCols, upSpokes, downSpokes, crestSpokes);
 }
 
-void WriteSRep(const std::string& /*filename*/, const SRep& /*srep*/) {
-    //TODO: implement
+void WriteSRep(const SRep& srep,
+               const std::string& headerFilename,
+               const std::string& upFilename,
+               const std::string& downFilename,
+               const std::string& crestFilename)
+{
+    writeHeaderFile(srep, headerFilename, upFilename, downFilename, crestFilename);
+    writeSpokeFiles(srep, upFilename, downFilename, crestFilename);
 }
 
 }

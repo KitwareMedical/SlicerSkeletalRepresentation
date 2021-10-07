@@ -46,6 +46,10 @@ void Vector3d::SetZ(double z) {
     this->Z = z;
 }
 
+std::array<double, 3> Vector3d::AsArray() const {
+    return std::array<double, 3>{this->GetX(), this->GetY(), this->GetZ()};
+}
+
 Vector3d::Vector3d(const Point3d& from, const Point3d& to)
     : Vector3d(to.GetX() - from.GetX(),
                to.GetY() - from.GetY(),

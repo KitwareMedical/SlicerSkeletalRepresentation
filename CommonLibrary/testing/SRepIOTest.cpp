@@ -5,7 +5,18 @@ using namespace srep::io;
 
 TEST(SRepIO, test) {
     //TODO: setup test data
-    // const std::string filename("/home/connor/Downloads/srep_examples2/hippocampus0/header.xml");
+    const std::string filename("/home/connor/Downloads/srep_examples2/hippocampus0/header.xml");
 
-    // ReadSRep(filename);
+    const auto origSRep = ReadSRep(filename);
+
+    WriteSRep(origSRep,
+              "/tmp/srep/header.xml",
+              "/tmp/srep/up.xml",
+              "/tmp/srep/down.xml",
+              "/tmp/srep/crest.xml");
+
+    const auto rereadSRep = ReadSRep("/tmp/srep/header.xml");
+
+    //it is close but not exact double equal
+    // EXPECT_EQ(origSRep, rereadSRep);
 }

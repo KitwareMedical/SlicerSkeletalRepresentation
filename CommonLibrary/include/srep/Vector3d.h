@@ -70,6 +70,9 @@ public:
 
     /// Returns a unit vector in this direction.
     Vector3d Unit() const;
+
+    /// Returns the point as a length 3 array;
+    std::array<double, 3> AsArray() const;
 private:
     double X;
     double Y;

@@ -59,6 +59,9 @@ private:
     SkeletalGrid Skeleton;
 };
 
+bool operator==(const SRep& a, const SRep& b);
+std::ostream& operator<<(std::ostream& os, const SRep& srep);
+
 /// Create a SRep.
 ///
 /// Crest spokes will be attached to the closest skeletal point.

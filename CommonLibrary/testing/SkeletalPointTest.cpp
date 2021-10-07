@@ -45,10 +45,10 @@ TEST(SkeletalPoint, test) {
         EXPECT_THROW(SkeletalPoint s(up, down), MisalignedSpokeException);
     }
     {
-        //misaligned spokes crest
+        //spoke crest can be at a different location
         const Spoke up(Point3d(0,0,0), Vector3d(0,1,0));
         const Spoke down(Point3d(0,0,0), Vector3d(0,-1,0));
         const Spoke crest(Point3d(0.1,0,0), Vector3d(1,0,0));
-        EXPECT_THROW(SkeletalPoint s(up, down, crest), MisalignedSpokeException);
+        EXPECT_NO_THROW(SkeletalPoint s(up, down, crest));
     }
 }

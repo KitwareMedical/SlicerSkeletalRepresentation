@@ -74,6 +74,15 @@ private:
     bool HasCrestSpoke;
 };
 
+bool operator==(const SkeletalPoint& a, const SkeletalPoint& b);
+bool operator!=(const SkeletalPoint& a, const SkeletalPoint& b);
+bool operator< (const SkeletalPoint& a, const SkeletalPoint& b);
+bool operator> (const SkeletalPoint& a, const SkeletalPoint& b);
+bool operator<=(const SkeletalPoint& a, const SkeletalPoint& b);
+bool operator>=(const SkeletalPoint& a, const SkeletalPoint& b);
+
+std::ostream& operator<<(std::ostream& os, const SkeletalPoint& point);
+
 }
 
 #endif
