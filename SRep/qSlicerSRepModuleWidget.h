@@ -45,6 +45,9 @@ public:
   void setMRMLSRepNode(vtkMRMLSRepNode* srepnode, bool forceReconnect = false);
   void updateWidgetFromMRML();
 
+  bool setEditedNode(vtkMRMLNode* node, QString role = QString(), QString context = QString()) override;
+  double nodeEditable(vtkMRMLNode* node) override;
+
 public slots:
   // this UI related slots
   void onImport();

@@ -309,3 +309,40 @@ void qSlicerSRepModuleWidget::onNodeAddedEvent(vtkObject*, vtkObject* node) {
     d->activeSRepTreeView->setCurrentNode(srepNode);
   }
 }
+
+//-----------------------------------------------------------------------------
+bool qSlicerSRepModuleWidget::setEditedNode(vtkMRMLNode* node, QString role, QString context) {
+  Q_D(qSlicerSRepModuleWidget);
+  Q_UNUSED(role);
+  Q_UNUSED(context);
+
+  {
+    auto srepNode = vtkMRMLSRepNode::SafeDownCast(node);
+    if (srepNode) {
+      d->activeSRepTreeView->setCurrentNode(srepNode);
+      return true;
+    }
+  }
+  {
+    auto srepDisplayNode = vtkMRMLSRepDisplayNode::SafeDownCast(node);
+    if (srepDisplayNode) {
+      auto srepNode = vtkMRMLSRepNode::SafeDownCast(srepDisplayNode->GetDisplayableNode());
+      if (srepNode) {
+        d->activeSRepTreeView->setCurrentNode(srepNode);
+        return true;
+      } else {
+        return false;
+      }
+    }
+  }
+  return false;
+}
+//-----------------------------------------------------------------------------
+double qSlicerSRepModuleWidget::nodeEditable(vtkMRMLNode* node) {
+  if (vtkMRMLSRepNode::SafeDownCast(node)
+    || vtkMRMLSRepDisplayNode::SafeDownCast(node))
+  {
+    return 0.5;
+  }
+  return 0.0;
+}
