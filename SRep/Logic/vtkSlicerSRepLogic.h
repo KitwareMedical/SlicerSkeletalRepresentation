@@ -54,10 +54,24 @@ public:
   /// @returns id of new display node.
   std::string AddFirstDisplayNodeForSRepNode(vtkMRMLSRepNode *srepNode);
 
-  /// Import SRep from a file
+  /// Import SRep from files
   /// @param filename The file to import the SRep from
   /// @return The MRML id of the created node.
   std::string ImportSRep(const std::string& filename);
+
+  /// Exports SRep to files.
+  ///
+  /// @param srepNode Node to write to file. If nullptr, this function returns false.
+  /// @param headerFilename File to write the header information to. If empty, this function returns false.
+  /// @param upFilename File to write the up spokes to. If empty, this function returns false.
+  /// @param downFilename File to write the down spokes to. If empty, this function returns false.
+  /// @param crestFilename File to write the crest spokes to. If empty, this function returns false.
+  /// @return True if files were written, false otherwise.
+  bool ExportSRep(vtkMRMLSRepNode *srepNode,
+                  const std::string& headerFilename,
+                  const std::string& upFilename,
+                  const std::string& downFilename,
+                  const std::string& crestFilename);
 
 protected:
   vtkSlicerSRepLogic();

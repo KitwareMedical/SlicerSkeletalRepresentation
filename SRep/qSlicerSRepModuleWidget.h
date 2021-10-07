@@ -50,6 +50,8 @@ public:
 
 public slots:
   // this UI related slots
+  void onExport();
+  void onExportDirectoryBrowse();
   void onImport();
   void onInputFileBrowse();
   void onOpacitySliderChanged();

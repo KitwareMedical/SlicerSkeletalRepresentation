@@ -91,8 +91,7 @@ void vtkSlicerSRepLogic
 }
 
 //---------------------------------------------------------------------------
-std::string vtkSlicerSRepLogic
-::ImportSRep(const std::string& filename)
+std::string vtkSlicerSRepLogic::ImportSRep(const std::string& filename)
 {
   const auto srepID = this->AddNewSRepNode();
   if (srepID.empty()) {
@@ -130,6 +129,26 @@ std::string vtkSlicerSRepLogic::AddNewSRepNode(const std::string& name, vtkMRMLS
   }
 
   return id;
+}
+
+bool vtkSlicerSRepLogic::ExportSRep(vtkMRMLSRepNode *srepNode,
+                                    const std::string& headerFilename,
+                                    const std::string& upFilename,
+                                    const std::string& downFilename,
+                                    const std::string& crestFilename)
+{
+  if (!srepNode
+    || !srepNode->GetSRep()
+    || headerFilename.empty()
+    || upFilename.empty()
+    || downFilename.empty()
+    || crestFilename.empty()
+    )
+  {
+    return false;
+  }
+
+  return srepNode->WriteSRepToFiles(headerFilename, upFilename, downFilename, crestFilename);
 }
 
 std::string vtkSlicerSRepLogic::AddFirstDisplayNodeForSRepNode(vtkMRMLSRepNode *srepNode) {

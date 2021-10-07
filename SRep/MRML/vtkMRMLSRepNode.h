@@ -45,6 +45,10 @@ public:
   // SRep specific methods
   //--------------------------------------------------------------------------
   void LoadSRepFromFile(const std::string& filename);
+  bool WriteSRepToFiles(const std::string& headerFilename,
+                        const std::string& upFilename,
+                        const std::string& downFilename,
+                        const std::string& crestFilename);
 
   bool HasSRep() const;
 

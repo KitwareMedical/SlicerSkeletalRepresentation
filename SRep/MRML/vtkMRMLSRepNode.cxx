@@ -7,22 +7,42 @@
 //----------------------------------------------------------------------------
 vtkMRMLNodeNewMacro(vtkMRMLSRepNode);
 
+//----------------------------------------------------------------------------
 vtkMRMLSRepNode::vtkMRMLSRepNode()
   : vtkMRMLDisplayableNode()
   , SRep()
 {}
 
+//----------------------------------------------------------------------------
 vtkMRMLSRepNode::~vtkMRMLSRepNode() = default;
 
+//----------------------------------------------------------------------------
 void vtkMRMLSRepNode::LoadSRepFromFile(const std::string& filename) {
   this->SRep = std::make_shared<srep::SRep>(srep::io::ReadSRep(filename));
   this->Modified();
 }
 
+//----------------------------------------------------------------------------
+bool vtkMRMLSRepNode::WriteSRepToFiles(const std::string& headerFilename,
+                                       const std::string& upFilename,
+                                       const std::string& downFilename,
+                                       const std::string& crestFilename)
+{
+  if (!this->HasSRep()) {
+    return false;
+  }
+
+  auto srep = this->GetSRep();
+  srep::io::WriteSRep(*srep, headerFilename, upFilename, downFilename, crestFilename);
+  return true;
+}
+
+//----------------------------------------------------------------------------
 bool vtkMRMLSRepNode::HasSRep() const {
   return static_cast<bool>(this->SRep);
 }
 
+//----------------------------------------------------------------------------
 const srep::SRep* vtkMRMLSRepNode::GetSRep() const {
   if (this->SRep) {
     return this->SRep.get();
@@ -30,12 +50,14 @@ const srep::SRep* vtkMRMLSRepNode::GetSRep() const {
   return nullptr;
 }
 
+//----------------------------------------------------------------------------
 void vtkMRMLSRepNode::PrintSelf(ostream& os, vtkIndent indent) {
   Superclass::PrintSelf(os,indent);
 
   os << "SRep";
 }
 
+//----------------------------------------------------------------------------
 void vtkMRMLSRepNode::CreateDefaultDisplayNodes() {
   if (this->GetDisplayNode()
     && vtkMRMLSRepDisplayNode::SafeDownCast(this->GetDisplayNode()))
@@ -57,6 +79,7 @@ void vtkMRMLSRepNode::CreateDefaultDisplayNodes() {
   this->SetAndObserveDisplayNodeID(dispNode->GetID());
 }
 
+//----------------------------------------------------------------------------
 vtkMRMLSRepDisplayNode* vtkMRMLSRepNode::GetSRepDisplayNode() {
   auto* dispNode = this->GetDisplayNode();
   if (dispNode) {
@@ -65,10 +88,13 @@ vtkMRMLSRepDisplayNode* vtkMRMLSRepNode::GetSRepDisplayNode() {
   return nullptr;
 }
 
+//----------------------------------------------------------------------------
 void vtkMRMLSRepNode::GetRASBounds(double bounds[6]) {
   this->GetBounds(bounds);
   //TODO: transform bounds
 }
+
+//----------------------------------------------------------------------------
 void vtkMRMLSRepNode::GetBounds(double bounds[6]) {
   vtkBoundingBox box;
 
@@ -87,6 +113,7 @@ void vtkMRMLSRepNode::GetBounds(double bounds[6]) {
   box.GetBounds(bounds);
 }
 
+//----------------------------------------------------------------------------
 void vtkMRMLSRepNode::CopyContent(vtkMRMLNode* anode, bool deepCopy/*=true*/) {
   MRMLNodeModifyBlocker blocker(this);
   Superclass::CopyContent(anode, deepCopy);

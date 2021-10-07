@@ -75,6 +75,9 @@ void qSlicerSRepModuleWidgetPrivate::setupSRepUi(qSlicerWidget* widget) {
   QObject::connect(this->inputFileBrowseButton, SIGNAL(clicked()), q, SLOT(onInputFileBrowse()));
   QObject::connect(this->importButton, SIGNAL(clicked()), q, SLOT(onImport()));
 
+  QObject::connect(this->outputDirectoryBrowseButton, SIGNAL(clicked()), q, SLOT(onExportDirectoryBrowse()));
+  QObject::connect(this->exportButton, SIGNAL(clicked()), q, SLOT(onExport()));
+
   //visibility
   QObject::connect(this->visibilityCheckbox, SIGNAL(clicked()), q, SLOT(onVisibilityChanged()));
 
@@ -118,20 +121,63 @@ void qSlicerSRepModuleWidget::onInputFileBrowse()
     tr("All files (*.*);;XML (*.xml)"),
     &selectedFilter
   );
-  d->inputFileLineEdit->setText(fileName.toUtf8().constData());
+  d->inputFileLineEdit->setText(fileName);
 }
 
 //-----------------------------------------------------------------------------
 void qSlicerSRepModuleWidget::onImport()
 {
   Q_D(qSlicerSRepModuleWidget);
-  QString inputFile = d->inputFileLineEdit->text();
+  const QString inputFile = d->inputFileLineEdit->text();
   if (inputFile.isEmpty()) {
     QMessageBox::critical(this, QObject::tr("Error"), "Input file must not be empty");
     return;
   }
 
   d->logic()->ImportSRep(inputFile.toStdString());
+}
+
+//-----------------------------------------------------------------------------
+void qSlicerSRepModuleWidget::onExportDirectoryBrowse() {
+  Q_D(qSlicerSRepModuleWidget);
+  QString dir = QFileDialog::getExistingDirectory(this, tr("Export Directory"),
+                                                QString(),
+                                                QFileDialog::ShowDirsOnly
+                                                | QFileDialog::DontResolveSymlinks);
+
+  d->outputDirectoryLineEdit->setText(dir);
+}
+
+//-----------------------------------------------------------------------------
+void qSlicerSRepModuleWidget::onExport() {
+  Q_D(qSlicerSRepModuleWidget);
+  const auto exportDirectoryPath = d->outputDirectoryLineEdit->text();
+  const auto exportBaseName = d->outputBaseNameLineEdit->text();
+  if (exportDirectoryPath.isEmpty()) {
+    QMessageBox::critical(this, QObject::tr("Error"), "Export directory must not be empty");
+    return;
+  }
+  if (exportBaseName.isEmpty()) {
+    QMessageBox::critical(this, QObject::tr("Error"), "Export base name must not be empty");
+    return;
+  }
+
+  const QDir exportDirectory(exportDirectoryPath);
+  const auto headerFile = exportDirectory.filePath(exportBaseName + QString("-header.xml"));
+  const auto upFile = exportDirectory.filePath(exportBaseName + QString("-up-spokes.vtp"));
+  const auto downFile = exportDirectory.filePath(exportBaseName + QString("-down-spokes.vtp"));
+  const auto crestFile = exportDirectory.filePath(exportBaseName + QString("-crest-spokes.vtp"));
+
+  const auto success = d->logic()->ExportSRep(d->activeSRepNode,
+                                              headerFile.toStdString(),
+                                              upFile.toStdString(),
+                                              downFile.toStdString(),
+                                              crestFile.toStdString());
+  if (success) {
+    QMessageBox::information(this, QObject::tr("Export Successful"), "Exported SRep successfully");
+  } else {
+    QMessageBox::critical(this, QObject::tr("Export Failed"), "Failed to export SRep");
+  }
 }
 
 //-----------------------------------------------------------------------------
@@ -215,6 +261,7 @@ void qSlicerSRepModuleWidget::updateWidgetFromMRML() {
 
   const bool haveActiveSRepNode = static_cast<bool>(d->activeSRepNode);
   d->displayContainer->setEnabled(haveActiveSRepNode);
+  d->exportContainer->setEnabled(haveActiveSRepNode);
 
   if (haveActiveSRepNode) {
     auto displayNode = d->activeSRepNode->GetDisplayNode();
