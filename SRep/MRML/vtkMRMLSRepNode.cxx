@@ -8,19 +8,19 @@
 vtkMRMLNodeNewMacro(vtkMRMLSRepNode);
 
 vtkMRMLSRepNode::vtkMRMLSRepNode()
-    : vtkMRMLDisplayableNode()
-    , SRep()
+  : vtkMRMLDisplayableNode()
+  , SRep()
 {}
 
 vtkMRMLSRepNode::~vtkMRMLSRepNode() = default;
 
 void vtkMRMLSRepNode::LoadSRepFromFile(const std::string& filename) {
-    this->SRep.reset(new srep::SRep(srep::io::ReadSRep(filename)));
-    this->Modified();
+  this->SRep = std::make_shared<srep::SRep>(srep::io::ReadSRep(filename));
+  this->Modified();
 }
 
 bool vtkMRMLSRepNode::HasSRep() const {
-    return static_cast<bool>(this->SRep);
+  return static_cast<bool>(this->SRep);
 }
 
 const srep::SRep* vtkMRMLSRepNode::GetSRep() const {
@@ -37,32 +37,32 @@ void vtkMRMLSRepNode::PrintSelf(ostream& os, vtkIndent indent) {
 }
 
 void vtkMRMLSRepNode::CreateDefaultDisplayNodes() {
-    if (this->GetDisplayNode()
-        && vtkMRMLSRepDisplayNode::SafeDownCast(this->GetDisplayNode()))
-    {
-        //display node already exists
-        return;
-    }
-    if (!this->GetScene()) {
-        vtkErrorMacro("vtkMRMLSRepNode::CreateDefaultDisplayNodes failed: scene is invalid");
-        return;
-    }
-    vtkMRMLSRepDisplayNode* dispNode = vtkMRMLSRepDisplayNode::SafeDownCast(
-        this->GetScene()->AddNewNodeByClass("vtkMRMLSRepDisplayNode"));
+  if (this->GetDisplayNode()
+    && vtkMRMLSRepDisplayNode::SafeDownCast(this->GetDisplayNode()))
+  {
+    //display node already exists
+    return;
+  }
+  if (!this->GetScene()) {
+    vtkErrorMacro("vtkMRMLSRepNode::CreateDefaultDisplayNodes failed: scene is invalid");
+    return;
+  }
+  vtkMRMLSRepDisplayNode* dispNode = vtkMRMLSRepDisplayNode::SafeDownCast(
+    this->GetScene()->AddNewNodeByClass("vtkMRMLSRepDisplayNode"));
 
-    if (!dispNode) {
+  if (!dispNode) {
     vtkErrorMacro("vtkMRMLSRepNode::CreateDefaultDisplayNodes failed: scene failed to instantiate a vtkMRMLSRepDisplayNode node");
-        return;
-    }
-    this->SetAndObserveDisplayNodeID(dispNode->GetID());
+    return;
+  }
+  this->SetAndObserveDisplayNodeID(dispNode->GetID());
 }
 
 vtkMRMLSRepDisplayNode* vtkMRMLSRepNode::GetSRepDisplayNode() {
-    auto* dispNode = this->GetDisplayNode();
-    if (dispNode) {
-        return vtkMRMLSRepDisplayNode::SafeDownCast(dispNode);
-    }
-    return nullptr;
+  auto* dispNode = this->GetDisplayNode();
+  if (dispNode) {
+    return vtkMRMLSRepDisplayNode::SafeDownCast(dispNode);
+  }
+  return nullptr;
 }
 
 void vtkMRMLSRepNode::GetRASBounds(double bounds[6]) {
@@ -85,4 +85,26 @@ void vtkMRMLSRepNode::GetBounds(double bounds[6]) {
     }
   });
   box.GetBounds(bounds);
+}
+
+void vtkMRMLSRepNode::CopyContent(vtkMRMLNode* anode, bool deepCopy/*=true*/) {
+  MRMLNodeModifyBlocker blocker(this);
+  Superclass::CopyContent(anode, deepCopy);
+
+  vtkMRMLSRepNode* node = vtkMRMLSRepNode::SafeDownCast(anode);
+  if (node) {
+    if (deepCopy) {
+      if (node->SRep) {
+        if (!this->SRep) {
+          this->SRep = std::make_shared<srep::SRep>();
+        }
+        *this->SRep = *node->SRep;
+      } else {
+        this->SRep.reset();
+      }
+    } else {
+      //shallow copy
+      this->SRep = node->SRep;
+    }
+  }
 }

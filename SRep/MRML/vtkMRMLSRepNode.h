@@ -50,8 +50,13 @@ public:
 
   const srep::SRep* GetSRep() const;
 
+  /// Copy node content (excludes basic data, such as name and node references).
+  /// \sa vtkMRMLNode::CopyContent
+  vtkMRMLCopyContentMacro(vtkMRMLSRepNode);
+
 private:
-    std::unique_ptr<srep::SRep> SRep;
+  // using shared_ptr to allow easy shallow copy in CopyContent
+  std::shared_ptr<srep::SRep> SRep;
 };
 
 #endif
