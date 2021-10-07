@@ -5,7 +5,8 @@
 // vtkMRMLSRepDisplayNode::VisibilityHelper
 //--------------------------------------------------------------------------
 vtkMRMLSRepDisplayNode::VisibilityHelper::VisibilityHelper(const bool allOnOff)
-    : topSpokes(allOnOff)
+    : overall(allOnOff)
+    , topSpokes(allOnOff)
     , bottomSpokes(allOnOff)
     , crestSpokes(allOnOff)
     , crestCurve(allOnOff)

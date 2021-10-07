@@ -49,10 +49,56 @@ void vtkMRMLSRepDisplayableManager::ProcessMRMLNodesEvents(vtkObject *caller, un
     }
 
     if (renderRequested) {
-      this->RequestRender();
+      this->BatchSafeRequestRender();
     }
   } else {
     this->Superclass::ProcessMRMLNodesEvents(caller, event, callData);
+  }
+}
+
+void vtkMRMLSRepDisplayableManager::BatchSafeRequestRender() {
+  if (this->GetMRMLScene() && !this->GetMRMLScene()->IsBatchProcessing()) {
+    this->Superclass::RequestRender();
+  }
+}
+void vtkMRMLSRepDisplayableManager::UpdateFromMRML() {
+  // this gets called from RequestRender, so make sure to jump out quickly if possible
+  if (!this->GetMRMLScene()) {
+    return;
+  }
+
+  // turn off update from mrml requested, as we're doing it now, and create
+  // widget requests a render which checks this flag before calling update
+  // from mrml again
+  this->SetUpdateFromMRMLRequested(false);
+
+  // add any new srep nodes
+  std::vector<vtkMRMLNode*> srepNodesInScene;
+  this->GetMRMLScene()->GetNodesByClass("vtkMRMLSRepNode", srepNodesInScene);
+  for (const auto node : srepNodesInScene) {
+    auto srepNode = vtkMRMLSRepNode::SafeDownCast(node);
+    if (srepNode && !this->SRepNodes.count(srepNode)) {
+      this->AddSRepNode(srepNode);
+    }
+  }
+
+  // add any new srep display nodes
+  std::vector<vtkMRMLNode*> srepDisplayNodesInScene;
+  this->GetMRMLScene()->GetNodesByClass("vtkMRMLSRepDisplayNode", srepDisplayNodesInScene);
+  for (const auto node : srepDisplayNodesInScene) {
+    auto srepDisplayNode = vtkMRMLSRepDisplayNode::SafeDownCast(node);
+    if (srepDisplayNode && !this->DisplayNodesToWidgets.count(srepDisplayNode)) {
+      this->AddDisplayNode(srepDisplayNode);
+    }
+  }
+
+  // remove any srep nodes that have been removed from the mrml scene
+  for (auto it = this->SRepNodes.begin(); it != this->SRepNodes.end();) {
+    if (srepNodesInScene.end() == std::find(srepNodesInScene.begin(), srepNodesInScene.end(), *it)) {
+      it = this->RemoveSRepNode(it);
+    } else {
+      ++it;
+    }
   }
 }
 
@@ -69,7 +115,7 @@ void vtkMRMLSRepDisplayableManager::OnMRMLSceneNodeAdded(vtkMRMLNode* node) {
 
   if (node->IsA("vtkMRMLSRepNode")) {
     this->AddSRepNode(vtkMRMLSRepNode::SafeDownCast(node));
-    this->RequestRender();
+    this->BatchSafeRequestRender();
   }
 }
 
@@ -81,14 +127,14 @@ void vtkMRMLSRepDisplayableManager::OnMRMLSceneNodeRemoved(vtkMRMLNode* node) {
   auto srepNode = vtkMRMLSRepNode::SafeDownCast(node);
   if (srepNode) {
     this->RemoveSRepNode(srepNode);
-    this->RequestRender();
+    this->BatchSafeRequestRender();
     return;
   }
 
   auto srepDisplayNode = vtkMRMLSRepDisplayNode::SafeDownCast(node);
   if (srepDisplayNode) {
     this->RemoveDisplayNode(srepDisplayNode);
-    this->RequestRender();
+    this->BatchSafeRequestRender();
     return;
   }
 }
@@ -128,8 +174,13 @@ void vtkMRMLSRepDisplayableManager::RemoveSRepNode(vtkMRMLSRepNode* node) {
     return;
   }
 
-  auto it = this->SRepNodes.find(node);
+  this->RemoveSRepNode(this->SRepNodes.find(node));
+}
+
+vtkMRMLSRepDisplayableManager::SRepNodesSet::iterator
+vtkMRMLSRepDisplayableManager::RemoveSRepNode(SRepNodesSet::iterator it) {
   if (this->SRepNodes.end() != it) {
+    auto node = *it;
     // Remove associated display nodes
     for (auto wit = this->DisplayNodesToWidgets.begin(); wit != this->DisplayNodesToWidgets.end();) {
       auto& displayNode = wit->first;
@@ -141,8 +192,9 @@ void vtkMRMLSRepDisplayableManager::RemoveSRepNode(vtkMRMLSRepNode* node) {
     }
 
     this->RemoveObservations(node);
-    this->SRepNodes.erase(it);
+    return this->SRepNodes.erase(it);
   }
+  return it;
 }
 
 vtkMRMLSRepDisplayableManager::DisplayNodesToWidgetsMap::iterator
@@ -160,10 +212,7 @@ void vtkMRMLSRepDisplayableManager::RemoveDisplayNode(vtkMRMLSRepDisplayNode* di
   if (!displayNode) {
     return;
   }
-  auto wit = this->DisplayNodesToWidgets.find(displayNode);
-  if (this->DisplayNodesToWidgets.end() != wit) {
-    this->RemoveDisplayNode(wit);
-  }
+  this->RemoveDisplayNode(this->DisplayNodesToWidgets.find(displayNode));
 }
 
 void vtkMRMLSRepDisplayableManager::AddDisplayNode(vtkMRMLSRepDisplayNode* displayNode) {
@@ -190,7 +239,7 @@ void vtkMRMLSRepDisplayableManager::AddDisplayNode(vtkMRMLSRepDisplayNode* displ
 
   newWidget->UpdateFromMRML(displayNode, 0);
 
-  this->RequestRender();
+  this->BatchSafeRequestRender();
 }
 
 vtkSmartPointer<vtkSlicerSRepWidget> vtkMRMLSRepDisplayableManager::CreateWidget(vtkMRMLSRepDisplayNode* srepDisplayNode) {

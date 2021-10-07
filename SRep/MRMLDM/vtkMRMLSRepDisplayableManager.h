@@ -26,6 +26,9 @@ protected:
   void OnMRMLSceneNodeAdded(vtkMRMLNode* node) override;
   void OnMRMLSceneNodeRemoved(vtkMRMLNode* node) override;
 
+  void BatchSafeRequestRender();
+  void UpdateFromMRML() override;
+
 private:
   using SRepNodesSet = std::set<vtkSmartPointer<vtkMRMLSRepNode>>;
   using DisplayNodesToWidgetsMap =
@@ -33,6 +36,7 @@ private:
 
   void AddSRepNode(vtkMRMLSRepNode* node);
   void RemoveSRepNode(vtkMRMLSRepNode* node);
+  SRepNodesSet::iterator RemoveSRepNode(SRepNodesSet::iterator it);
 
   void AddDisplayNode(vtkMRMLSRepDisplayNode* displayNode);
   void RemoveDisplayNode(vtkMRMLSRepDisplayNode* displayNode);
