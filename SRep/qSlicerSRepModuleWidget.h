@@ -25,22 +25,44 @@
 
 class qSlicerSRepModuleWidgetPrivate;
 class vtkMRMLNode;
+class vtkMRMLSRepNode;
 
 /// \ingroup Slicer_QtModules_ExtensionTemplate
 class Q_SLICER_QTMODULES_SREP_EXPORT qSlicerSRepModuleWidget :
   public qSlicerAbstractModuleWidget
 {
   Q_OBJECT
-
 public:
-
   typedef qSlicerAbstractModuleWidget Superclass;
   qSlicerSRepModuleWidget(QWidget *parent=0);
   virtual ~qSlicerSRepModuleWidget();
 
+  /// Set up the GUI from mrml when entering
+  void enter() override;
+  /// Disconnect from scene when exiting
+  void exit() override;
+
+  void setMRMLSRepNode(vtkMRMLSRepNode* srepnode, bool forceReconnect = false);
+  void updateWidgetFromMRML();
+
 public slots:
-  void onInputFileBrowse();
+  // this UI related slots
   void onImport();
+  void onInputFileBrowse();
+  void onOpacitySliderChanged();
+  void onOpacitySpinboxChanged();
+  void onVisibilityChanged();
+
+  // MRML change related slots
+  void onActiveSRepItemChanged(vtkIdType);
+  void onActiveSRepMRMLNodeChanged(vtkMRMLNode* node);
+  void onActiveSRepNodeDisplayModifiedEvent();
+  void onActiveSRepNodeModifiedEvent();
+  void onMRMLSceneEndBatchProcessEvent();
+  void onMRMLSceneEndCloseEvent();
+  void onMRMLSceneEndImportEvent();
+  void onMRMLSceneEndRestoreEvent();
+  void onNodeAddedEvent(vtkObject*, vtkObject* node);
 
 protected:
   QScopedPointer<qSlicerSRepModuleWidgetPrivate> d_ptr;

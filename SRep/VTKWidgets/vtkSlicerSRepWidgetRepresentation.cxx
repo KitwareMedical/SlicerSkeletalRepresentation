@@ -60,8 +60,8 @@ vtkSlicerSRepWidgetRepresentation::PointsRep::PointsRep()
   this->Property->SetSpecular(0.0);
   this->Property->SetShading(true);
   this->Property->SetSpecularPower(1.0);
-  this->Property->SetPointSize(3.);
-  this->Property->SetLineWidth(3.);
+  this->Property->SetPointSize(3.0);
+  this->Property->SetLineWidth(3.0);
   this->Property->SetOpacity(1.);
 
   // This turns on resolve coincident topology for everything
@@ -132,6 +132,12 @@ int vtkSlicerSRepWidgetRepresentation::RenderOpaqueGeometry(vtkViewport* viewpor
 }
 int vtkSlicerSRepWidgetRepresentation::RenderTranslucentPolygonalGeometry(vtkViewport* viewport) {
   int count = 0;
+
+  // The internal actor needs to share property keys.
+  // This ensures the mapper state is consistent and allows depth peeling to work as expected.
+  this->Skeleton.Actor->SetPropertyKeys(this->GetPropertyKeys());
+  this->Skeleton.TubeActor->SetPropertyKeys(this->GetPropertyKeys());
+
   if (this->Skeleton.Actor->GetVisibility()) {
     count += this->Skeleton.Actor->RenderTranslucentPolygonalGeometry(viewport);
   }
@@ -297,6 +303,11 @@ void vtkSlicerSRepWidgetRepresentation::UpdateFromMRML(vtkMRMLNode* caller, unsi
   const double radius = distSquared / divisor;
   this->Skeleton.GlyphSourceSphere->SetRadius(radius);
   this->Skeleton.TubeFilter->SetRadius(radius);
+
+  auto displayNode = this->GetSRepDisplayNode();
+  if (displayNode) {
+    this->Skeleton.Property->SetOpacity(displayNode->GetOpacity());
+  }
 }
 
 void vtkSlicerSRepWidgetRepresentation::SetSRepDisplayNode(vtkMRMLSRepDisplayNode* srepDisplayNode) {
