@@ -28,6 +28,10 @@
 #include <vtkMRMLSliceViewDisplayableManagerFactory.h>
 #include <vtkMRMLThreeDViewDisplayableManagerFactory.h>
 
+// SubjectHierarchy Plugins includes
+#include "qSlicerSubjectHierarchyPluginHandler.h"
+#include "qSlicerSubjectHierarchySRepPlugin.h"
+
 // DisplayableManager initialization
 #include <vtkAutoInit.h>
 VTK_MODULE_INIT(vtkSlicerSRepModuleMRMLDisplayableManager)
@@ -108,6 +112,9 @@ void qSlicerSRepModule::setup()
 
   //register displayable manager with 3d view
   vtkMRMLThreeDViewDisplayableManagerFactory::GetInstance()->RegisterDisplayableManager("vtkMRMLSRepDisplayableManager");
+
+  // Register Subject Hierarchy core plugins
+  qSlicerSubjectHierarchyPluginHandler::instance()->registerPlugin(new qSlicerSubjectHierarchySRepPlugin());
 }
 
 //-----------------------------------------------------------------------------

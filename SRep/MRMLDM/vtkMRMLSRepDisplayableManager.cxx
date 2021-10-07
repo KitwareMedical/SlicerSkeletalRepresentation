@@ -73,13 +73,35 @@ void vtkMRMLSRepDisplayableManager::OnMRMLSceneNodeAdded(vtkMRMLNode* node) {
   }
 }
 
+void vtkMRMLSRepDisplayableManager::OnMRMLSceneNodeRemoved(vtkMRMLNode* node) {
+  if (!node) {
+    return;
+  }
+
+  auto srepNode = vtkMRMLSRepNode::SafeDownCast(node);
+  if (srepNode) {
+    this->RemoveSRepNode(srepNode);
+    this->RequestRender();
+    return;
+  }
+
+  auto srepDisplayNode = vtkMRMLSRepDisplayNode::SafeDownCast(node);
+  if (srepDisplayNode) {
+    this->RemoveDisplayNode(srepDisplayNode);
+    this->RequestRender();
+    return;
+  }
+}
+
 void vtkMRMLSRepDisplayableManager::AddSRepNode(vtkMRMLSRepNode* node) {
   if (!node) {
+    vtkErrorMacro("Failed to add null SRep node");
     return;
   }
 
   vtkMRMLAbstractViewNode* viewNode = vtkMRMLAbstractViewNode::SafeDownCast(this->GetMRMLDisplayableNode());
   if (!viewNode) {
+    vtkErrorMacro("Failed to add SRep node due to null view node");
     return;
   }
 
@@ -95,6 +117,52 @@ void vtkMRMLSRepDisplayableManager::AddSRepNode(vtkMRMLSRepNode* node) {
     {
       this->AddDisplayNode(display);
     }
+    else {
+      vtkErrorMacro("Not adding display node because not displayable in view");
+    }
+  }
+}
+
+void vtkMRMLSRepDisplayableManager::RemoveSRepNode(vtkMRMLSRepNode* node) {
+  if (!node) {
+    return;
+  }
+
+  auto it = this->SRepNodes.find(node);
+  if (this->SRepNodes.end() != it) {
+    // Remove associated display nodes
+    for (auto wit = this->DisplayNodesToWidgets.begin(); wit != this->DisplayNodesToWidgets.end();) {
+      auto& displayNode = wit->first;
+      if (displayNode->GetDisplayableNode() == node) {
+        wit = this->RemoveDisplayNode(wit);
+      } else {
+        ++wit;
+      }
+    }
+
+    this->RemoveObservations(node);
+    this->SRepNodes.erase(it);
+  }
+}
+
+vtkMRMLSRepDisplayableManager::DisplayNodesToWidgetsMap::iterator
+vtkMRMLSRepDisplayableManager::RemoveDisplayNode(DisplayNodesToWidgetsMap::iterator wit) {
+  if (wit != this->DisplayNodesToWidgets.end()) {
+    auto& widget = wit->second;
+    widget->SetRenderer(nullptr);
+    widget->SetRepresentation(nullptr);
+    return this->DisplayNodesToWidgets.erase(wit);
+  }
+  return wit;
+}
+
+void vtkMRMLSRepDisplayableManager::RemoveDisplayNode(vtkMRMLSRepDisplayNode* displayNode) {
+  if (!displayNode) {
+    return;
+  }
+  auto wit = this->DisplayNodesToWidgets.find(displayNode);
+  if (this->DisplayNodesToWidgets.end() != wit) {
+    this->RemoveDisplayNode(wit);
   }
 }
 

@@ -51,7 +51,7 @@ void vtkMRMLSRepNode::CreateDefaultDisplayNodes() {
         this->GetScene()->AddNewNodeByClass("vtkMRMLSRepDisplayNode"));
 
     if (!dispNode) {
-        vtkErrorMacro("vtkMRMLMarkupsNode::CreateDefaultDisplayNodes failed: scene failed to instantiate a vtkMRMLMarkupsDisplayNode node");
+    vtkErrorMacro("vtkMRMLSRepNode::CreateDefaultDisplayNodes failed: scene failed to instantiate a vtkMRMLSRepDisplayNode node");
         return;
     }
     this->SetAndObserveDisplayNodeID(dispNode->GetID());

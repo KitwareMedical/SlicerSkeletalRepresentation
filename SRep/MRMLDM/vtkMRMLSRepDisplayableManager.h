@@ -18,31 +18,34 @@ public:
   vtkTypeMacro(vtkMRMLSRepDisplayableManager, vtkMRMLAbstractDisplayableManager);
   void PrintSelf(ostream& os, vtkIndent indent) override;
 
-  void OnMRMLSceneNodeAdded(vtkMRMLNode* node) override;
-
 protected:
   vtkMRMLSRepDisplayableManager();
   ~vtkMRMLSRepDisplayableManager() override;
 
   void ProcessMRMLNodesEvents(vtkObject *caller, unsigned long event, void *callData) override;
+  void OnMRMLSceneNodeAdded(vtkMRMLNode* node) override;
+  void OnMRMLSceneNodeRemoved(vtkMRMLNode* node) override;
 
 private:
+  using SRepNodesSet = std::set<vtkSmartPointer<vtkMRMLSRepNode>>;
+  using DisplayNodesToWidgetsMap =
+    std::map<vtkSmartPointer<vtkMRMLSRepDisplayNode>, vtkSmartPointer<vtkSlicerSRepWidget>>;
+
   void AddSRepNode(vtkMRMLSRepNode* node);
+  void RemoveSRepNode(vtkMRMLSRepNode* node);
+
   void AddDisplayNode(vtkMRMLSRepDisplayNode* displayNode);
+  void RemoveDisplayNode(vtkMRMLSRepDisplayNode* displayNode);
+  DisplayNodesToWidgetsMap::iterator RemoveDisplayNode(DisplayNodesToWidgetsMap::iterator wit);
 
   void AddObservations(vtkMRMLSRepNode* node);
   void RemoveObservations(vtkMRMLSRepNode* node);
 
-  /// Create a widget.
   vtkSmartPointer<vtkSlicerSRepWidget> CreateWidget(vtkMRMLSRepDisplayNode* node);
 
-  using SRepNodesSet = std::set<vtkSmartPointer<vtkMRMLSRepNode>>;
+  //Members
   SRepNodesSet SRepNodes;
-
-  using DisplayNodesToWidgetsMap =
-    std::map<vtkSmartPointer<vtkMRMLSRepDisplayNode>, vtkSmartPointer<vtkSlicerSRepWidget>>;
   DisplayNodesToWidgetsMap DisplayNodesToWidgets;
-
   std::vector<unsigned long> ObservedSRepNodeEvents;
 };
 
