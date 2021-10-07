@@ -24,6 +24,9 @@ public:
 
   void PrintSelf(ostream& os, vtkIndent indent) override;
 
+  void GetRASBounds(double bounds[6]) override;
+  void GetBounds(double bounds[6]) override;
+
   //--------------------------------------------------------------------------
   // MRMLNode methods
   //--------------------------------------------------------------------------

@@ -1,7 +1,7 @@
 #include "vtkMRMLSRepNode.h"
 #include <vtkMRMLScene.h>
+#include <vtkBoundingBox.h>
 
-#include <srep/SRep.h>
 #include <srep/SRepIO.h>
 
 //----------------------------------------------------------------------------
@@ -63,4 +63,26 @@ vtkMRMLSRepDisplayNode* vtkMRMLSRepNode::GetSRepDisplayNode() {
         return vtkMRMLSRepDisplayNode::SafeDownCast(dispNode);
     }
     return nullptr;
+}
+
+void vtkMRMLSRepNode::GetRASBounds(double bounds[6]) {
+  this->GetBounds(bounds);
+  //TODO: transform bounds
+}
+void vtkMRMLSRepNode::GetBounds(double bounds[6]) {
+  vtkBoundingBox box;
+
+  if (!this->HasSRep()) {
+    box.GetBounds(bounds);
+    return;
+  }
+
+  srep::foreachPoint(*this->GetSRep(), [&box](const srep::SkeletalPoint& point) {
+    box.AddPoint(point.GetUpSpoke().GetBoundaryPoint().AsArray().data());
+    box.AddPoint(point.GetDownSpoke().GetBoundaryPoint().AsArray().data());
+    if (point.IsCrest()) {
+      box.AddPoint(point.GetCrestSpoke().GetBoundaryPoint().AsArray().data());
+    }
+  });
+  box.GetBounds(bounds);
 }
