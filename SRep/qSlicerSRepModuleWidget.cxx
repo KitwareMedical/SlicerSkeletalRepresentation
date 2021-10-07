@@ -262,6 +262,7 @@ void qSlicerSRepModuleWidget::updateWidgetFromMRML() {
   const bool haveActiveSRepNode = static_cast<bool>(d->activeSRepNode);
   d->displayContainer->setEnabled(haveActiveSRepNode);
   d->exportContainer->setEnabled(haveActiveSRepNode);
+  d->informationContainer->setEnabled(haveActiveSRepNode);
 
   if (haveActiveSRepNode) {
     auto displayNode = d->activeSRepNode->GetDisplayNode();
@@ -269,6 +270,19 @@ void qSlicerSRepModuleWidget::updateWidgetFromMRML() {
       d->visibilityCheckbox->setChecked(displayNode->GetVisibility());
       d->opacitySlider->setValue(static_cast<int>(displayNode->GetOpacity() * 100));
       d->opacitySpinbox->setValue(displayNode->GetOpacity());
+    }
+
+    const auto srep = d->activeSRepNode->GetSRep();
+    if (srep) {
+      d->numberSkeletalPointsLineEdit->setText(QString::fromStdString(std::to_string(srep->GetNumSkeletalPoints())));
+      d->numberCrestPointsLineEdit->setText(QString::fromStdString(std::to_string(srep->GetNumCrestPoints())));
+      d->numberRowsLineEdit->setText(QString::fromStdString(std::to_string(srep->GetNumRows())));
+      d->numberColsLineEdit->setText(QString::fromStdString(std::to_string(srep->GetNumCols())));
+    } else {
+      d->numberSkeletalPointsLineEdit->setText("0");
+      d->numberCrestPointsLineEdit->setText("0");
+      d->numberRowsLineEdit->setText("0");
+      d->numberColsLineEdit->setText("0");
     }
   }
 }

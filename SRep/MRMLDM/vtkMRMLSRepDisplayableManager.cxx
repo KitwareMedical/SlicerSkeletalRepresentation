@@ -184,7 +184,7 @@ vtkMRMLSRepDisplayableManager::RemoveSRepNode(SRepNodesSet::iterator it) {
     // Remove associated display nodes
     for (auto wit = this->DisplayNodesToWidgets.begin(); wit != this->DisplayNodesToWidgets.end();) {
       auto& displayNode = wit->first;
-      if (displayNode->GetDisplayableNode() == node) {
+      if (displayNode->GetDisplayableNode() == node.Get()) {
         wit = this->RemoveDisplayNode(wit);
       } else {
         ++wit;

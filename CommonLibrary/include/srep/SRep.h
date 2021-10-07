@@ -40,6 +40,14 @@ public:
     /// Gets the number of columns.
     size_t GetNumCols() const;
 
+    inline size_t GetNumCrestPoints() const {
+        return NumCrestPoints(this->GetNumRows(), this->GetNumCols());
+    }
+
+    inline size_t GetNumSkeletalPoints() const {
+        return this->GetNumRows() * this->GetNumCols();
+    }
+
     /// Gets the grid of skeleton points.
     const SkeletalGrid& GetSkeletalPoints() const;
     /// Gets skeletal point without bounds checking
