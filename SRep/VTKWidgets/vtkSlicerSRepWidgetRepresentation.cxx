@@ -212,14 +212,16 @@ void vtkSlicerSRepWidgetRepresentation::UpdateFromMRML(vtkMRMLNode* caller, unsi
   for (size_t row = 0; row < grid.size(); ++row) {
     for (size_t col = 0; col < grid[row].size(); ++col) {
       const auto& skeletalPoint = grid[row][col];
-      const auto skeletalPointId = insertNextPoint(skeletalPoint.GetPoint(), skeletonColor);
-      gridToPointId[row][col] = skeletalPointId;
+      const auto upSkeletalPointId = insertNextPoint(skeletalPoint.GetUpSpoke().GetSkeletalPoint(), skeletonColor);
+      //don't really know where to attach the fold if the up and down aren't at the same skeletal point, so just attach to up?
+      gridToPointId[row][col] = upSkeletalPointId;
 
-      const auto upId = insertNextPoint(skeletalPoint.GetUpSpoke().GetBoundaryPoint(), upColor);
-      insertNextLine(skeletalPointId, upId, upColor); // up spoke
+      const auto upBoundaryId = insertNextPoint(skeletalPoint.GetUpSpoke().GetBoundaryPoint(), upColor);
+      insertNextLine(upSkeletalPointId, upBoundaryId, upColor); // up spoke
 
-      const auto downId = insertNextPoint(skeletalPoint.GetDownSpoke().GetBoundaryPoint(), downColor);
-      insertNextLine(skeletalPointId, downId, downColor); // down spoke
+      const auto downSkeletalPointId = insertNextPoint(skeletalPoint.GetDownSpoke().GetSkeletalPoint(), skeletonColor);
+      const auto downBoundaryId = insertNextPoint(skeletalPoint.GetDownSpoke().GetBoundaryPoint(), downColor);
+      insertNextLine(downSkeletalPointId, downBoundaryId, downColor); // down spoke
     }
   }
 

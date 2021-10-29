@@ -158,11 +158,12 @@ SRep MakeSRep(const size_t rows,
     }
 
     // attach crest spokes to their nearest skeletal point. Must not attach to a interior point.
+    // if up and down spokes are not the same location by a large margin, this may not work well
     for (const auto& spoke : crestSpokes) {
-        double minDist = Point3d::Distance(spoke.GetSkeletalPoint(), grid[0][0].GetPoint());
+        double minDist = Point3d::Distance(spoke.GetSkeletalPoint(), grid[0][0].GetUpSpoke().GetSkeletalPoint());
         SkeletalPoint* bestSkeletalPoint = &(grid[0][0]);
         foreachCrestPoint(grid, [&minDist, &bestSkeletalPoint, &spoke](SkeletalPoint& crestPoint) {
-            const double dist = Point3d::Distance(spoke.GetSkeletalPoint(), crestPoint.GetPoint());
+            const double dist = Point3d::Distance(spoke.GetSkeletalPoint(), crestPoint.GetUpSpoke().GetSkeletalPoint());
             if (dist < minDist) {
                 minDist = dist;
                 bestSkeletalPoint = &crestPoint;
