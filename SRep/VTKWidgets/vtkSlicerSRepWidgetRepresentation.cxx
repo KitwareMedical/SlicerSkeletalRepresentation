@@ -167,7 +167,7 @@ void vtkSlicerSRepWidgetRepresentation::UpdateFromMRML(vtkMRMLNode* caller, unsi
     this->VisibilityOff();
     return;
   }
-  const auto srep = srepNode->GetSRep();
+  const auto srep = srepNode->GetSRepWorld();
   if (!srep || srep->IsEmpty()) {
     this->VisibilityOff();
     return;
