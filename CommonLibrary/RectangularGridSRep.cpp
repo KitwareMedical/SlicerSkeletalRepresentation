@@ -68,6 +68,7 @@ RectangularGridSRep::RectangularGridSRep(const SkeletalGrid& skeleton)
 {
     this->Validate(skeleton);
     this->Skeleton = skeleton;
+    this->CreateMeshRepresentation();
 }
 
 RectangularGridSRep::RectangularGridSRep(SkeletalGrid&& skeleton)
@@ -75,6 +76,7 @@ RectangularGridSRep::RectangularGridSRep(SkeletalGrid&& skeleton)
 {
     this->Validate(skeleton);
     this->Skeleton = std::move(skeleton);
+    this->CreateMeshRepresentation();
 }
 
 void RectangularGridSRep::Validate(const SkeletalGrid& skeleton) {
@@ -115,6 +117,100 @@ const SkeletalPoint& RectangularGridSRep::GetSkeletalPoint(size_t row, size_t co
 const SkeletalPoint& RectangularGridSRep::GetSkeletalPointAt(size_t row, size_t col) const {
     return this->Skeleton.at(row).at(col);
 }
+
+void RectangularGridSRep::CreateMeshRepresentation() {
+    this->SkeletonAsMesh.UpSpokes.Clear();
+    this->SkeletonAsMesh.DownSpokes.Clear();
+    this->SkeletonAsMesh.CrestSpokes.Clear();
+    this->SkeletonAsMesh.CrestSkeletalConnections.clear();
+    this->SkeletonAsMesh.Spine.clear();
+
+    /////////////////////////////////////////////////////////////////////////////
+    //
+    // UpSpokes, DownSpokes, and Spine
+    //
+    /////////////////////////////////////////////////////////////////////////////
+    // UpSpokes/DownSpokes will be row major
+    const auto toUpDownMeshIndex = [this](const size_t row, const size_t col) {
+        return row * this->GetNumCols() + col;
+    };
+
+    for (size_t row = 0; row < this->GetNumRows(); ++row) {
+        for (size_t col = 0; col < this->GetNumCols(); ++col) {
+            std::vector<IndexType> neighbors;
+            if (row > 0) neighbors.push_back(toUpDownMeshIndex(row - 1, col));
+            if (row < this->GetNumRows() - 1) neighbors.push_back(toUpDownMeshIndex(row + 1, col));
+            if (col > 0) neighbors.push_back(toUpDownMeshIndex(row, col - 1));
+            if (col < this->GetNumCols() - 1) neighbors.push_back(toUpDownMeshIndex(row, col + 1));
+
+            const auto& skeletalPoint = this->Skeleton[row][col];
+
+            this->SkeletonAsMesh.UpSpokes.AddSpoke(skeletalPoint.GetUpSpoke(), neighbors);
+            this->SkeletonAsMesh.DownSpokes.AddSpoke(skeletalPoint.GetDownSpoke(), neighbors);
+        }
+    }
+
+    //Spine is the middle row if there is an even number of rows, then no spine?
+    if (this->GetNumRows() % 2 == 1) {
+        const auto spineRow = this->GetNumRows() / 2;
+        for (size_t col = 0; col < this->GetNumCols(); ++col) {
+            this->SkeletonAsMesh.Spine.push_back(toUpDownMeshIndex(spineRow, col));
+        }
+    }
+
+    /////////////////////////////////////////////////////////////////////////////
+    //
+    // CrestSpokes and CrestSkeletalConnections
+    //
+    /////////////////////////////////////////////////////////////////////////////
+    // CrestSpokes will be clockwise from top left
+    const auto numCrestPoints = this->GetNumCrestPoints();
+    const auto addCrestPoint = [this, numCrestPoints, toUpDownMeshIndex](const size_t row, const size_t col) {
+        // neighbors will be the prev and next index wrapping at the end.
+        // this->SkeletonAsMesh.CrestSpokes.GetNumberOfSpokes() is the index to being added
+        std::vector<IndexType> neighbors;
+        neighbors.push_back((numCrestPoints + this->SkeletonAsMesh.CrestSpokes.GetNumberOfSpokes() - 1) % numCrestPoints);
+        neighbors.push_back((numCrestPoints + this->SkeletonAsMesh.CrestSpokes.GetNumberOfSpokes() + 1) % numCrestPoints);
+
+        const auto skeletalPoint = this->Skeleton[row][col];
+        this->SkeletonAsMesh.CrestSpokes.AddSpoke(skeletalPoint.GetCrestSpoke(), neighbors);
+        this->SkeletonAsMesh.CrestSkeletalConnections.push_back(toUpDownMeshIndex(row, col));
+    };
+
+    //top row, traverse right
+    for (size_t row = 0; row < this->GetNumRows(); ++row) {
+        addCrestPoint(row, 0);
+    }
+    //rightmost col, except top and bottom, traverse down
+    for (size_t col = 1; col < this->GetNumCols() - 1; ++col) {
+        addCrestPoint(this->GetNumRows() - 1, col);
+    }
+    //bottom row, traverse left (long long to allow negative for loop break)
+    for (long long row = this->GetNumRows() - 1; row >= 0; --row) {
+        addCrestPoint(row, this->GetNumCols() - 1);
+    }
+    //left col, except top and bottom, traverse up 
+    for (size_t col = this->GetNumCols() - 2; col >= 1; --col){
+        addCrestPoint(0, col);
+    }
+}
+
+const SpokeMesh& RectangularGridSRep::GetUpSpokes() const {
+    return this->SkeletonAsMesh.UpSpokes;
+}
+const SpokeMesh& RectangularGridSRep::GetDownSpokes() const {
+    return this->SkeletonAsMesh.DownSpokes;
+}
+const SpokeMesh& RectangularGridSRep::GetCrestSpokes() const {
+    return this->SkeletonAsMesh.CrestSpokes;
+}
+const std::vector<RectangularGridSRep::IndexType>& RectangularGridSRep::GetCrestSkeletalConnections() const {
+    return this->SkeletonAsMesh.CrestSkeletalConnections;
+}
+const std::vector<RectangularGridSRep::IndexType>& RectangularGridSRep::GetSpine() const {
+    return this->SkeletonAsMesh.Spine;
+}
+
 
 RectangularGridSRep MakeRectangularGridSRep(const size_t rows,
               const size_t cols,

@@ -2,6 +2,7 @@
 #define __srep_SRep_h
 
 #include <functional>
+#include <srep/MeshSRepInterface.h>
 #include <srep/SkeletalPoint.h>
 
 namespace srep {
@@ -12,7 +13,7 @@ class InvalidSkeletalGridException : public std::invalid_argument {
 
 /// @note direction u is row direction
 /// @note direction v is column direction
-class RectangularGridSRep {
+class RectangularGridSRep : public MeshSRepInterface {
 public:
     using SkeletalGrid = std::vector<std::vector<SkeletalPoint>>;
 
@@ -61,10 +62,33 @@ public:
     static size_t NumCrestPoints(size_t rows, size_t cols) {
         return rows * 2 + (cols-2) * 2;
     }
+
+    ///////////////////////////////////////////////////////////
+    //
+    // MeshSRepInterface overrides
+    //
+    ///////////////////////////////////////////////////////////
+    const SpokeMesh& GetUpSpokes() const override;
+    const SpokeMesh& GetDownSpokes() const override;
+    const SpokeMesh& GetCrestSpokes() const override;
+    const std::vector<IndexType>& GetCrestSkeletalConnections() const override;
+    const std::vector<IndexType>& GetSpine() const override;
+
 private:
     static void Validate(const SkeletalGrid& skeleton);
+    void CreateMeshRepresentation();
 
     SkeletalGrid Skeleton;
+
+    struct MeshRepresentation {
+        SpokeMesh UpSpokes;
+        SpokeMesh DownSpokes;
+        SpokeMesh CrestSpokes;
+        std::vector<IndexType> CrestSkeletalConnections;
+        std::vector<IndexType> Spine;
+    };
+
+    MeshRepresentation SkeletonAsMesh;
 };
 
 bool operator==(const RectangularGridSRep& a, const RectangularGridSRep& b);

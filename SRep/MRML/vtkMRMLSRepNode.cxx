@@ -203,7 +203,7 @@ void vtkMRMLSRepNode::UpdateSRepWorld(vtkAbstractTransform* transform) {
     }
   }
 
-  this->SRepWorld = std::make_shared<srep::RectangularGridSRep>(transformedGrid);
+  this->SRepWorld = std::make_shared<srep::RectangularGridSRep>(std::move(transformedGrid));
 }
 
 //---------------------------------------------------------------------------
