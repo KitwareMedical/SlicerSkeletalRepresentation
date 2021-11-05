@@ -3,6 +3,7 @@
 
 #include <srep/Spoke.h>
 #include <srep/SpokeMesh.h>
+#include <srep/Util.h>
 
 namespace srep {
 
@@ -13,7 +14,22 @@ class MeshSRepInterface {
 public:
   using IndexType = SpokeMesh::IndexType;
 
+  //disallow copy and move of the interface
+  MeshSRepInterface() = default;
+  MeshSRepInterface(const MeshSRepInterface&) = delete;
+  MeshSRepInterface& operator=(const MeshSRepInterface&) = delete;
+  MeshSRepInterface(MeshSRepInterface&&) = delete;
+  MeshSRepInterface& operator=(MeshSRepInterface&&) = delete;
+
   virtual ~MeshSRepInterface() = default;
+
+  /// Clones the SRep.
+  ///
+  /// Deep copy is made. The reason that owner is used instead of a unique_ptr is to allow
+  /// the return type to be covariant.
+  virtual util::owner<MeshSRepInterface*> Clone() const = 0;
+
+  virtual bool IsEmpty() const = 0;
 
   /// Mesh of up spokes.
   ///

@@ -9,6 +9,7 @@ set(${KIT}_INCLUDE_DIRECTORIES
   )
 
 set(${KIT}_SRCS
+  vtkMRMLRectangularGridSRepNode.cxx
   vtkMRMLSRepNode.cxx
   vtkMRMLSRepDisplayNode.cxx
   )

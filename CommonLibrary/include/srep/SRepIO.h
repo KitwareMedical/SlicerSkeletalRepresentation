@@ -8,7 +8,7 @@ namespace srep {
 namespace io {
 
 /// Reads RectangularGridSRep from XML file.
-RectangularGridSRep ReadRectangularGridSRep(const std::string& filename);
+std::unique_ptr<RectangularGridSRep> ReadRectangularGridSRep(const std::string& filename);
 
 /// Writes RectangularGridSRep to XML file.
 void WriteSRep(const RectangularGridSRep& srep,

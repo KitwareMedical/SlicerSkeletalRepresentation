@@ -1,6 +1,7 @@
 #include <srep/RectangularGridSRep.h>
 #include <iostream>
 #include <limits>
+#include <memory>
 
 namespace srep {
 
@@ -61,10 +62,12 @@ void foreachPoint(const RectangularGridSRep::SkeletalGrid& grid, const std::func
 
 RectangularGridSRep::RectangularGridSRep()
     : Skeleton()
+    , SkeletonAsMesh()
 {}
 
 RectangularGridSRep::RectangularGridSRep(const SkeletalGrid& skeleton)
     : Skeleton()
+    , SkeletonAsMesh()
 {
     this->Validate(skeleton);
     this->Skeleton = skeleton;
@@ -73,6 +76,7 @@ RectangularGridSRep::RectangularGridSRep(const SkeletalGrid& skeleton)
 
 RectangularGridSRep::RectangularGridSRep(SkeletalGrid&& skeleton)
     : Skeleton()
+    , SkeletonAsMesh()
 {
     this->Validate(skeleton);
     this->Skeleton = std::move(skeleton);
@@ -92,6 +96,14 @@ void RectangularGridSRep::Validate(const SkeletalGrid& skeleton) {
             }
         }
     }
+}
+
+util::owner<RectangularGridSRep*> RectangularGridSRep::Clone() const {
+    // use a unique ptr right up until the very end in case there are any exceptions
+    std::unique_ptr<RectangularGridSRep> cloned(new RectangularGridSRep);
+    cloned->Skeleton = this->Skeleton;
+    cloned->SkeletonAsMesh = this->SkeletonAsMesh;
+    return cloned.release();
 }
 
 bool RectangularGridSRep::IsEmpty() const {
@@ -212,11 +224,12 @@ const std::vector<RectangularGridSRep::IndexType>& RectangularGridSRep::GetSpine
 }
 
 
-RectangularGridSRep MakeRectangularGridSRep(const size_t rows,
-              const size_t cols,
-              const std::vector<Spoke>& upSpokes,
-              const std::vector<Spoke>& downSpokes,
-              const std::vector<Spoke>& crestSpokes)
+std::unique_ptr<RectangularGridSRep> MakeRectangularGridSRep(
+    const size_t rows,
+    const size_t cols,
+    const std::vector<Spoke>& upSpokes,
+    const std::vector<Spoke>& downSpokes,
+    const std::vector<Spoke>& crestSpokes)
 {
     //do a bit of up front validation
     if (upSpokes.size() != downSpokes.size()) {
@@ -240,7 +253,7 @@ RectangularGridSRep MakeRectangularGridSRep(const size_t rows,
 
     if (upSpokes.size() == 0) {
         //just shortcut this here to make things nice further down
-        return RectangularGridSRep();
+        return {};
     }
 
     RectangularGridSRep::SkeletalGrid grid;
@@ -275,7 +288,7 @@ RectangularGridSRep MakeRectangularGridSRep(const size_t rows,
         }
     });
 
-    return RectangularGridSRep(grid);
+    return std::unique_ptr<RectangularGridSRep>(new RectangularGridSRep(grid));
 }
 
 bool operator==(const RectangularGridSRep& a, const RectangularGridSRep& b) {

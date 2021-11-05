@@ -52,6 +52,8 @@ protected:
   ~vtkSlicerSRepWidgetRepresentation();
 
 private:
+  void ConvertSRepToVisualRepresentation(const srep::MeshSRepInterface& srep);
+
   struct PointsRep {
       vtkSmartPointer<vtkSphereSource>      GlyphSourceSphere;
       vtkSmartPointer<vtkGlyph3D>           Glypher;

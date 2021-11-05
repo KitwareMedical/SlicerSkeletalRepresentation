@@ -145,7 +145,7 @@ void writeSpokeFiles(const RectangularGridSRep& srep,
 
 } // namespace {}
 
-RectangularGridSRep ReadRectangularGridSRep(const std::string& filename) {
+std::unique_ptr<RectangularGridSRep> ReadRectangularGridSRep(const std::string& filename) {
     const auto headerParams = readHeaderFile(filename);
     const auto upSpokes = readSpokeFile(headerParams.upSpoke);
     const auto downSpokes = readSpokeFile(headerParams.downSpoke);

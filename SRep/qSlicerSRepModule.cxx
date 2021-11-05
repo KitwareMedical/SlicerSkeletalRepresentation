@@ -132,5 +132,5 @@ vtkMRMLAbstractLogic* qSlicerSRepModule::createLogic()
 
 //-----------------------------------------------------------------------------
 QStringList qSlicerSRepModule::associatedNodeTypes() const {
-  return QStringList() << "vtkMRMLSRepNode";
+  return QStringList() << "vtkMRMLRectangularGridSRepNode";
 }

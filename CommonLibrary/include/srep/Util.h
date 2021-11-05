@@ -29,6 +29,15 @@ FinalAction<T> finally(T action) {
     return FinalAction<T>(action);
 }
 
+/// Utility template from Guidelines Support Library to denote a owning pointer.
+///
+/// This can be used with covariant return types.
+/// See https://github.com/gsl-lite/gsl-lite
+template< class T
+        , typename = typename std::enable_if< std::is_pointer<T>::value >::type
+>
+using owner = T;
+
 }
 }
 

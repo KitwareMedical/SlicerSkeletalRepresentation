@@ -5,19 +5,13 @@
 #include <vtkMRMLTransformNode.h>
 #include <vtkBoundingBox.h>
 
-#include <srep/SRepIO.h>
 #include <srep/Spoke.h>
 #include <srep/SkeletalPoint.h>
 #include <srep/RectangularGridSRep.h>
 
 //----------------------------------------------------------------------------
-vtkMRMLNodeNewMacro(vtkMRMLSRepNode);
-
-//----------------------------------------------------------------------------
 vtkMRMLSRepNode::vtkMRMLSRepNode()
   : vtkMRMLDisplayableNode()
-  , SRep()
-  , SRepWorld()
   , SRepTransform()
 {
   this->SRepTransform->Identity();
@@ -27,40 +21,8 @@ vtkMRMLSRepNode::vtkMRMLSRepNode()
 vtkMRMLSRepNode::~vtkMRMLSRepNode() = default;
 
 //----------------------------------------------------------------------------
-void vtkMRMLSRepNode::LoadSRepFromFile(const std::string& filename) {
-  this->SRep = std::make_shared<srep::RectangularGridSRep>(srep::io::ReadRectangularGridSRep(filename));
-  this->UpdateSRepWorld(this->SRepTransform);
-  this->Modified();
-}
-
-//----------------------------------------------------------------------------
-bool vtkMRMLSRepNode::WriteSRepToFiles(const std::string& headerFilename,
-                                       const std::string& upFilename,
-                                       const std::string& downFilename,
-                                       const std::string& crestFilename)
-{
-  if (!this->HasSRep()) {
-    return false;
-  }
-
-  auto srep = this->GetSRep();
-  srep::io::WriteSRep(*srep, headerFilename, upFilename, downFilename, crestFilename);
-  return true;
-}
-
-//----------------------------------------------------------------------------
 bool vtkMRMLSRepNode::HasSRep() const {
-  return static_cast<bool>(this->SRep);
-}
-
-//----------------------------------------------------------------------------
-const srep::RectangularGridSRep* vtkMRMLSRepNode::GetSRep() const {
-  return this->SRep.get();
-}
-
-//----------------------------------------------------------------------------
-const srep::RectangularGridSRep* vtkMRMLSRepNode::GetSRepWorld() const {
-  return this->SRepWorld.get();
+  return static_cast<bool>(this->GetSRep());
 }
 
 //----------------------------------------------------------------------------
@@ -112,7 +74,7 @@ void vtkMRMLSRepNode::GetBounds(double bounds[6]) {
 }
 
 //----------------------------------------------------------------------------
-void vtkMRMLSRepNode::GetSRepBounds(const srep::RectangularGridSRep* srep, double bounds[6]) {
+void vtkMRMLSRepNode::GetSRepBounds(const srep::MeshSRepInterface* srep, double bounds[6]) {
   vtkBoundingBox box;
 
   if (!srep) {
@@ -120,37 +82,17 @@ void vtkMRMLSRepNode::GetSRepBounds(const srep::RectangularGridSRep* srep, doubl
     return;
   }
 
-  srep::foreachPoint(*srep, [&box](const srep::SkeletalPoint& point) {
-    box.AddPoint(point.GetUpSpoke().GetBoundaryPoint().AsArray().data());
-    box.AddPoint(point.GetDownSpoke().GetBoundaryPoint().AsArray().data());
-    if (point.IsCrest()) {
-      box.AddPoint(point.GetCrestSpoke().GetBoundaryPoint().AsArray().data());
+  const auto addSpokeMesh = [&](const srep::SpokeMesh& mesh) {
+    for (size_t i = 0 ; i < mesh.GetNumberOfSpokes(); ++i) {
+      box.AddPoint(mesh[i].GetBoundaryPoint().AsArray().data());
     }
-  });
+  };
+
+  addSpokeMesh(srep->GetUpSpokes());
+  addSpokeMesh(srep->GetDownSpokes());
+  addSpokeMesh(srep->GetCrestSpokes());
+
   box.GetBounds(bounds);
-}
-
-//----------------------------------------------------------------------------
-void vtkMRMLSRepNode::CopyContent(vtkMRMLNode* anode, bool deepCopy/*=true*/) {
-  MRMLNodeModifyBlocker blocker(this);
-  Superclass::CopyContent(anode, deepCopy);
-
-  vtkMRMLSRepNode* node = vtkMRMLSRepNode::SafeDownCast(anode);
-  if (node) {
-    if (deepCopy) {
-      if (node->SRep) {
-        if (!this->SRep) {
-          this->SRep = std::make_shared<srep::RectangularGridSRep>();
-        }
-        *this->SRep = *node->SRep;
-      } else {
-        this->SRep.reset();
-      }
-    } else {
-      //shallow copy
-      this->SRep = node->SRep;
-    }
-  }
 }
 
 //---------------------------------------------------------------------------
@@ -159,66 +101,9 @@ bool vtkMRMLSRepNode::CanApplyNonLinearTransforms() const
   return true;
 }
 
-//---------------------------------------------------------------------------
-void vtkMRMLSRepNode::UpdateSRepWorld(vtkAbstractTransform* transform) {
-  if (!this->SRep) {
-    return;
-  }
-
-  if (!transform) {
-    // no transform, both are the same. Shallow copy.
-    this->SRepWorld = this->SRep;
-    return;
-  }
-
-  using namespace srep;
-  const auto& grid = this->SRep->GetSkeletalPoints();
-  RectangularGridSRep::SkeletalGrid transformedGrid(grid.size(), std::vector<SkeletalPoint>(grid[0].size()));
-
-  for (size_t i = 0; i < grid.size(); ++i) {
-    for (size_t j  = 0; j < grid[i].size(); ++j) {
-      const auto& skeletalPoint = grid[i][j];
-      const auto& upSpoke = skeletalPoint.GetUpSpoke();
-      const auto& downSpoke = skeletalPoint.GetDownSpoke();
-      double transformedSkeletal[3];
-      double transformedBoundary[3];
-
-      transform->TransformPoint(upSpoke.GetSkeletalPoint().AsArray().data(), transformedSkeletal);
-      transform->TransformPoint(upSpoke.GetBoundaryPoint().AsArray().data(), transformedBoundary);
-      const Spoke transformedUpSpoke(Point3d{transformedSkeletal}, Vector3d{Point3d{transformedSkeletal}, Point3d{transformedBoundary}});
-
-      transform->TransformPoint(downSpoke.GetSkeletalPoint().AsArray().data(), transformedSkeletal);
-      transform->TransformPoint(downSpoke.GetBoundaryPoint().AsArray().data(), transformedBoundary);
-      const Spoke transformedDownSpoke(Point3d{transformedSkeletal}, Vector3d{Point3d{transformedSkeletal}, Point3d{transformedBoundary}});
-      if (skeletalPoint.IsCrest()) {
-        const auto& crestSpoke = skeletalPoint.GetCrestSpoke();
-        transform->TransformPoint(crestSpoke.GetSkeletalPoint().AsArray().data(), transformedSkeletal);
-        transform->TransformPoint(crestSpoke.GetBoundaryPoint().AsArray().data(), transformedBoundary);
-        const Spoke transformedCrestSpoke(Point3d{transformedSkeletal}, Vector3d{Point3d{transformedSkeletal}, Point3d{transformedBoundary}});
-
-        transformedGrid[i][j] = SkeletalPoint(transformedUpSpoke, transformedDownSpoke, transformedCrestSpoke);
-      } else {
-        transformedGrid[i][j] = SkeletalPoint(transformedUpSpoke, transformedDownSpoke);
-      }
-    }
-  }
-
-  this->SRepWorld = std::make_shared<srep::RectangularGridSRep>(std::move(transformedGrid));
-}
-
-//---------------------------------------------------------------------------
-void vtkMRMLSRepNode::ApplyTransform(vtkAbstractTransform* transform)
-{
-  if (!this->SRep) {
-    return;
-  }
-
-  this->UpdateSRepWorld(transform);
-  if (this->SRep.get() != this->SRepWorld.get()) {
-    // deep copy unless transform == nullptr so they are the same
-    *this->SRep = *this->SRepWorld;
-  }
-  this->Modified();
+//----------------------------------------------------------------------------
+void vtkMRMLSRepNode::CopyContent(vtkMRMLNode* anode, bool deepCopy/*=true*/) {
+  Superclass::CopyContent(anode, deepCopy);
 }
 
 //---------------------------------------------------------------------------
@@ -226,7 +111,7 @@ void vtkMRMLSRepNode::OnTransformNodeReferenceChanged(vtkMRMLTransformNode* tran
 
   //this next line is a GetTransformToWorld one-liner that works even if this->GetParentTransformNode is nullptr
   vtkMRMLTransformNode::GetTransformBetweenNodes(this->GetParentTransformNode(), nullptr, this->SRepTransform);
-  this->UpdateSRepWorld(this->SRepTransform);
+  this->UpdateSRepWorld();
   Superclass::OnTransformNodeReferenceChanged(transformNode);
   this->Modified();
 }
@@ -239,8 +124,13 @@ void vtkMRMLSRepNode::ProcessMRMLEvents (vtkObject* caller,
   if (caller != nullptr && event == vtkMRMLTransformableNode::TransformModifiedEvent) {
     //this next line is a GetTransformToWorld one-liner that works even if this->GetParentTransformNode is nullptr
     vtkMRMLTransformNode::GetTransformBetweenNodes(this->GetParentTransformNode(), nullptr, this->SRepTransform);
-    this->UpdateSRepWorld(this->SRepTransform);
+    this->UpdateSRepWorld();
   }
 
   Superclass::ProcessMRMLEvents(caller, event, callData);
+}
+
+//---------------------------------------------------------------------------
+void vtkMRMLSRepNode::UpdateSRepWorld() {
+  this->DoUpdateSRepWorld(this->SRepTransform);
 }

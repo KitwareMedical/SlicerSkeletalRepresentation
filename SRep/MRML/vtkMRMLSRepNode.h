@@ -21,21 +21,23 @@ class VTK_SLICER_SREP_MODULE_MRML_EXPORT vtkMRMLSRepNode : public vtkMRMLDisplay
 {
 public:
   vtkMRMLSRepNode();
+  vtkMRMLSRepNode(const vtkMRMLSRepNode&) = delete;
+  vtkMRMLSRepNode& operator=(const vtkMRMLSRepNode&) = delete;
+  vtkMRMLSRepNode(vtkMRMLSRepNode&&) = delete;
+  vtkMRMLSRepNode& operator=(vtkMRMLSRepNode&&) = delete;
   virtual ~vtkMRMLSRepNode();
 
-  static vtkMRMLSRepNode *New();
   vtkTypeMacro(vtkMRMLSRepNode,vtkMRMLDisplayableNode);
 
   void PrintSelf(ostream& os, vtkIndent indent) override;
 
   void GetRASBounds(double bounds[6]) override;
   void GetBounds(double bounds[6]) override;
-  static void GetSRepBounds(const srep::RectangularGridSRep* srep, double bounds[6]);
+  static void GetSRepBounds(const srep::MeshSRepInterface* srep, double bounds[6]);
 
   //--------------------------------------------------------------------------
   // MRMLNode methods
   //--------------------------------------------------------------------------
-  vtkMRMLNode* CreateNodeInstance() override;
   /// Get node XML tag name (like Volume, Model)
   const char* GetNodeTagName() override {return "SRep";};
 
@@ -49,10 +51,6 @@ public:
   /// \sa ApplyTransform
   bool CanApplyNonLinearTransforms() const override;
 
-  /// Apply the passed transformation to the SRep
-  /// \sa CanApplyNonLinearTransforms
-  void ApplyTransform(vtkAbstractTransform* transform) override;
-
   void OnTransformNodeReferenceChanged(vtkMRMLTransformNode* transformNode) override;
 
   void ProcessMRMLEvents(vtkObject * caller,
@@ -62,30 +60,18 @@ public:
   //--------------------------------------------------------------------------
   // SRep specific methods
   //--------------------------------------------------------------------------
-  /// Loads SRep from a file. 
-  /// \sa WriteSRepToFiles
-  void LoadSRepFromFile(const std::string& filename);
-
-  /// Writes SRep to a file.
-  ///
-  /// Will non-transformed SRep. (Any hardened transformation will still apply).
-  /// \sa LoadSRepFromFile, ApplyTransform
-  bool WriteSRepToFiles(const std::string& headerFilename,
-                        const std::string& upFilename,
-                        const std::string& downFilename,
-                        const std::string& crestFilename);
 
   /// Returns true if the MRML node has an SRep, false otherwise
   bool HasSRep() const;
 
   /// Gets the SRep, if any, before any transforms are applied.
   /// \sa GetSRepWorld, HasSRep
-  const srep::RectangularGridSRep* GetSRep() const;
+  virtual const srep::MeshSRepInterface* GetSRep() const = 0;
 
   /// Gets the SRep, if any, after all transforms are applied.
   /// If there are no transforms, this will be the same as GetSRep
   /// \sa GetSRep, HasSRep
-  const srep::RectangularGridSRep* GetSRepWorld() const;
+  virtual const srep::MeshSRepInterface* GetSRepWorld() const = 0;
 
   // TODO: void SetSRep(const srep::RectangularGridSRep&);
   // TODO: void SetSRep(srep::RectangularGridSRep&&);
@@ -94,12 +80,16 @@ public:
   /// \sa vtkMRMLNode::CopyContent
   vtkMRMLCopyContentMacro(vtkMRMLSRepNode);
 
-private:
-  void UpdateSRepWorld(vtkAbstractTransform* transform);
+protected:
+  /// Call this to update the srep world with the stored transform.
+  void UpdateSRepWorld();
 
-  // using shared_ptr to allow easy shallow copy in CopyContent
-  std::shared_ptr<srep::RectangularGridSRep> SRep;
-  std::shared_ptr<srep::RectangularGridSRep> SRepWorld;
+  /// Transform the SRep.
+  ///
+  /// \param transform The transform to use. If nullptr, same as identity (i.e. no transform).
+  virtual void DoUpdateSRepWorld(vtkAbstractTransform* transform) = 0;
+
+private:
   vtkNew<vtkGeneralTransform> SRepTransform; // nullptr means no transform.
 };
 

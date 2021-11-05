@@ -2,6 +2,7 @@
 #define __srep_SRep_h
 
 #include <functional>
+#include <memory>
 #include <srep/MeshSRepInterface.h>
 #include <srep/SkeletalPoint.h>
 
@@ -26,14 +27,16 @@ public:
     RectangularGridSRep(SkeletalGrid&& skeleton);
 
     //copy and move defined and valid
-    RectangularGridSRep(const RectangularGridSRep&) = default;
-    RectangularGridSRep& operator=(const RectangularGridSRep&) = default;
-    RectangularGridSRep(RectangularGridSRep&&) = default;
-    RectangularGridSRep& operator=(RectangularGridSRep&&) = default;
+    RectangularGridSRep(const RectangularGridSRep&) = delete;
+    RectangularGridSRep& operator=(const RectangularGridSRep&) = delete;
+    RectangularGridSRep(RectangularGridSRep&&) = delete;
+    RectangularGridSRep& operator=(RectangularGridSRep&&) = delete;
     ~RectangularGridSRep() = default;
 
+    util::owner<RectangularGridSRep*> Clone() const override;
+
     /// Returns true if RectangularGridSRep has no rows or columns.
-    bool IsEmpty() const;
+    bool IsEmpty() const override;
 
     /// Gets the number of rows.
     size_t GetNumRows() const;
@@ -108,7 +111,7 @@ std::ostream& operator<<(std::ostream& os, const RectangularGridSRep& srep);
 /// @throws std::invalid_argument if parameters do not match up as described above.
 /// @throws std::runtime_error if not all crest points have a crest spoke attached to them. This can happen if
 ///         a single skeletal point is the closest point to two crest spokes.
-RectangularGridSRep MakeRectangularGridSRep(size_t rows, size_t cols, const std::vector<Spoke>& upSpokes, const std::vector<Spoke>& downSpokes, const std::vector<Spoke>& crestSpokes);
+std::unique_ptr<RectangularGridSRep> MakeRectangularGridSRep(size_t rows, size_t cols, const std::vector<Spoke>& upSpokes, const std::vector<Spoke>& downSpokes, const std::vector<Spoke>& crestSpokes);
 
 /// Runs a function over every crest point in an RectangularGridSRep skeletal grid.
 void foreachCrestPoint(RectangularGridSRep::SkeletalGrid& grid, const std::function<void(SkeletalPoint& crestPoint)>& call);

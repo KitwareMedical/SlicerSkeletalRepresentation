@@ -156,6 +156,102 @@ vtkTypeBool vtkSlicerSRepWidgetRepresentation::HasTranslucentPolygonalGeometry()
   return false;
 }
 
+namespace {
+struct vtkSpokeIds {
+  vtkIdType boundaryId;
+  vtkIdType skeletonId;
+};
+}
+
+void vtkSlicerSRepWidgetRepresentation::ConvertSRepToVisualRepresentation(const srep::MeshSRepInterface& srep) {
+  //-------------------------------
+  const auto insertNextPoint = [this](const srep::Point3d& point, const vtkColor3ub& color) {
+    const auto id = this->Skeleton.Points->InsertNextPoint(point.AsArray().data());
+    this->Skeleton.PointColors->InsertNextTypedTuple(color.GetData());
+    return id;
+  };
+
+  //-------------------------------
+  const auto insertNextLine = [this](const vtkIdType start, const vtkIdType end, const vtkColor3ub& color) {
+    this->Skeleton.Lines->InsertNextCell(2);
+    this->Skeleton.Lines->InsertCellPoint(start);
+    this->Skeleton.Lines->InsertCellPoint(end);
+    this->Skeleton.LineColors->InsertNextTypedTuple(color.GetData());
+  };
+
+  //-------------------------------
+  const auto addSpokeMesh = [this, insertNextPoint, insertNextLine]
+    (const srep::SpokeMesh& mesh, const vtkColor3ub& spokeColor, const vtkColor3ub& connectionColor) -> std::vector<vtkSpokeIds>{
+    std::vector<vtkSpokeIds> spokesToVTKPointIds;
+
+    // add all the points and the spoke lines
+    for (size_t i = 0; i < mesh.GetNumberOfSpokes(); ++i) {
+      vtkSpokeIds ids;
+      ids.skeletonId = insertNextPoint(mesh[i].GetSkeletalPoint(), spokeColor);
+      ids.boundaryId = insertNextPoint(mesh[i].GetBoundaryPoint(), spokeColor);
+      insertNextLine(ids.skeletonId, ids.boundaryId, spokeColor);
+      spokesToVTKPointIds.push_back(ids);
+    }
+
+    // add the connection lines. It is essentially a bidirectional graph, so only add one line between two points, even if
+    // it shows up twice "once in each direction"
+    std::set<std::pair<vtkIdType, vtkIdType>> connections;
+    for (size_t i = 0; i < mesh.GetNumberOfSpokes(); ++i) {
+      const auto neighbors = mesh.GetNeighbors(i);
+      for (size_t neighbor : neighbors) {
+        vtkIdType point1 = spokesToVTKPointIds[i].skeletonId;
+        vtkIdType point2 = spokesToVTKPointIds[neighbor].skeletonId;
+        //sort the points
+        if (point1 > point2) {
+          std::swap(point1, point2);
+        }
+        connections.insert(std::make_pair(point1, point2));
+      }
+    }
+
+    for (const auto connection : connections) {
+      insertNextLine(connection.first, connection.second, connectionColor);
+    }
+
+    return spokesToVTKPointIds;
+  };
+
+  ///////////////////////////////////////
+  // Start
+  ///////////////////////////////////////
+
+  vtkNew<vtkNamedColors> namedColors;
+  const auto upSpokeColor = namedColors->GetColor3ub("Tomato");
+  const auto downSpokeColor = namedColors->GetColor3ub("Mint");
+  const auto upSkeletonColor = namedColors->GetColor3ub("Cornsilk");
+  const auto downSkeletonColor = namedColors->GetColor3ub("Cornsilk");
+  const auto crestCurveColor = namedColors->GetColor3ub("Gold");
+  const auto crestSpokeColor = namedColors->GetColor3ub("Gold");
+  const auto crestToSkeletonConnectionColor = namedColors->GetColor3ub("Black");
+
+  this->Skeleton.Points->Reset();
+  this->Skeleton.PointColors->Reset();
+  this->Skeleton.Lines->Reset();
+  this->Skeleton.LineColors->Reset();
+
+  const auto upSpokeToPointIds = addSpokeMesh(srep.GetUpSpokes(), upSpokeColor, upSkeletonColor);
+  const auto downSpokeToPointIds = addSpokeMesh(srep.GetDownSpokes(), downSpokeColor, downSkeletonColor);
+  const auto crestSpokeToPointIds = addSpokeMesh(srep.GetCrestSpokes(), crestSpokeColor, crestCurveColor);
+
+  // connect the crest to skeleton
+  const auto crestSkeletonConnections = srep.GetCrestSkeletalConnections();
+  for (size_t crestIndex = 0; crestIndex < crestSkeletonConnections.size(); ++crestIndex) {
+    const auto upDownSpokeIndex = crestSkeletonConnections[crestIndex];
+
+    // connect to both up and down skeleton points to account for the up and down spokes
+    // possibly having their skeletal points at different points in space
+    insertNextLine(crestSpokeToPointIds[crestIndex].skeletonId, upSpokeToPointIds[upDownSpokeIndex].skeletonId,
+      crestToSkeletonConnectionColor);
+    insertNextLine(crestSpokeToPointIds[crestIndex].skeletonId, downSpokeToPointIds[upDownSpokeIndex].skeletonId,
+      crestToSkeletonConnectionColor);
+  }
+}
+
 void vtkSlicerSRepWidgetRepresentation::UpdateFromMRML(vtkMRMLNode* caller, unsigned long event, void *callData) {
   Superclass::UpdateFromMRML(caller, event, callData);
 
@@ -175,127 +271,14 @@ void vtkSlicerSRepWidgetRepresentation::UpdateFromMRML(vtkMRMLNode* caller, unsi
 
   this->VisibilityOn();
 
-  vtkNew<vtkNamedColors> namedColors;
-
-  this->Skeleton.Points->Reset();
-  this->Skeleton.PointColors->Reset();
-  this->Skeleton.Lines->Reset();
-  this->Skeleton.LineColors->Reset();
-
-  const auto& grid = srep->GetSkeletalPoints();
-  std::vector<std::vector<vtkIdType>> gridToPointId;
-  gridToPointId.resize(grid.size());
-  for (size_t row = 0; row < grid.size(); ++row) {
-    gridToPointId[row].resize(grid[row].size());
-  }
-
-  const auto insertNextLine = [this](const vtkIdType start, const vtkIdType end, const vtkColor3ub& color) {
-    this->Skeleton.Lines->InsertNextCell(2);
-    this->Skeleton.Lines->InsertCellPoint(start);
-    this->Skeleton.Lines->InsertCellPoint(end);
-    this->Skeleton.LineColors->InsertNextTypedTuple(color.GetData());
-  };
-
-  const auto insertNextPoint = [this](const srep::Point3d& point, const vtkColor3ub& color) {
-    const auto id = this->Skeleton.Points->InsertNextPoint(point.AsArray().data());
-    this->Skeleton.PointColors->InsertNextTypedTuple(color.GetData());
-    return id;
-  };
-
-  const auto upColor = namedColors->GetColor3ub("Tomato");
-  const auto downColor = namedColors->GetColor3ub("Mint");
-  const auto skeletonColor = namedColors->GetColor3ub("Cornsilk");
-  const auto crestColor = namedColors->GetColor3ub("Gold");
-  const auto crestToSkeletonConnectionColor = namedColors->GetColor3ub("Black");
-
-  // visualize all points and up/down spoke lines
-  for (size_t row = 0; row < grid.size(); ++row) {
-    for (size_t col = 0; col < grid[row].size(); ++col) {
-      const auto& skeletalPoint = grid[row][col];
-      const auto upSkeletalPointId = insertNextPoint(skeletalPoint.GetUpSpoke().GetSkeletalPoint(), skeletonColor);
-      //don't really know where to attach the fold if the up and down aren't at the same skeletal point, so just attach to up?
-      gridToPointId[row][col] = upSkeletalPointId;
-
-      const auto upBoundaryId = insertNextPoint(skeletalPoint.GetUpSpoke().GetBoundaryPoint(), upColor);
-      insertNextLine(upSkeletalPointId, upBoundaryId, upColor); // up spoke
-
-      const auto downSkeletalPointId = insertNextPoint(skeletalPoint.GetDownSpoke().GetSkeletalPoint(), skeletonColor);
-      const auto downBoundaryId = insertNextPoint(skeletalPoint.GetDownSpoke().GetBoundaryPoint(), downColor);
-      insertNextLine(downSkeletalPointId, downBoundaryId, downColor); // down spoke
-    }
-  }
-
-  // visualize crest (aka fold)
-  // loop through crest clockwise manner for easier connection of the fold
-  std::vector<vtkIdType> crestBaseIds;
-
-  const auto insertCrest = [&](size_t row, size_t col) {
-    const auto& crestSpoke = grid[row][col].GetCrestSpoke();
-
-    const auto crestBoundaryId = insertNextPoint(crestSpoke.GetBoundaryPoint(), crestColor);
-    const auto crestBaseId = insertNextPoint(crestSpoke.GetSkeletalPoint(), crestColor);
-    crestBaseIds.push_back(crestBaseId);
-
-    insertNextLine(crestBoundaryId, crestBaseId, crestColor); // crest spoke
-    insertNextLine(gridToPointId[row][col], crestBaseId, crestToSkeletonConnectionColor); // connection skeletal grid to fold
-  };
-  //do top row left to right
-  for (size_t col = 0; col < grid[0].size(); ++col) {
-    insertCrest(0, col);
-  }
-  //do right col top to bottom
-  for (size_t row = 0; row < grid.size(); ++row) {
-    insertCrest(row, grid[row].size() - 1);
-  }
-  //do bottom row right to left
-  for (size_t col = grid.back().size() - 1; ; --col) {
-    insertCrest(grid.size() - 1, col);
-    if (col == 0) {
-      break;
-    }
-  }
-  //do left col bottom to top
-  for (size_t row = grid.size() - 1; ; --row) {
-    insertCrest(row, 0);
-    if (row == 0) {
-      break;
-    }
-  }
-
-  //connect the fold
-  for (size_t cur = 0; cur < crestBaseIds.size(); ++cur) {
-    const size_t next = (cur + 1) % crestBaseIds.size();
-    insertNextLine(crestBaseIds[cur], crestBaseIds[next], crestColor);
-  }
-
-  //connect all skeletal points
-  for (size_t row = 0; row < grid.size(); ++row) {
-    for (size_t col = 0; col < grid[row].size(); ++col) {
-      //left
-      if (col != 0) {
-        insertNextLine(gridToPointId[row][col], gridToPointId[row][col-1], skeletonColor);
-      }
-
-      //right
-      if (col != grid[row].size() - 1) {
-        insertNextLine(gridToPointId[row][col], gridToPointId[row][col+1], skeletonColor);
-      }
-
-      //up
-      if (row != 0) {
-        insertNextLine(gridToPointId[row][col], gridToPointId[row-1][col], skeletonColor);
-      }
-
-      //down
-      if (row != grid.size() - 1) {
-        insertNextLine(gridToPointId[row][col], gridToPointId[row+1][col], skeletonColor);
-      }
-    }
-  }
+  // TODO: if performance is an issue, save of a MTime or do something to only do the conversion
+  // when the content of srepNode->GetSRepWorld() changes
+  this->ConvertSRepToVisualRepresentation(*srep);
 
   // set point size
   this->Skeleton.Points->ComputeBounds();
-  const auto bounds = this->Skeleton.Points->GetBounds();
+  double bounds[6];
+  this->Skeleton.Points->GetBounds(bounds);
 
   const double minPoint[] = {bounds[0], bounds[2], bounds[4]};
   const double maxPoint[] = {bounds[1], bounds[3], bounds[5]};

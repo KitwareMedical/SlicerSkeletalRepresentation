@@ -31,6 +31,7 @@
 #include <cassert>
 
 #include "vtkMRMLSRepNode.h"
+#include "vtkMRMLRectangularGridSRepNode.h"
 
 //----------------------------------------------------------------------------
 vtkStandardNewMacro(vtkSlicerSRepLogic);
@@ -68,7 +69,7 @@ void vtkSlicerSRepLogic::RegisterNodes()
 
   vtkMRMLScene *scene = this->GetMRMLScene();
 
-  scene->RegisterNodeClass(vtkSmartPointer<vtkMRMLSRepNode>::New());
+  scene->RegisterNodeClass(vtkSmartPointer<vtkMRMLRectangularGridSRepNode>::New());
   scene->RegisterNodeClass(vtkSmartPointer<vtkMRMLSRepDisplayNode>::New());
 }
 
@@ -100,7 +101,15 @@ std::string vtkSlicerSRepLogic::ImportSRep(const std::string& filename)
   }
 
   auto* srep = vtkMRMLSRepNode::SafeDownCast(this->GetMRMLScene()->GetNodeByID(srepID));
-  srep->LoadSRepFromFile(filename);
+  if (srep) {
+    //TODO: some magic differentiating between different srep types
+    auto rectSRep = vtkMRMLRectangularGridSRepNode::SafeDownCast(srep);
+    if (rectSRep) {
+      rectSRep->LoadRectangularGridSRepFromFile(filename);
+    } else {
+      std::cout << __FILE__ << ":" << __LINE__ << " Unknown srep type" << std::endl;
+    }
+  }
   return srep->GetID();
 }
 
@@ -114,7 +123,7 @@ std::string vtkSlicerSRepLogic::AddNewSRepNode(const std::string& name, vtkMRMLS
   vtkMRMLScene *addToThisScene = scene ? scene : this->GetMRMLScene();
 
   // create and add the node
-  auto mnode = vtkSmartPointer<vtkMRMLSRepNode>::New();
+  auto mnode = vtkSmartPointer<vtkMRMLRectangularGridSRepNode>::New();
   addToThisScene->AddNode(mnode);
 
   // add a display node
@@ -148,7 +157,13 @@ bool vtkSlicerSRepLogic::ExportSRep(vtkMRMLSRepNode *srepNode,
     return false;
   }
 
-  return srepNode->WriteSRepToFiles(headerFilename, upFilename, downFilename, crestFilename);
+  const auto rectSRep = vtkMRMLRectangularGridSRepNode::SafeDownCast(srepNode);
+  if (rectSRep) {
+    return rectSRep->WriteRectangularGridSRepToFiles(headerFilename, upFilename, downFilename, crestFilename);
+  } else {
+    std::cout << __FILE__ << ":" << __LINE__ << " Unknown srep type" << std::endl;
+    return false;
+  }
 }
 
 std::string vtkSlicerSRepLogic::AddFirstDisplayNodeForSRepNode(vtkMRMLSRepNode *srepNode) {
