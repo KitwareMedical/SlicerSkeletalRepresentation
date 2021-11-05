@@ -1,3 +1,6 @@
+#ifndef __srep_MeshSRepInterface_h
+#define __srep_MeshSRepInterface_h
+
 #include <srep/Spoke.h>
 #include <srep/SpokeMesh.h>
 
@@ -40,3 +43,5 @@ public:
 };
 
 };
+
+#endif

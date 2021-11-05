@@ -1,3 +1,6 @@
+#ifndef __srep_SpokeMesh_h
+#define __srep_SpokeMesh_h
+
 #include <vector>
 
 #include <srep/Spoke.h>
@@ -38,3 +41,5 @@ private:
 };
 
 } //namespace srep
+
+#endif
