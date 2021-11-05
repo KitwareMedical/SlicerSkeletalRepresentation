@@ -8,7 +8,7 @@
 #include <srep/SRepIO.h>
 #include <srep/Spoke.h>
 #include <srep/SkeletalPoint.h>
-#include <srep/SRep.h>
+#include <srep/RectangularGridSRep.h>
 
 //----------------------------------------------------------------------------
 vtkMRMLNodeNewMacro(vtkMRMLSRepNode);
@@ -28,7 +28,7 @@ vtkMRMLSRepNode::~vtkMRMLSRepNode() = default;
 
 //----------------------------------------------------------------------------
 void vtkMRMLSRepNode::LoadSRepFromFile(const std::string& filename) {
-  this->SRep = std::make_shared<srep::SRep>(srep::io::ReadSRep(filename));
+  this->SRep = std::make_shared<srep::RectangularGridSRep>(srep::io::ReadRectangularGridSRep(filename));
   this->UpdateSRepWorld(this->SRepTransform);
   this->Modified();
 }
@@ -54,12 +54,12 @@ bool vtkMRMLSRepNode::HasSRep() const {
 }
 
 //----------------------------------------------------------------------------
-const srep::SRep* vtkMRMLSRepNode::GetSRep() const {
+const srep::RectangularGridSRep* vtkMRMLSRepNode::GetSRep() const {
   return this->SRep.get();
 }
 
 //----------------------------------------------------------------------------
-const srep::SRep* vtkMRMLSRepNode::GetSRepWorld() const {
+const srep::RectangularGridSRep* vtkMRMLSRepNode::GetSRepWorld() const {
   return this->SRepWorld.get();
 }
 
@@ -112,7 +112,7 @@ void vtkMRMLSRepNode::GetBounds(double bounds[6]) {
 }
 
 //----------------------------------------------------------------------------
-void vtkMRMLSRepNode::GetSRepBounds(const srep::SRep* srep, double bounds[6]) {
+void vtkMRMLSRepNode::GetSRepBounds(const srep::RectangularGridSRep* srep, double bounds[6]) {
   vtkBoundingBox box;
 
   if (!srep) {
@@ -140,7 +140,7 @@ void vtkMRMLSRepNode::CopyContent(vtkMRMLNode* anode, bool deepCopy/*=true*/) {
     if (deepCopy) {
       if (node->SRep) {
         if (!this->SRep) {
-          this->SRep = std::make_shared<srep::SRep>();
+          this->SRep = std::make_shared<srep::RectangularGridSRep>();
         }
         *this->SRep = *node->SRep;
       } else {
@@ -173,7 +173,7 @@ void vtkMRMLSRepNode::UpdateSRepWorld(vtkAbstractTransform* transform) {
 
   using namespace srep;
   const auto& grid = this->SRep->GetSkeletalPoints();
-  SRep::SkeletalGrid transformedGrid(grid.size(), std::vector<SkeletalPoint>(grid[0].size()));
+  RectangularGridSRep::SkeletalGrid transformedGrid(grid.size(), std::vector<SkeletalPoint>(grid[0].size()));
 
   for (size_t i = 0; i < grid.size(); ++i) {
     for (size_t j  = 0; j < grid[i].size(); ++j) {
@@ -203,7 +203,7 @@ void vtkMRMLSRepNode::UpdateSRepWorld(vtkAbstractTransform* transform) {
     }
   }
 
-  this->SRepWorld = std::make_shared<srep::SRep>(transformedGrid);
+  this->SRepWorld = std::make_shared<srep::RectangularGridSRep>(transformedGrid);
 }
 
 //---------------------------------------------------------------------------

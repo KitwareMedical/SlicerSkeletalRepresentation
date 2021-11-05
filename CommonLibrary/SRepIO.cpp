@@ -67,7 +67,7 @@ std::vector<Spoke> readSpokeFile(const std::string& filename) {
     return spokes;
 }
 
-void writeHeaderFile(const SRep& srep,
+void writeHeaderFile(const RectangularGridSRep& srep,
                      const std::string& headerFilename,
                      const std::string& upFilename,
                      const std::string& downFilename,
@@ -85,7 +85,7 @@ void writeHeaderFile(const SRep& srep,
     ;
 }
 
-void writeSpokeFiles(const SRep& srep,
+void writeSpokeFiles(const RectangularGridSRep& srep,
                      const std::string& upFilename,
                      const std::string& downFilename,
                      const std::string& crestFilename)
@@ -145,7 +145,7 @@ void writeSpokeFiles(const SRep& srep,
 
 } // namespace {}
 
-SRep ReadSRep(const std::string& filename) {
+RectangularGridSRep ReadRectangularGridSRep(const std::string& filename) {
     const auto headerParams = readHeaderFile(filename);
     const auto upSpokes = readSpokeFile(headerParams.upSpoke);
     const auto downSpokes = readSpokeFile(headerParams.downSpoke);
@@ -153,10 +153,10 @@ SRep ReadSRep(const std::string& filename) {
 
     //TODO: use the rest of the headerParams
 
-    return MakeSRep(headerParams.nRows, headerParams.nCols, upSpokes, downSpokes, crestSpokes);
+    return MakeRectangularGridSRep(headerParams.nRows, headerParams.nCols, upSpokes, downSpokes, crestSpokes);
 }
 
-void WriteSRep(const SRep& srep,
+void WriteSRep(const RectangularGridSRep& srep,
                const std::string& headerFilename,
                const std::string& upFilename,
                const std::string& downFilename,

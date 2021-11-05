@@ -2,16 +2,16 @@
 #define __srep_SRepIO_h
 
 #include <string>
-#include <srep/SRep.h>
+#include <srep/RectangularGridSRep.h>
 
 namespace srep {
 namespace io {
 
-/// Reads SRep from XML file.
-SRep ReadSRep(const std::string& filename);
+/// Reads RectangularGridSRep from XML file.
+RectangularGridSRep ReadRectangularGridSRep(const std::string& filename);
 
-/// Writes SRep to XML file.
-void WriteSRep(const SRep& srep,
+/// Writes RectangularGridSRep to XML file.
+void WriteSRep(const RectangularGridSRep& srep,
                const std::string& headerFilename,
                const std::string& upFilename,
                const std::string& downFilename,

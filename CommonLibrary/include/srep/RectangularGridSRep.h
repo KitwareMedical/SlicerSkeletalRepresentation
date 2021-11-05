@@ -12,26 +12,26 @@ class InvalidSkeletalGridException : public std::invalid_argument {
 
 /// @note direction u is row direction
 /// @note direction v is column direction
-class SRep {
+class RectangularGridSRep {
 public:
     using SkeletalGrid = std::vector<std::vector<SkeletalPoint>>;
 
-    SRep();
+    RectangularGridSRep();
     /// Construct from a 2D grid of skeleton points
     /// \throws InvalidSkeletalGridException if all the interior vectors are not the same size
-    SRep(const SkeletalGrid& skeleton);
+    RectangularGridSRep(const SkeletalGrid& skeleton);
     /// Construct from a 2D grid of skeleton points
     /// \throws InvalidSkeletalGridException if all the interior vectors are not the same size
-    SRep(SkeletalGrid&& skeleton);
+    RectangularGridSRep(SkeletalGrid&& skeleton);
 
     //copy and move defined and valid
-    SRep(const SRep&) = default;
-    SRep& operator=(const SRep&) = default;
-    SRep(SRep&&) = default;
-    SRep& operator=(SRep&&) = default;
-    ~SRep() = default;
+    RectangularGridSRep(const RectangularGridSRep&) = default;
+    RectangularGridSRep& operator=(const RectangularGridSRep&) = default;
+    RectangularGridSRep(RectangularGridSRep&&) = default;
+    RectangularGridSRep& operator=(RectangularGridSRep&&) = default;
+    ~RectangularGridSRep() = default;
 
-    /// Returns true if SRep has no rows or columns.
+    /// Returns true if RectangularGridSRep has no rows or columns.
     bool IsEmpty() const;
 
     /// Gets the number of rows.
@@ -57,7 +57,7 @@ public:
 
     // TODO: is this actualy right if there is only 1 col?
     // is it even valid to have only one col?
-    /// Gets the number of crest points an SRep will have given the number of rows and columns.
+    /// Gets the number of crest points an RectangularGridSRep will have given the number of rows and columns.
     static size_t NumCrestPoints(size_t rows, size_t cols) {
         return rows * 2 + (cols-2) * 2;
     }
@@ -67,40 +67,40 @@ private:
     SkeletalGrid Skeleton;
 };
 
-bool operator==(const SRep& a, const SRep& b);
-std::ostream& operator<<(std::ostream& os, const SRep& srep);
+bool operator==(const RectangularGridSRep& a, const RectangularGridSRep& b);
+std::ostream& operator<<(std::ostream& os, const RectangularGridSRep& srep);
 
-/// Create a SRep.
+/// Create a RectangularGridSRep.
 ///
 /// Crest spokes will be attached to the closest skeletal point.
 ///
-/// @param rows Number of rows in the new SRep.
-/// @param cols Number of columns in the new SRep.
+/// @param rows Number of rows in the new RectangularGridSRep.
+/// @param cols Number of columns in the new RectangularGridSRep.
 /// @param upSpokes Spokes in the up direction. Vector must be rows * cols in length, laid out in row major order.
 ///                 Each spoke must have the same skeletal point as the spoke in downSpokes at the same index.
 /// @param downSpokes Spokes in the down direction. Vector must be rows * cols in length, laid out in row major order.
 ///                   Each spoke must have the same skeletal point as the spoke in upSpokes at the same index.
-/// @param crestSpokes Crest spokes. Vector must be SRep::NumCrestPoints(rows, cols) in length.
+/// @param crestSpokes Crest spokes. Vector must be RectangularGridSRep::NumCrestPoints(rows, cols) in length.
 /// @throws std::invalid_argument if parameters do not match up as described above.
 /// @throws std::runtime_error if not all crest points have a crest spoke attached to them. This can happen if
 ///         a single skeletal point is the closest point to two crest spokes.
-SRep MakeSRep(size_t rows, size_t cols, const std::vector<Spoke>& upSpokes, const std::vector<Spoke>& downSpokes, const std::vector<Spoke>& crestSpokes);
+RectangularGridSRep MakeRectangularGridSRep(size_t rows, size_t cols, const std::vector<Spoke>& upSpokes, const std::vector<Spoke>& downSpokes, const std::vector<Spoke>& crestSpokes);
 
-/// Runs a function over every crest point in an SRep skeletal grid.
-void foreachCrestPoint(SRep::SkeletalGrid& grid, const std::function<void(SkeletalPoint& crestPoint)>& call);
-/// Runs a function over every crest point in an SRep skeletal grid.
-void foreachCrestPoint(const SRep::SkeletalGrid& grid, const std::function<void(const SkeletalPoint& crestPoint)>& call);
-/// Runs a function over every point in an SRep skeletal grid.
-void foreachPoint(SRep::SkeletalGrid& grid, const std::function<void(SkeletalPoint& point)>& call);
-/// Runs a function over every point in an SRep skeletal grid.
-void foreachPoint(const SRep::SkeletalGrid& grid, const std::function<void(const SkeletalPoint& point)>& call);
+/// Runs a function over every crest point in an RectangularGridSRep skeletal grid.
+void foreachCrestPoint(RectangularGridSRep::SkeletalGrid& grid, const std::function<void(SkeletalPoint& crestPoint)>& call);
+/// Runs a function over every crest point in an RectangularGridSRep skeletal grid.
+void foreachCrestPoint(const RectangularGridSRep::SkeletalGrid& grid, const std::function<void(const SkeletalPoint& crestPoint)>& call);
+/// Runs a function over every point in an RectangularGridSRep skeletal grid.
+void foreachPoint(RectangularGridSRep::SkeletalGrid& grid, const std::function<void(SkeletalPoint& point)>& call);
+/// Runs a function over every point in an RectangularGridSRep skeletal grid.
+void foreachPoint(const RectangularGridSRep::SkeletalGrid& grid, const std::function<void(const SkeletalPoint& point)>& call);
 
-/// Runs a function over every crest point in an SRep.
-inline void foreachCrestPoint(const SRep& srep, const std::function<void(const SkeletalPoint& crestPoint)>& call) {
+/// Runs a function over every crest point in an RectangularGridSRep.
+inline void foreachCrestPoint(const RectangularGridSRep& srep, const std::function<void(const SkeletalPoint& crestPoint)>& call) {
     foreachCrestPoint(srep.GetSkeletalPoints(), call);
 }
-/// Runs a function over every point in an SRep.
-inline void foreachPoint(const SRep& srep, const std::function<void(const SkeletalPoint& point)>& call) {
+/// Runs a function over every point in an RectangularGridSRep.
+inline void foreachPoint(const RectangularGridSRep& srep, const std::function<void(const SkeletalPoint& point)>& call) {
     foreachPoint(srep.GetSkeletalPoints(), call);
 }
 

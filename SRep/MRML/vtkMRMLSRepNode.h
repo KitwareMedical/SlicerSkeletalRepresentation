@@ -11,7 +11,7 @@
 
 #include <memory>
 
-#include <srep/SRep.h>
+#include <srep/RectangularGridSRep.h>
 
 class vtkAbstractTransform;
 class vtkGeneralTransform;
@@ -30,7 +30,7 @@ public:
 
   void GetRASBounds(double bounds[6]) override;
   void GetBounds(double bounds[6]) override;
-  static void GetSRepBounds(const srep::SRep* srep, double bounds[6]);
+  static void GetSRepBounds(const srep::RectangularGridSRep* srep, double bounds[6]);
 
   //--------------------------------------------------------------------------
   // MRMLNode methods
@@ -80,15 +80,15 @@ public:
 
   /// Gets the SRep, if any, before any transforms are applied.
   /// \sa GetSRepWorld, HasSRep
-  const srep::SRep* GetSRep() const;
+  const srep::RectangularGridSRep* GetSRep() const;
 
   /// Gets the SRep, if any, after all transforms are applied.
   /// If there are no transforms, this will be the same as GetSRep
   /// \sa GetSRep, HasSRep
-  const srep::SRep* GetSRepWorld() const;
+  const srep::RectangularGridSRep* GetSRepWorld() const;
 
-  // TODO: void SetSRep(const srep::SRep&);
-  // TODO: void SetSRep(srep::SRep&&);
+  // TODO: void SetSRep(const srep::RectangularGridSRep&);
+  // TODO: void SetSRep(srep::RectangularGridSRep&&);
 
   /// Copy node content (excludes basic data, such as name and node references).
   /// \sa vtkMRMLNode::CopyContent
@@ -98,8 +98,8 @@ private:
   void UpdateSRepWorld(vtkAbstractTransform* transform);
 
   // using shared_ptr to allow easy shallow copy in CopyContent
-  std::shared_ptr<srep::SRep> SRep;
-  std::shared_ptr<srep::SRep> SRepWorld;
+  std::shared_ptr<srep::RectangularGridSRep> SRep;
+  std::shared_ptr<srep::RectangularGridSRep> SRepWorld;
   vtkNew<vtkGeneralTransform> SRepTransform; // nullptr means no transform.
 };
 

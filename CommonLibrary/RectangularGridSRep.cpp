@@ -1,10 +1,10 @@
-#include <srep/SRep.h>
+#include <srep/RectangularGridSRep.h>
 #include <iostream>
 #include <limits>
 
 namespace srep {
 
-void foreachCrestPoint(SRep::SkeletalGrid& grid, const std::function<void(SkeletalPoint& crestPoint)>& call) {
+void foreachCrestPoint(RectangularGridSRep::SkeletalGrid& grid, const std::function<void(SkeletalPoint& crestPoint)>& call) {
     if (grid.size() == 0) {
         return;
     }
@@ -33,16 +33,16 @@ void foreachCrestPoint(SRep::SkeletalGrid& grid, const std::function<void(Skelet
     }
 }
 
-void foreachCrestPoint(const SRep::SkeletalGrid& grid, const std::function<void(const SkeletalPoint& crestPoint)>& call) {
+void foreachCrestPoint(const RectangularGridSRep::SkeletalGrid& grid, const std::function<void(const SkeletalPoint& crestPoint)>& call) {
     // yes, const_cast is bad, but we know that foreachCrestPoint (non-const) does not modify the grid, it only
     // leaves the option for the callback function to modify the point, which we do not allow by routing through
     // the wrapper callback here.
-    foreachCrestPoint(const_cast<SRep::SkeletalGrid&>(grid), [&](SkeletalPoint& crestPoint) {
+    foreachCrestPoint(const_cast<RectangularGridSRep::SkeletalGrid&>(grid), [&](SkeletalPoint& crestPoint) {
         call(crestPoint);
     });
 }
 
-void foreachPoint(SRep::SkeletalGrid& grid, const std::function<void(SkeletalPoint& point)>& call) {
+void foreachPoint(RectangularGridSRep::SkeletalGrid& grid, const std::function<void(SkeletalPoint& point)>& call) {
     for (auto& row : grid) {
         for (auto& skeletalPoint : row) {
             call(skeletalPoint);
@@ -50,7 +50,7 @@ void foreachPoint(SRep::SkeletalGrid& grid, const std::function<void(SkeletalPoi
     }
 }
 
-void foreachPoint(const SRep::SkeletalGrid& grid, const std::function<void(const SkeletalPoint& point)>& call) {
+void foreachPoint(const RectangularGridSRep::SkeletalGrid& grid, const std::function<void(const SkeletalPoint& point)>& call) {
     for (auto& row : grid) {
         for (auto& skeletalPoint : row) {
             call(skeletalPoint);
@@ -59,25 +59,25 @@ void foreachPoint(const SRep::SkeletalGrid& grid, const std::function<void(const
 }
 
 
-SRep::SRep()
+RectangularGridSRep::RectangularGridSRep()
     : Skeleton()
 {}
 
-SRep::SRep(const SkeletalGrid& skeleton)
+RectangularGridSRep::RectangularGridSRep(const SkeletalGrid& skeleton)
     : Skeleton()
 {
     this->Validate(skeleton);
     this->Skeleton = skeleton;
 }
 
-SRep::SRep(SkeletalGrid&& skeleton)
+RectangularGridSRep::RectangularGridSRep(SkeletalGrid&& skeleton)
     : Skeleton()
 {
     this->Validate(skeleton);
     this->Skeleton = std::move(skeleton);
 }
 
-void SRep::Validate(const SkeletalGrid& skeleton) {
+void RectangularGridSRep::Validate(const SkeletalGrid& skeleton) {
     //validate it is a valid grid
     if (!skeleton.empty()) {
         const auto numCols = skeleton.front().size();
@@ -92,31 +92,31 @@ void SRep::Validate(const SkeletalGrid& skeleton) {
     }
 }
 
-bool SRep::IsEmpty() const {
+bool RectangularGridSRep::IsEmpty() const {
     return this->Skeleton.empty();
 }
 
-size_t SRep::GetNumRows() const {
+size_t RectangularGridSRep::GetNumRows() const {
     return this->Skeleton.size();
 }
 
-size_t SRep::GetNumCols() const {
+size_t RectangularGridSRep::GetNumCols() const {
     return this->Skeleton.empty() ? 0 : this->Skeleton.front().size();
 }
 
-const SRep::SkeletalGrid& SRep::GetSkeletalPoints() const {
+const RectangularGridSRep::SkeletalGrid& RectangularGridSRep::GetSkeletalPoints() const {
     return this->Skeleton;
 }
 
-const SkeletalPoint& SRep::GetSkeletalPoint(size_t row, size_t col) const {
+const SkeletalPoint& RectangularGridSRep::GetSkeletalPoint(size_t row, size_t col) const {
     return this->Skeleton[row][col];
 }
 
-const SkeletalPoint& SRep::GetSkeletalPointAt(size_t row, size_t col) const {
+const SkeletalPoint& RectangularGridSRep::GetSkeletalPointAt(size_t row, size_t col) const {
     return this->Skeleton.at(row).at(col);
 }
 
-SRep MakeSRep(const size_t rows,
+RectangularGridSRep MakeRectangularGridSRep(const size_t rows,
               const size_t cols,
               const std::vector<Spoke>& upSpokes,
               const std::vector<Spoke>& downSpokes,
@@ -136,7 +136,7 @@ SRep MakeSRep(const size_t rows,
             throw std::invalid_argument("Expecting up and down spokes to be parallel lists at the same skeletal points");
         }
     }
-    const auto numCrestPoints = SRep::NumCrestPoints(rows, cols);
+    const auto numCrestPoints = RectangularGridSRep::NumCrestPoints(rows, cols);
     if (crestSpokes.size() != numCrestPoints) {
         throw std::invalid_argument("The number of crest points found does not match what there should be for the grid size: "
             + std::to_string(crestSpokes.size()) + " != " + std::to_string(numCrestPoints));
@@ -144,10 +144,10 @@ SRep MakeSRep(const size_t rows,
 
     if (upSpokes.size() == 0) {
         //just shortcut this here to make things nice further down
-        return SRep();
+        return RectangularGridSRep();
     }
 
-    SRep::SkeletalGrid grid;
+    RectangularGridSRep::SkeletalGrid grid;
     for (size_t row = 0; row < rows; ++row) {
         std::vector<SkeletalPoint> skeletalPointRow;
         for (size_t col = 0; col < cols; ++col) {
@@ -179,15 +179,15 @@ SRep MakeSRep(const size_t rows,
         }
     });
 
-    return SRep(grid);
+    return RectangularGridSRep(grid);
 }
 
-bool operator==(const SRep& a, const SRep& b) {
+bool operator==(const RectangularGridSRep& a, const RectangularGridSRep& b) {
     return a.GetSkeletalPoints() == b.GetSkeletalPoints();
 }
 
-std::ostream& operator<<(std::ostream& os, const SRep& srep) {
-    os << "SRep {" << std::endl
+std::ostream& operator<<(std::ostream& os, const RectangularGridSRep& srep) {
+    os << "RectangularGridSRep {" << std::endl
        << "  rows: " << srep.GetNumRows() << std::endl
        << "  cols: " << srep.GetNumCols() << std::endl;
     const auto& grid = srep.GetSkeletalPoints();

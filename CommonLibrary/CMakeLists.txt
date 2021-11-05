@@ -3,7 +3,7 @@ add_library(srep
     ReadHeaderFile.cpp
     SkeletalPoint.cpp
     Spoke.cpp
-    SRep.cpp
+    RectangularGridSRep.cpp
     SRepIO.cpp
     Vector3d.cpp
 )
