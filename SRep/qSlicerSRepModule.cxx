@@ -15,17 +15,17 @@
 
 ==============================================================================*/
 
-// SRep Logic includes
-#include <vtkSlicerSRepLogic.h>
-
 // SRep includes
 #include "qSlicerSRepModule.h"
 #include "qSlicerSRepModuleWidget.h"
 #include "qSlicerSRepReader.h"
+#include "qSlicerSRepWriter.h"
+#include <vtkMRMLSRepDisplayableManager.h>
+#include <vtkSlicerSRepLogic.h>
+
 #include <qSlicerCoreApplication.h>
 #include <qSlicerModuleManager.h>
 #include <qSlicerIOManager.h>
-#include <vtkMRMLSRepDisplayableManager.h>
 
 #include <vtkMRMLSliceViewDisplayableManagerFactory.h>
 #include <vtkMRMLThreeDViewDisplayableManagerFactory.h>
@@ -122,6 +122,7 @@ void qSlicerSRepModule::setup()
   qSlicerIOManager* ioManager = qSlicerApplication::application()->ioManager();
   // ioManager takes ownership of pointer
   ioManager->registerIO(new qSlicerSRepReader(vtkSlicerSRepLogic::SafeDownCast(this->logic()), this));
+  ioManager->registerIO(new qSlicerSRepWriter(this));
 }
 
 //-----------------------------------------------------------------------------
