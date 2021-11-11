@@ -27,6 +27,10 @@ Point3d::Point3d(const double p[3])
     : Point3d(p[0], p[1], p[2])
 {}
 
+Point3d::Point3d(const std::array<double, 3>& p)
+    : Point3d(p[0], p[1], p[2])
+{}
+
 void Point3d::SetX(double x) {
     if (std::isnan(x)) {
         throw std::invalid_argument("Point cannot have a nan component");

@@ -1,4 +1,5 @@
 #include "vtkMRMLSRepNode.h"
+#include "vtkMRMLSRepStorageNode.h"
 #include <vtkAbstractTransform.h>
 #include <vtkGeneralTransform.h>
 #include <vtkMRMLScene.h>
@@ -55,6 +56,18 @@ void vtkMRMLSRepNode::CreateDefaultDisplayNodes() {
 }
 
 //----------------------------------------------------------------------------
+vtkMRMLStorageNode* vtkMRMLSRepNode::CreateDefaultStorageNode()
+{
+  vtkMRMLScene* scene = this->GetScene();
+  if (scene == nullptr)
+    {
+    vtkErrorMacro("CreateDefaultStorageNode failed: scene is invalid");
+    return nullptr;
+    }
+  return vtkMRMLStorageNode::SafeDownCast(scene->CreateNodeByClass("vtkMRMLSRepStorageNode"));
+}
+
+//----------------------------------------------------------------------------
 vtkMRMLSRepDisplayNode* vtkMRMLSRepNode::GetSRepDisplayNode() {
   auto* dispNode = this->GetDisplayNode();
   if (dispNode) {
@@ -83,7 +96,7 @@ void vtkMRMLSRepNode::GetSRepBounds(const srep::MeshSRepInterface* srep, double 
   }
 
   const auto addSpokeMesh = [&](const srep::SpokeMesh& mesh) {
-    for (size_t i = 0 ; i < mesh.GetNumberOfSpokes(); ++i) {
+    for (long i = 0 ; i < mesh.GetNumberOfSpokes(); ++i) {
       box.AddPoint(mesh[i].GetBoundaryPoint().AsArray().data());
     }
   };

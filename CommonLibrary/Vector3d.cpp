@@ -25,6 +25,10 @@ Vector3d::Vector3d(const double p[3])
     : Vector3d(p[0], p[1], p[2])
 {}
 
+Vector3d::Vector3d(const std::array<double, 3>& p)
+    : Vector3d(p[0], p[1], p[2])
+{}
+
 void Vector3d::SetX(double x) {
     if (std::isnan(x)) {
         throw std::invalid_argument("Point cannot have a nan component");

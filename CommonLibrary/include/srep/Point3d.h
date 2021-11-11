@@ -16,6 +16,8 @@ public:
     /// @throws std::invalid_argument if any nan
     explicit Point3d(const double p[3]);
 
+    explicit Point3d(const std::array<double, 3>& p);
+
     //copy and move defined and valid
     Point3d(const Point3d&) = default;
     Point3d& operator=(const Point3d&) = default;

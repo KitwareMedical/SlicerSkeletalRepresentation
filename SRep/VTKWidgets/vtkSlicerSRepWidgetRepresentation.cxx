@@ -185,7 +185,7 @@ void vtkSlicerSRepWidgetRepresentation::ConvertSRepToVisualRepresentation(const 
     std::vector<vtkSpokeIds> spokesToVTKPointIds;
 
     // add all the points and the spoke lines
-    for (size_t i = 0; i < mesh.GetNumberOfSpokes(); ++i) {
+    for (long i = 0; i < mesh.GetNumberOfSpokes(); ++i) {
       vtkSpokeIds ids;
       ids.skeletonId = insertNextPoint(mesh[i].GetSkeletalPoint(), spokeColor);
       ids.boundaryId = insertNextPoint(mesh[i].GetBoundaryPoint(), spokeColor);
@@ -196,7 +196,7 @@ void vtkSlicerSRepWidgetRepresentation::ConvertSRepToVisualRepresentation(const 
     // add the connection lines. It is essentially a bidirectional graph, so only add one line between two points, even if
     // it shows up twice "once in each direction"
     std::set<std::pair<vtkIdType, vtkIdType>> connections;
-    for (size_t i = 0; i < mesh.GetNumberOfSpokes(); ++i) {
+    for (long i = 0; i < mesh.GetNumberOfSpokes(); ++i) {
       const auto neighbors = mesh.GetNeighbors(i);
       for (size_t neighbor : neighbors) {
         vtkIdType point1 = spokesToVTKPointIds[i].skeletonId;
@@ -241,13 +241,13 @@ void vtkSlicerSRepWidgetRepresentation::ConvertSRepToVisualRepresentation(const 
   // connect the crest to skeleton
   const auto crestSkeletonConnections = srep.GetCrestSkeletalConnections();
   for (size_t crestIndex = 0; crestIndex < crestSkeletonConnections.size(); ++crestIndex) {
-    const auto upDownSpokeIndex = crestSkeletonConnections[crestIndex];
+    const auto upDownIndices = crestSkeletonConnections[crestIndex];
 
     // connect to both up and down skeleton points to account for the up and down spokes
     // possibly having their skeletal points at different points in space
-    insertNextLine(crestSpokeToPointIds[crestIndex].skeletonId, upSpokeToPointIds[upDownSpokeIndex].skeletonId,
+    insertNextLine(crestSpokeToPointIds[crestIndex].skeletonId, upSpokeToPointIds[upDownIndices.first].skeletonId,
       crestToSkeletonConnectionColor);
-    insertNextLine(crestSpokeToPointIds[crestIndex].skeletonId, downSpokeToPointIds[upDownSpokeIndex].skeletonId,
+    insertNextLine(crestSpokeToPointIds[crestIndex].skeletonId, downSpokeToPointIds[upDownIndices.second].skeletonId,
       crestToSkeletonConnectionColor);
   }
 }

@@ -21,6 +21,7 @@
 // MRML includes
 #include <vtkMRMLScene.h>
 #include <vtkMRMLSRepDisplayNode.h>
+#include <vtkMRMLSRepStorageNode.h>
 
 // VTK includes
 #include <vtkIntArray.h>
@@ -71,6 +72,7 @@ void vtkSlicerSRepLogic::RegisterNodes()
 
   scene->RegisterNodeClass(vtkSmartPointer<vtkMRMLRectangularGridSRepNode>::New());
   scene->RegisterNodeClass(vtkSmartPointer<vtkMRMLSRepDisplayNode>::New());
+  scene->RegisterNodeClass(vtkSmartPointer<vtkMRMLSRepStorageNode>::New());
 }
 
 //---------------------------------------------------------------------------
@@ -113,6 +115,7 @@ std::string vtkSlicerSRepLogic::ImportSRep(const std::string& filename)
   return srep->GetID();
 }
 
+//----------------------------------------------------------------------------
 std::string vtkSlicerSRepLogic::AddNewSRepNode(const std::string& name, vtkMRMLScene* scene) {
   std::string id;
   if (!scene && !this->GetMRMLScene()) {
@@ -140,6 +143,7 @@ std::string vtkSlicerSRepLogic::AddNewSRepNode(const std::string& name, vtkMRMLS
   return id;
 }
 
+//----------------------------------------------------------------------------
 bool vtkSlicerSRepLogic::ExportSRep(vtkMRMLSRepNode *srepNode,
                                     const std::string& headerFilename,
                                     const std::string& upFilename,
@@ -166,6 +170,7 @@ bool vtkSlicerSRepLogic::ExportSRep(vtkMRMLSRepNode *srepNode,
   }
 }
 
+//----------------------------------------------------------------------------
 std::string vtkSlicerSRepLogic::AddFirstDisplayNodeForSRepNode(vtkMRMLSRepNode *srepNode) {
   const std::string emptyId;
   if (!srepNode || !srepNode->GetScene()) {

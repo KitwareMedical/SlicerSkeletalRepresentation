@@ -2,6 +2,7 @@
 #define __vtkMRMLRectangularGridSRepNode_h
 
 #include "vtkMRMLSRepNode.h"
+#include "srep/RectangularGridSRep.h"
 
 class VTK_SLICER_SREP_MODULE_MRML_EXPORT vtkMRMLRectangularGridSRepNode
   : public vtkMRMLSRepNode
@@ -43,6 +44,9 @@ public:
   /// If there are no transforms, this will be the same as GetSRep
   /// \sa GetSRep, HasSRep
   const srep::RectangularGridSRep* GetRectangularGridSRepWorld() const;
+
+  /// Sets the SRep. Takes sole ownership.
+  void SetRectangularGridSRep(std::unique_ptr<srep::RectangularGridSRep>&& srep);
 
   const srep::MeshSRepInterface* GetSRep() const override;
   const srep::MeshSRepInterface* GetSRepWorld() const override;

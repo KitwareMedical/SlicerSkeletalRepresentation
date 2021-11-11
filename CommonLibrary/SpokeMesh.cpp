@@ -2,15 +2,19 @@
 
 namespace srep {
 
-size_t SpokeMesh::GetNumberOfSpokes() const {
+SpokeMesh::IndexType SpokeMesh::GetNumberOfSpokes() const {
   return this->Spokes.size();
 }
 
-const Spoke& SpokeMesh::at(const IndexType index) const {
+bool SpokeMesh::IsEmpty() const {
+  return this->GetNumberOfSpokes() == 0;
+}
+
+const Spoke& SpokeMesh::At(const IndexType index) const {
   return this->Spokes.at(index);
 }
 
-Spoke& SpokeMesh::at(const IndexType index) {
+Spoke& SpokeMesh::At(const IndexType index) {
   return this->Spokes.at(index);
 }
 

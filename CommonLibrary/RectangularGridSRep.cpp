@@ -96,6 +96,21 @@ void RectangularGridSRep::Validate(const SkeletalGrid& skeleton) {
             }
         }
     }
+
+    //validate that the crest is correct
+    for (size_t row = 0; row < skeleton.size(); ++row) {
+        for (size_t col = 0; col < skeleton[row].size(); ++col) {
+            if (row == 0 || col == 0 || row == skeleton.size() - 1 || col ==  skeleton[row].size() - 1) {
+                if (!skeleton[row][col].IsCrest()) {
+                    throw InvalidSkeletalGridException("Outer boundary are not all crest points");
+                }
+            } else {
+                if (skeleton[row][col].IsCrest()) {
+                    throw InvalidSkeletalGridException("Interior of the grid should not contain crest points");
+                }
+            }
+        }
+    }
 }
 
 util::owner<RectangularGridSRep*> RectangularGridSRep::Clone() const {
@@ -166,7 +181,9 @@ void RectangularGridSRep::CreateMeshRepresentation() {
     if (this->GetNumRows() % 2 == 1) {
         const auto spineRow = this->GetNumRows() / 2;
         for (size_t col = 0; col < this->GetNumCols(); ++col) {
-            this->SkeletonAsMesh.Spine.push_back(toUpDownMeshIndex(spineRow, col));
+            const auto index = toUpDownMeshIndex(spineRow, col);
+            // for this class the up and down spokes are at equivalent indices
+            this->SkeletonAsMesh.Spine.push_back(std::make_pair(index, index));
         }
     }
 
@@ -186,7 +203,8 @@ void RectangularGridSRep::CreateMeshRepresentation() {
 
         const auto skeletalPoint = this->Skeleton[row][col];
         this->SkeletonAsMesh.CrestSpokes.AddSpoke(skeletalPoint.GetCrestSpoke(), neighbors);
-        this->SkeletonAsMesh.CrestSkeletalConnections.push_back(toUpDownMeshIndex(row, col));
+        const auto index = toUpDownMeshIndex(row, col);
+        this->SkeletonAsMesh.CrestSkeletalConnections.push_back(std::make_pair(index, index));
     };
 
     //top row, traverse right
@@ -216,10 +234,10 @@ const SpokeMesh& RectangularGridSRep::GetDownSpokes() const {
 const SpokeMesh& RectangularGridSRep::GetCrestSpokes() const {
     return this->SkeletonAsMesh.CrestSpokes;
 }
-const std::vector<RectangularGridSRep::IndexType>& RectangularGridSRep::GetCrestSkeletalConnections() const {
+const std::vector<RectangularGridSRep::UpDownIndices>& RectangularGridSRep::GetCrestSkeletalConnections() const {
     return this->SkeletonAsMesh.CrestSkeletalConnections;
 }
-const std::vector<RectangularGridSRep::IndexType>& RectangularGridSRep::GetSpine() const {
+const std::vector<RectangularGridSRep::UpDownIndices>& RectangularGridSRep::GetSpine() const {
     return this->SkeletonAsMesh.Spine;
 }
 

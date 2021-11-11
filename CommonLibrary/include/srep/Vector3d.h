@@ -23,6 +23,8 @@ public:
     /// @throws std::invalid_argument if any nan
     explicit Vector3d(const double p[3]);
 
+    explicit Vector3d(const std::array<double, 3>& p);
+
     //copy and move defined and valid
     Vector3d(const Vector3d&) = default;
     Vector3d& operator=(const Vector3d&) = default;

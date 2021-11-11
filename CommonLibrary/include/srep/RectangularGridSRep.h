@@ -1,5 +1,5 @@
-#ifndef __srep_SRep_h
-#define __srep_SRep_h
+#ifndef __srep_RectangularGridSRep_h
+#define __srep_RectangularGridSRep_h
 
 #include <functional>
 #include <memory>
@@ -74,8 +74,8 @@ public:
     const SpokeMesh& GetUpSpokes() const override;
     const SpokeMesh& GetDownSpokes() const override;
     const SpokeMesh& GetCrestSpokes() const override;
-    const std::vector<IndexType>& GetCrestSkeletalConnections() const override;
-    const std::vector<IndexType>& GetSpine() const override;
+    const std::vector<UpDownIndices>& GetCrestSkeletalConnections() const override;
+    const std::vector<UpDownIndices>& GetSpine() const override;
 
 private:
     static void Validate(const SkeletalGrid& skeleton);
@@ -87,8 +87,8 @@ private:
         SpokeMesh UpSpokes;
         SpokeMesh DownSpokes;
         SpokeMesh CrestSpokes;
-        std::vector<IndexType> CrestSkeletalConnections;
-        std::vector<IndexType> Spine;
+        std::vector<UpDownIndices> CrestSkeletalConnections;
+        std::vector<UpDownIndices> Spine;
     };
 
     MeshRepresentation SkeletonAsMesh;

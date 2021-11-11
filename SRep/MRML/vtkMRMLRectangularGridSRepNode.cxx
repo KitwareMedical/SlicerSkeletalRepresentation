@@ -25,6 +25,12 @@ const srep::RectangularGridSRep* vtkMRMLRectangularGridSRepNode::GetRectangularG
   return this->SRepWorld.get();
 }
 
+void vtkMRMLRectangularGridSRepNode::SetRectangularGridSRep(std::unique_ptr<srep::RectangularGridSRep>&& srep) {
+  this->SRep = std::move(srep);
+  this->UpdateSRepWorld();
+  this->Modified();
+}
+
 //----------------------------------------------------------------------------
 const srep::MeshSRepInterface* vtkMRMLRectangularGridSRepNode::GetSRep() const {
   return this->SRep.get();

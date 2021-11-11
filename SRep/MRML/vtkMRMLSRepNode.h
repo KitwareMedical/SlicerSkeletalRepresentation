@@ -11,7 +11,7 @@
 
 #include <memory>
 
-#include <srep/RectangularGridSRep.h>
+#include <srep/MeshSRepInterface.h>
 
 class vtkAbstractTransform;
 class vtkGeneralTransform;
@@ -44,6 +44,8 @@ public:
   /// Create and observe default display node(s)
   void CreateDefaultDisplayNodes() override;
 
+  vtkMRMLStorageNode* CreateDefaultStorageNode() override;
+
   /// Return a cast display node, returns nullptr if none
   vtkMRMLSRepDisplayNode* GetSRepDisplayNode();
 
@@ -72,9 +74,6 @@ public:
   /// If there are no transforms, this will be the same as GetSRep
   /// \sa GetSRep, HasSRep
   virtual const srep::MeshSRepInterface* GetSRepWorld() const = 0;
-
-  // TODO: void SetSRep(const srep::RectangularGridSRep&);
-  // TODO: void SetSRep(srep::RectangularGridSRep&&);
 
   /// Copy node content (excludes basic data, such as name and node references).
   /// \sa vtkMRMLNode::CopyContent

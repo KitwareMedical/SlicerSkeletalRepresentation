@@ -48,14 +48,16 @@ public:
   /// \sa GetUpSpokes, GetDownSpokes
   virtual const SpokeMesh& GetCrestSpokes() const = 0;
 
+  using UpDownIndices = std::pair<IndexType, IndexType>;
+
   /// Gets the connections from the crest to the skeleton.
   ///
   /// This is a parallel list to GetCrestSpokes.
   /// \sa GetCrestSpokes
-  virtual const std::vector<IndexType>& GetCrestSkeletalConnections() const = 0;
+  virtual const std::vector<UpDownIndices>& GetCrestSkeletalConnections() const = 0;
 
   /// Indices out of GetUpSpokes and GetDownSpokes that make up the spine.
-  virtual const std::vector<IndexType>& GetSpine() const = 0;
+  virtual const std::vector<UpDownIndices>& GetSpine() const = 0;
 };
 
 };

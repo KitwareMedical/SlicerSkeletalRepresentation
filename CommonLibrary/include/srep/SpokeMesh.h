@@ -9,14 +9,15 @@ namespace srep {
 
 class SpokeMesh {
 public:
-  using IndexType = size_t;
+  using IndexType = long;
   using NeighborList = std::vector<IndexType>;
 
-  size_t GetNumberOfSpokes() const;
+  IndexType GetNumberOfSpokes() const;
+  bool IsEmpty() const;
   /// Adding spokes may invalidate references
-  const Spoke& at(IndexType index) const;
+  const Spoke& At(IndexType index) const;
   /// Adding spokes may invalidate references
-  Spoke& at(IndexType index);
+  Spoke& At(IndexType index);
   /// Adding spokes may invalidate references
   const Spoke& operator[](IndexType index) const;
   /// Adding spokes may invalidate references
