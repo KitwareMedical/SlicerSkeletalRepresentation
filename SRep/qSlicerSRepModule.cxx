@@ -21,8 +21,10 @@
 // SRep includes
 #include "qSlicerSRepModule.h"
 #include "qSlicerSRepModuleWidget.h"
+#include "qSlicerSRepReader.h"
 #include <qSlicerCoreApplication.h>
 #include <qSlicerModuleManager.h>
+#include <qSlicerIOManager.h>
 #include <vtkMRMLSRepDisplayableManager.h>
 
 #include <vtkMRMLSliceViewDisplayableManagerFactory.h>
@@ -110,11 +112,16 @@ void qSlicerSRepModule::setup()
 {
   this->Superclass::setup();
 
-  //register displayable manager with 3d view
+  // Register displayable manager with 3d view
   vtkMRMLThreeDViewDisplayableManagerFactory::GetInstance()->RegisterDisplayableManager("vtkMRMLSRepDisplayableManager");
 
   // Register Subject Hierarchy core plugins
   qSlicerSubjectHierarchyPluginHandler::instance()->registerPlugin(new qSlicerSubjectHierarchySRepPlugin());
+
+  // Register Reader/Writer
+  qSlicerIOManager* ioManager = qSlicerApplication::application()->ioManager();
+  // ioManager takes ownership of pointer
+  ioManager->registerIO(new qSlicerSRepReader(vtkSlicerSRepLogic::SafeDownCast(this->logic()), this));
 }
 
 //-----------------------------------------------------------------------------

@@ -1,6 +1,7 @@
 #include "vtkMRMLSRepStorageNode.h"
 #include "vtkMRMLRectangularGridSRepNode.h"
 #include "vtkMRMLMessageCollection.h"
+#include "vtkMRMLScene.h"
 #include "vtkStringArray.h"
 
 #include "srep/Util.h"
@@ -220,7 +221,7 @@ void read(rapidjson::Value& json, vtkMRMLSRepDisplayNode& displayNode) {
   }
 }
 
-// must not return nullptr
+// must not return nullptr. Throws on error.
 std::unique_ptr<rapidjson::Document> CreateJsonDocumentFromFile(const char* filePath) {
   FILE* fp = fopen(filePath, "r");
   if (!fp) {
@@ -261,6 +262,30 @@ vtkMRMLSRepStorageNode::~vtkMRMLSRepStorageNode() = default;
 bool vtkMRMLSRepStorageNode::CanReadInReferenceNode(vtkMRMLNode *refNode)
 {
   return refNode->IsA("vtkMRMLSRepNode");
+}
+
+//----------------------------------------------------------------------------
+std::string vtkMRMLSRepStorageNode::GetSRepType() {
+  const char* filePath = this->GetFileName();
+  if (!filePath)
+    {
+    vtkErrorMacro("vtkMRMLSRepStorageNode::GetSRepType failed: invalid filename");
+    return "";
+    }
+
+  try {
+    auto jsonRoot = CreateJsonDocumentFromFile(filePath);
+
+    if (jsonRoot->HasMember(keys::RectangularGridSRep)) {
+      return "vtkMRMLRectangularGridSRepNode";
+    } else {
+      vtkErrorMacro("vtkMRMLSRepStorageNode::GetSRepType failed: unable to find valid srep type");
+      return "";
+    }
+  } catch (const std::exception& e) {
+    vtkErrorMacro("vtkMRMLSRepStorageNode::GetSRepType failed: " << e.what());
+    return "";
+  }
 }
 
 //----------------------------------------------------------------------------
@@ -376,4 +401,36 @@ void vtkMRMLSRepStorageNode::InitializeSupportedReadFileTypes()
 void vtkMRMLSRepStorageNode::InitializeSupportedWriteFileTypes()
 {
   this->SupportedWriteFileTypes->InsertNextValue("SRep JSON (.srep.json)");
+}
+
+//----------------------------------------------------------------------------
+vtkMRMLSRepNode* vtkMRMLSRepStorageNode::CreateSRepNode(const char* nodeName) {
+  vtkMRMLScene* scene = this->GetScene();
+  if (!scene) {
+    vtkErrorMacro("vtkMRMLMarkupsJsonStorageNode::CreateSRepNode failed: invalid scene");
+    return nullptr;
+  }
+
+  const auto srepType = this->GetSRepType();
+  if (srepType.empty()) {
+    return nullptr;
+  }
+
+  std::string newNodeName;
+  if (nodeName && strlen(nodeName) > 0) {
+    newNodeName = nodeName;
+  } else {
+    newNodeName = scene->GetUniqueNameByString(this->GetFileNameWithoutExtension(this->GetFileName()).c_str());
+  }
+
+  auto* srepNode = vtkMRMLSRepNode::SafeDownCast(scene->AddNewNodeByClass(srepType, newNodeName));
+  if (!srepNode) {
+    vtkErrorMacro("vtkMRMLMarkupsJsonStorageNode::CreateSRepNode failed: unable to make class by name: " << srepType);
+    return nullptr;
+  }
+  this->ReadData(srepNode);
+  if (!srepNode->GetDisplayNode()) {
+    srepNode->CreateDefaultDisplayNodes();
+  }
+  return srepNode;
 }

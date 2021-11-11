@@ -57,7 +57,7 @@ public:
   /// Import SRep from files
   /// @param filename The file to import the SRep from
   /// @return The MRML id of the created node.
-  std::string ImportSRep(const std::string& filename);
+  std::string ImportRectangularGridSRepFromXML(const std::string& filename);
 
   /// Exports SRep to files.
   ///
@@ -67,11 +67,16 @@ public:
   /// @param downFilename File to write the down spokes to. If empty, this function returns false.
   /// @param crestFilename File to write the crest spokes to. If empty, this function returns false.
   /// @return True if files were written, false otherwise.
-  bool ExportSRep(vtkMRMLSRepNode *srepNode,
+  bool ExportRectangularGridSRepToXML(vtkMRMLSRepNode *srepNode,
                   const std::string& headerFilename,
                   const std::string& upFilename,
                   const std::string& downFilename,
                   const std::string& crestFilename);
+
+  /// Load a srep from fileName, return nullptr on error, node ID string
+  /// otherwise. Adds the appropriate storage and display nodes to the scene
+  /// as well.
+  const char* LoadSRep(const char* fileName, const char* nodeName=nullptr);
 
 protected:
   vtkSlicerSRepLogic();

@@ -3,6 +3,7 @@
 
 #include "vtkSlicerSRepModuleMRMLExport.h"
 #include "vtkMRMLStorageNode.h"
+#include "vtkMRMLSRepNode.h"
 
 class VTK_SLICER_SREP_MODULE_MRML_EXPORT vtkMRMLSRepStorageNode : public vtkMRMLStorageNode
 {
@@ -16,6 +17,10 @@ public:
   const char* GetNodeTagName() override {return "SRepStorage";};
 
   bool CanReadInReferenceNode(vtkMRMLNode *refNode) override;
+
+  vtkMRMLSRepNode* CreateSRepNode(const char* nodeName);
+
+  std::string GetSRepType();
 
 protected:
   vtkMRMLSRepStorageNode();

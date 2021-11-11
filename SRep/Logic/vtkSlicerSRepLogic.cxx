@@ -94,7 +94,7 @@ void vtkSlicerSRepLogic
 }
 
 //---------------------------------------------------------------------------
-std::string vtkSlicerSRepLogic::ImportSRep(const std::string& filename)
+std::string vtkSlicerSRepLogic::ImportRectangularGridSRepFromXML(const std::string& filename)
 {
   const auto srepID = this->AddNewSRepNode();
   if (srepID.empty()) {
@@ -144,7 +144,7 @@ std::string vtkSlicerSRepLogic::AddNewSRepNode(const std::string& name, vtkMRMLS
 }
 
 //----------------------------------------------------------------------------
-bool vtkSlicerSRepLogic::ExportSRep(vtkMRMLSRepNode *srepNode,
+bool vtkSlicerSRepLogic::ExportRectangularGridSRepToXML(vtkMRMLSRepNode *srepNode,
                                     const std::string& headerFilename,
                                     const std::string& upFilename,
                                     const std::string& downFilename,
@@ -190,4 +190,30 @@ std::string vtkSlicerSRepLogic::AddFirstDisplayNodeForSRepNode(vtkMRMLSRepNode *
   }
 
   return displayNode->GetID();
+}
+
+//----------------------------------------------------------------------------
+const char* vtkSlicerSRepLogic::LoadSRep(const char* fileName, const char* nodeName) {
+  if (!fileName) {
+    vtkErrorMacro("LoadSRep: null file, cannot load");
+    return nullptr;
+  }
+
+  vtkDebugMacro("LoadSRep, file name = " << fileName << ", nodeName = " << (nodeName ? nodeName : "null"));
+
+  vtkMRMLSRepStorageNode* storageNode = vtkMRMLSRepStorageNode::SafeDownCast(
+    this->GetMRMLScene()->AddNewNodeByClass("vtkMRMLSRepStorageNode"));
+
+  if (!storageNode) {
+    vtkErrorMacro("LoadSRep: failed to instantiate srep storage node by class vtkMRMLSRepStorageNode");
+    return nullptr;
+  }
+
+  storageNode->SetFileName(fileName);
+  vtkMRMLSRepNode* srepNode = storageNode->CreateSRepNode(nodeName);
+  if (!srepNode) {
+    return nullptr;
+  }
+  return srepNode->GetID();
+
 }

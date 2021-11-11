@@ -134,7 +134,7 @@ void qSlicerSRepModuleWidget::onImport()
     return;
   }
 
-  d->logic()->ImportSRep(inputFile.toStdString());
+  d->logic()->ImportRectangularGridSRepFromXML(inputFile.toStdString());
 }
 
 //-----------------------------------------------------------------------------
@@ -168,7 +168,7 @@ void qSlicerSRepModuleWidget::onExport() {
   const auto downFile = exportDirectory.filePath(exportBaseName + QString("-down-spokes.vtp"));
   const auto crestFile = exportDirectory.filePath(exportBaseName + QString("-crest-spokes.vtp"));
 
-  const auto success = d->logic()->ExportSRep(d->activeSRepNode,
+  const auto success = d->logic()->ExportRectangularGridSRepToXML(d->activeSRepNode,
                                               headerFile.toStdString(),
                                               upFile.toStdString(),
                                               downFile.toStdString(),
