@@ -63,7 +63,9 @@ void qSlicerSRepModuleWidgetPrivate::setupSRepUi(qSlicerWidget* widget) {
   Q_Q(qSlicerSRepModuleWidget);
   this->setupUi(widget);
 
-  this->activeSRepTreeView->setNodeTypes(QStringList(QString("vtkMRMLRectangularGridSRepNode")));
+  this->activeSRepTreeView->setNodeTypes(QStringList()
+    << "vtkMRMLEllipticalSRepNode"
+    << "vtkMRMLRectangularGridSRepNode");
   this->activeSRepTreeView->setColumnHidden(this->activeSRepTreeView->model()->idColumn(), true);
   this->activeSRepTreeView->setColumnHidden(this->activeSRepTreeView->model()->transformColumn(), true);
   this->activeSRepTreeView->setColumnHidden(this->activeSRepTreeView->model()->descriptionColumn(), false);
@@ -272,18 +274,16 @@ void qSlicerSRepModuleWidget::updateWidgetFromMRML() {
       d->opacitySpinbox->setValue(displayNode->GetOpacity());
     }
 
-    // const auto srep = d->activeSRepNode->GetSRep();
-    // if (srep) {
-    //   d->numberSkeletalPointsLineEdit->setText(QString::fromStdString(std::to_string(srep->GetNumSkeletalPoints())));
-    //   d->numberCrestPointsLineEdit->setText(QString::fromStdString(std::to_string(srep->GetNumCrestPoints())));
-    //   d->numberRowsLineEdit->setText(QString::fromStdString(std::to_string(srep->GetNumRows())));
-    //   d->numberColsLineEdit->setText(QString::fromStdString(std::to_string(srep->GetNumCols())));
-    // } else {
-      d->numberSkeletalPointsLineEdit->setText("TODO: UPDATE INFO");
-      d->numberCrestPointsLineEdit->setText("TODO: UPDATE INFO");
-      d->numberRowsLineEdit->setText("TODO: UPDATE INFO");
-      d->numberColsLineEdit->setText("TODO: UPDATE INFO");
-    // }
+    const auto srep = d->activeSRepNode->GetSRep();
+    if (srep) {
+      d->numUpSpokesLineEdit->setText(QString::number(srep->GetUpSpokes().GetNumberOfSpokes()));
+      d->numDownSpokesLineEdit->setText(QString::number(srep->GetDownSpokes().GetNumberOfSpokes()));
+      d->numCrestSpokesLineEdit->setText(QString::number(srep->GetCrestSpokes().GetNumberOfSpokes()));
+    } else {
+      d->numUpSpokesLineEdit->setText("-");
+      d->numDownSpokesLineEdit->setText("-");
+      d->numCrestSpokesLineEdit->setText("-");
+    }
   }
 }
 

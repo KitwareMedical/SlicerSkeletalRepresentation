@@ -47,9 +47,12 @@ public:
   vtkTypeMacro(vtkSlicerSRepLogic, vtkSlicerModuleLogic);
   void PrintSelf(ostream& os, vtkIndent indent);
 
-  /// Creates new SRep node
+  /// Creates new Rectangular Grid SRep node
   /// @returns id of new node.
-  std::string AddNewSRepNode(const std::string& name = "", vtkMRMLScene* scene = nullptr);
+  std::string AddNewRectangularGridSRepNode(const std::string& name = "", vtkMRMLScene* scene = nullptr);
+  /// Creates new Elliptical SRep node
+  /// @returns id of new node.
+  std::string AddNewEllipticalSRepNode(const std::string& name = "", vtkMRMLScene* scene = nullptr);
   /// Creates new SRep display node and add it to srep node
   /// @returns id of new display node.
   std::string AddFirstDisplayNodeForSRepNode(vtkMRMLSRepNode *srepNode);

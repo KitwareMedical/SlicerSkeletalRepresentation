@@ -46,7 +46,7 @@ public:
   const srep::RectangularGridSRep* GetRectangularGridSRepWorld() const;
 
   /// Sets the SRep. Takes sole ownership.
-  void SetRectangularGridSRep(std::unique_ptr<srep::RectangularGridSRep>&& srep);
+  void SetRectangularGridSRep(std::unique_ptr<srep::RectangularGridSRep> srep);
 
   const srep::MeshSRepInterface* GetSRep() const override;
   const srep::MeshSRepInterface* GetSRepWorld() const override;

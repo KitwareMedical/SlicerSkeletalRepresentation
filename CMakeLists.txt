@@ -22,6 +22,7 @@ add_subdirectory(CommonLibrary)
 #-----------------------------------------------------------------------------
 # Extension modules
 add_subdirectory(SRep)
+add_subdirectory(SRepCreator)
 ## NEXT_MODULE
 
 #-----------------------------------------------------------------------------

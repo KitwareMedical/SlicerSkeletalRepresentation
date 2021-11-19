@@ -12,10 +12,18 @@
 #include <memory>
 
 #include <srep/MeshSRepInterface.h>
+#include <srep/SkeletalPoint.h>
 
 class vtkAbstractTransform;
 class vtkGeneralTransform;
 class vtkMRMLTransformNode;
+
+/// Transform a grid of skeletal points
+///
+/// This makes no assumptions what rows and columns mean, it just does
+/// raw point transformations.
+std::vector<std::vector<srep::SkeletalPoint>>
+TransformSkeletalPoints(const std::vector<std::vector<srep::SkeletalPoint>>& grid, vtkAbstractTransform* transform);
 
 class VTK_SLICER_SREP_MODULE_MRML_EXPORT vtkMRMLSRepNode : public vtkMRMLDisplayableNode
 {

@@ -282,7 +282,7 @@ void vtkSlicerSRepWidgetRepresentation::UpdateFromMRML(vtkMRMLNode* caller, unsi
 
   const double minPoint[] = {bounds[0], bounds[2], bounds[4]};
   const double maxPoint[] = {bounds[1], bounds[3], bounds[5]};
-  const double distSquared = vtkMath::Distance2BetweenPoints(minPoint, maxPoint);
+  const double distSquared = sqrt(vtkMath::Distance2BetweenPoints(minPoint, maxPoint));
 
   constexpr double divisor = 500;
   const double radius = distSquared / divisor;

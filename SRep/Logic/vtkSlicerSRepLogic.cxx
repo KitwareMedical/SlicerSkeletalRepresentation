@@ -32,6 +32,7 @@
 #include <cassert>
 
 #include "vtkMRMLSRepNode.h"
+#include "vtkMRMLEllipticalSRepNode.h"
 #include "vtkMRMLRectangularGridSRepNode.h"
 
 //----------------------------------------------------------------------------
@@ -70,6 +71,7 @@ void vtkSlicerSRepLogic::RegisterNodes()
 
   vtkMRMLScene *scene = this->GetMRMLScene();
 
+  scene->RegisterNodeClass(vtkSmartPointer<vtkMRMLEllipticalSRepNode>::New());
   scene->RegisterNodeClass(vtkSmartPointer<vtkMRMLRectangularGridSRepNode>::New());
   scene->RegisterNodeClass(vtkSmartPointer<vtkMRMLSRepDisplayNode>::New());
   scene->RegisterNodeClass(vtkSmartPointer<vtkMRMLSRepStorageNode>::New());
@@ -96,7 +98,7 @@ void vtkSlicerSRepLogic
 //---------------------------------------------------------------------------
 std::string vtkSlicerSRepLogic::ImportRectangularGridSRepFromXML(const std::string& filename)
 {
-  const auto srepID = this->AddNewSRepNode();
+  const auto srepID = this->AddNewRectangularGridSRepNode();
   if (srepID.empty()) {
     vtkErrorMacro("LoadSRep: failed to instantiate vtkMRMLSRepNode");
     return std::string{};
@@ -116,10 +118,10 @@ std::string vtkSlicerSRepLogic::ImportRectangularGridSRepFromXML(const std::stri
 }
 
 //----------------------------------------------------------------------------
-std::string vtkSlicerSRepLogic::AddNewSRepNode(const std::string& name, vtkMRMLScene* scene) {
+std::string vtkSlicerSRepLogic::AddNewRectangularGridSRepNode(const std::string& name, vtkMRMLScene* scene) {
   std::string id;
   if (!scene && !this->GetMRMLScene()) {
-    vtkErrorMacro("AddNewSRepNode: no scene to add a srep node to!");
+    vtkErrorMacro("AddNewRectangularGridSRepNode: no scene to add a srep node to!");
     return id;
   }
 
@@ -127,6 +129,34 @@ std::string vtkSlicerSRepLogic::AddNewSRepNode(const std::string& name, vtkMRMLS
 
   // create and add the node
   auto mnode = vtkSmartPointer<vtkMRMLRectangularGridSRepNode>::New();
+  addToThisScene->AddNode(mnode);
+
+  // add a display node
+  std::string displayID = this->AddFirstDisplayNodeForSRepNode(mnode);
+
+  if (displayID.compare("") != 0) {
+    // get the node id to return
+    id = std::string(mnode->GetID());
+    if (!name.empty()) {
+      mnode->SetName(name.c_str());
+    }
+  }
+
+  return id;
+}
+
+//----------------------------------------------------------------------------
+std::string vtkSlicerSRepLogic::AddNewEllipticalSRepNode(const std::string& name, vtkMRMLScene* scene) {
+  std::string id;
+  if (!scene && !this->GetMRMLScene()) {
+    vtkErrorMacro("AddNewEllipticalSRepNode: no scene to add a srep node to!");
+    return id;
+  }
+
+  vtkMRMLScene *addToThisScene = scene ? scene : this->GetMRMLScene();
+
+  // create and add the node
+  auto mnode = vtkSmartPointer<vtkMRMLEllipticalSRepNode>::New();
   addToThisScene->AddNode(mnode);
 
   // add a display node

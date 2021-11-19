@@ -11,6 +11,47 @@
 #include <srep/RectangularGridSRep.h>
 
 //----------------------------------------------------------------------------
+std::vector<std::vector<srep::SkeletalPoint>>
+TransformSkeletalPoints(const std::vector<std::vector<srep::SkeletalPoint>>& grid, vtkAbstractTransform* transform) {
+  if (!transform) {
+    return grid;
+  }
+
+  using namespace srep;
+  std::vector<std::vector<srep::SkeletalPoint>> transformedGrid;
+  transformedGrid.reserve(grid.size());
+  for (const auto& vectorOfPoints : grid) {
+    transformedGrid.resize(transformedGrid.size() + 1);
+    transformedGrid.back().reserve(vectorOfPoints.size());
+    for (const auto& skeletalPoint : vectorOfPoints) {
+      const auto& upSpoke = skeletalPoint.GetUpSpoke();
+      const auto& downSpoke = skeletalPoint.GetDownSpoke();
+      double transformedSkeletal[3];
+      double transformedBoundary[3];
+
+      transform->TransformPoint(upSpoke.GetSkeletalPoint().AsArray().data(), transformedSkeletal);
+      transform->TransformPoint(upSpoke.GetBoundaryPoint().AsArray().data(), transformedBoundary);
+      const Spoke transformedUpSpoke(Point3d{transformedSkeletal}, Vector3d{Point3d{transformedSkeletal}, Point3d{transformedBoundary}});
+
+      transform->TransformPoint(downSpoke.GetSkeletalPoint().AsArray().data(), transformedSkeletal);
+      transform->TransformPoint(downSpoke.GetBoundaryPoint().AsArray().data(), transformedBoundary);
+      const Spoke transformedDownSpoke(Point3d{transformedSkeletal}, Vector3d{Point3d{transformedSkeletal}, Point3d{transformedBoundary}});
+      if (skeletalPoint.IsCrest()) {
+        const auto& crestSpoke = skeletalPoint.GetCrestSpoke();
+        transform->TransformPoint(crestSpoke.GetSkeletalPoint().AsArray().data(), transformedSkeletal);
+        transform->TransformPoint(crestSpoke.GetBoundaryPoint().AsArray().data(), transformedBoundary);
+        const Spoke transformedCrestSpoke(Point3d{transformedSkeletal}, Vector3d{Point3d{transformedSkeletal}, Point3d{transformedBoundary}});
+
+        transformedGrid.back().emplace_back(transformedUpSpoke, transformedDownSpoke, transformedCrestSpoke);
+      } else {
+        transformedGrid.back().emplace_back(transformedUpSpoke, transformedDownSpoke);
+      }
+    }
+  }
+  return transformedGrid;
+}
+
+//----------------------------------------------------------------------------
 vtkMRMLSRepNode::vtkMRMLSRepNode()
   : vtkMRMLDisplayableNode()
   , SRepTransform()

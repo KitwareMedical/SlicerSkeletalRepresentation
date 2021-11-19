@@ -25,7 +25,8 @@ const srep::RectangularGridSRep* vtkMRMLRectangularGridSRepNode::GetRectangularG
   return this->SRepWorld.get();
 }
 
-void vtkMRMLRectangularGridSRepNode::SetRectangularGridSRep(std::unique_ptr<srep::RectangularGridSRep>&& srep) {
+//----------------------------------------------------------------------------
+void vtkMRMLRectangularGridSRepNode::SetRectangularGridSRep(std::unique_ptr<srep::RectangularGridSRep> srep) {
   this->SRep = std::move(srep);
   this->UpdateSRepWorld();
   this->Modified();
@@ -53,39 +54,7 @@ void vtkMRMLRectangularGridSRepNode::DoUpdateSRepWorld(vtkAbstractTransform* tra
     return;
   }
 
-  using namespace srep;
-  const auto& grid = this->SRep->GetSkeletalPoints();
-  RectangularGridSRep::SkeletalGrid transformedGrid(grid.size(), std::vector<SkeletalPoint>(grid[0].size()));
-
-  for (size_t i = 0; i < grid.size(); ++i) {
-    for (size_t j  = 0; j < grid[i].size(); ++j) {
-      const auto& skeletalPoint = grid[i][j];
-      const auto& upSpoke = skeletalPoint.GetUpSpoke();
-      const auto& downSpoke = skeletalPoint.GetDownSpoke();
-      double transformedSkeletal[3];
-      double transformedBoundary[3];
-
-      transform->TransformPoint(upSpoke.GetSkeletalPoint().AsArray().data(), transformedSkeletal);
-      transform->TransformPoint(upSpoke.GetBoundaryPoint().AsArray().data(), transformedBoundary);
-      const Spoke transformedUpSpoke(Point3d{transformedSkeletal}, Vector3d{Point3d{transformedSkeletal}, Point3d{transformedBoundary}});
-
-      transform->TransformPoint(downSpoke.GetSkeletalPoint().AsArray().data(), transformedSkeletal);
-      transform->TransformPoint(downSpoke.GetBoundaryPoint().AsArray().data(), transformedBoundary);
-      const Spoke transformedDownSpoke(Point3d{transformedSkeletal}, Vector3d{Point3d{transformedSkeletal}, Point3d{transformedBoundary}});
-      if (skeletalPoint.IsCrest()) {
-        const auto& crestSpoke = skeletalPoint.GetCrestSpoke();
-        transform->TransformPoint(crestSpoke.GetSkeletalPoint().AsArray().data(), transformedSkeletal);
-        transform->TransformPoint(crestSpoke.GetBoundaryPoint().AsArray().data(), transformedBoundary);
-        const Spoke transformedCrestSpoke(Point3d{transformedSkeletal}, Vector3d{Point3d{transformedSkeletal}, Point3d{transformedBoundary}});
-
-        transformedGrid[i][j] = SkeletalPoint(transformedUpSpoke, transformedDownSpoke, transformedCrestSpoke);
-      } else {
-        transformedGrid[i][j] = SkeletalPoint(transformedUpSpoke, transformedDownSpoke);
-      }
-    }
-  }
-
-  this->SRepWorld = std::make_shared<srep::RectangularGridSRep>(std::move(transformedGrid));
+  this->SRepWorld = std::make_shared<srep::RectangularGridSRep>(TransformSkeletalPoints(this->SRep->GetSkeletalPoints(), transform));
 }
 
 //---------------------------------------------------------------------------
@@ -113,9 +82,6 @@ void vtkMRMLRectangularGridSRepNode::CopyContent(vtkMRMLNode* anode, bool deepCo
   if (node) {
     if (deepCopy) {
       if (node->SRep) {
-        if (!this->SRep) {
-          this->SRep = std::make_shared<srep::RectangularGridSRep>();
-        }
         this->SRep = std::shared_ptr<srep::RectangularGridSRep>(node->SRep->Clone());
       } else {
         this->SRep.reset();

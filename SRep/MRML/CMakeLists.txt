@@ -12,6 +12,7 @@ set(${KIT}_INCLUDE_DIRECTORIES
   )
 
 set(${KIT}_SRCS
+  vtkMRMLEllipticalSRepNode.cxx
   vtkMRMLRectangularGridSRepNode.cxx
   vtkMRMLSRepNode.cxx
   vtkMRMLSRepDisplayNode.cxx

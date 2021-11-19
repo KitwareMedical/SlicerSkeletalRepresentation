@@ -5,17 +5,15 @@
 #include <memory>
 #include <srep/MeshSRepInterface.h>
 #include <srep/SkeletalPoint.h>
+#include <srep/Exceptions.h>
 
 namespace srep {
-
-class InvalidSkeletalGridException : public std::invalid_argument {
-    using std::invalid_argument::invalid_argument;
-};
 
 /// @note direction u is row direction
 /// @note direction v is column direction
 class RectangularGridSRep : public MeshSRepInterface {
 public:
+    /// Normal rows by columns grid of SkeletalPoints
     using SkeletalGrid = std::vector<std::vector<SkeletalPoint>>;
 
     RectangularGridSRep();
@@ -25,13 +23,13 @@ public:
     /// Construct from a 2D grid of skeleton points
     /// \throws InvalidSkeletalGridException if all the interior vectors are not the same size
     RectangularGridSRep(SkeletalGrid&& skeleton);
+    ~RectangularGridSRep() = default;
 
-    //copy and move defined and valid
+    //copy and move deleted
     RectangularGridSRep(const RectangularGridSRep&) = delete;
     RectangularGridSRep& operator=(const RectangularGridSRep&) = delete;
     RectangularGridSRep(RectangularGridSRep&&) = delete;
     RectangularGridSRep& operator=(RectangularGridSRep&&) = delete;
-    ~RectangularGridSRep() = default;
 
     util::owner<RectangularGridSRep*> Clone() const override;
 

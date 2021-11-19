@@ -1,12 +1,13 @@
 add_library(srep
-    Point3d.cpp
-    ReadHeaderFile.cpp
-    SkeletalPoint.cpp
-    Spoke.cpp
-    SpokeMesh.cpp
-    RectangularGridSRep.cpp
-    SRepIO.cpp
-    Vector3d.cpp
+  EllipticalSRep.cpp
+  Point3d.cpp
+  ReadHeaderFile.cpp
+  RectangularGridSRep.cpp
+  SkeletalPoint.cpp
+  Spoke.cpp
+  SpokeMesh.cpp
+  SRepIO.cpp
+  Vector3d.cpp
 )
 target_include_directories(srep PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
