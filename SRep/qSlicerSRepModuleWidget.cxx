@@ -27,6 +27,20 @@
 #include <qMRMLSubjectHierarchyModel.h>
 #include <vtkMRMLScene.h>
 
+#include <functional>
+
+namespace {
+
+QColor toQColor(const vtkColor3ub& color) {
+  return QColor(color[0], color[1], color[2]);
+}
+
+vtkColor3ub toVTKColor3ub(const QColor& color) {
+  return vtkColor3ub(color.red(), color.green(), color.blue());
+}
+
+} // namespace {}
+
 //-----------------------------------------------------------------------------
 /// \ingroup Slicer_QtModules_ExtensionTemplate
 class qSlicerSRepModuleWidgetPrivate: public Ui_qSlicerSRepModuleWidget
@@ -39,7 +53,11 @@ public:
   void setupSRepUi(qSlicerWidget* widget);
   vtkWeakPointer<vtkMRMLSRepNode> activeSRepNode;
 private:
+  using SetColorFunc = void (vtkMRMLSRepDisplayNode::*)(const vtkColor3ub&);
+
   qSlicerSRepModuleWidget* const q_ptr;
+
+  void onColorChanged(ctkColorPickerButton* button, SetColorFunc setFunc);
 };
 
 //-----------------------------------------------------------------------------
@@ -86,6 +104,28 @@ void qSlicerSRepModuleWidgetPrivate::setupSRepUi(qSlicerWidget* widget) {
   //opacity
   QObject::connect(this->opacitySlider, SIGNAL(valueChanged(int)), q, SLOT(onOpacitySliderChanged()));
   QObject::connect(this->opacitySpinbox, SIGNAL(valueChanged(double)), q, SLOT(onOpacitySpinboxChanged()));
+
+  //colors
+  QObject::connect(this->upSpokeColorButton, &ctkColorPickerButton::colorChanged,
+    [this](){ this->onColorChanged(this->upSpokeColorButton, &vtkMRMLSRepDisplayNode::SetUpSpokeColor);});
+  QObject::connect(this->downSpokeColorButton, &ctkColorPickerButton::colorChanged,
+    [this](){ this->onColorChanged(this->downSpokeColorButton, &vtkMRMLSRepDisplayNode::SetDownSpokeColor);});
+  QObject::connect(this->crestSpokeColorButton, &ctkColorPickerButton::colorChanged,
+    [this](){ this->onColorChanged(this->crestSpokeColorButton, &vtkMRMLSRepDisplayNode::SetCrestSpokeColor);});
+  QObject::connect(this->skeletalSheetColorButton, &ctkColorPickerButton::colorChanged,
+    [this](){ this->onColorChanged(this->skeletalSheetColorButton, &vtkMRMLSRepDisplayNode::SetSkeletalSheetColor);});
+  QObject::connect(this->crestCurveColorButton, &ctkColorPickerButton::colorChanged,
+    [this](){ this->onColorChanged(this->crestCurveColorButton, &vtkMRMLSRepDisplayNode::SetCrestCurveColor);});
+  QObject::connect(this->skeletonToCrestConnectionColorButton, &ctkColorPickerButton::colorChanged,
+    [this](){ this->onColorChanged(this->skeletonToCrestConnectionColorButton, &vtkMRMLSRepDisplayNode::SetSkeletonToCrestConnectionColor);});
+}
+
+//-----------------------------------------------------------------------------
+void qSlicerSRepModuleWidgetPrivate::onColorChanged(ctkColorPickerButton* button, SetColorFunc setFunc) {
+  auto displayNode = this->activeSRepNode->GetSRepDisplayNode();
+  if (displayNode) {
+    (displayNode->*setFunc)(toVTKColor3ub(button->color()));
+  }
 }
 
 //-----------------------------------------------------------------------------
@@ -231,7 +271,7 @@ void qSlicerSRepModuleWidget::onVisibilityChanged() {
     return;
   }
 
-  auto displayNode = d->activeSRepNode->GetDisplayNode();
+  auto displayNode = d->activeSRepNode->GetSRepDisplayNode();
   if (displayNode) {
     displayNode->SetVisibility(d->visibilityCheckbox->isChecked());
   }
@@ -247,7 +287,7 @@ void qSlicerSRepModuleWidget::onOpacitySliderChanged() {
 void qSlicerSRepModuleWidget::onOpacitySpinboxChanged() {
   Q_D(qSlicerSRepModuleWidget);
   d->opacitySlider->setValue(static_cast<int>(d->opacitySpinbox->value() * 100));
-  auto displayNode = d->activeSRepNode->GetDisplayNode();
+  auto displayNode = d->activeSRepNode->GetSRepDisplayNode();
   if (displayNode) {
     displayNode->SetOpacity(d->opacitySpinbox->value());
   }
@@ -267,11 +307,18 @@ void qSlicerSRepModuleWidget::updateWidgetFromMRML() {
   d->informationContainer->setEnabled(haveActiveSRepNode);
 
   if (haveActiveSRepNode) {
-    auto displayNode = d->activeSRepNode->GetDisplayNode();
+    auto displayNode = d->activeSRepNode->GetSRepDisplayNode();
     if (displayNode) {
       d->visibilityCheckbox->setChecked(displayNode->GetVisibility());
       d->opacitySlider->setValue(static_cast<int>(displayNode->GetOpacity() * 100));
       d->opacitySpinbox->setValue(displayNode->GetOpacity());
+
+      d->upSpokeColorButton->setColor(toQColor(displayNode->GetUpSpokeColor()));
+      d->downSpokeColorButton->setColor(toQColor(displayNode->GetDownSpokeColor()));
+      d->crestSpokeColorButton->setColor(toQColor(displayNode->GetCrestSpokeColor()));
+      d->crestCurveColorButton->setColor(toQColor(displayNode->GetCrestCurveColor()));
+      d->skeletalSheetColorButton->setColor(toQColor(displayNode->GetSkeletalSheetColor()));
+      d->skeletonToCrestConnectionColorButton->setColor(toQColor(displayNode->GetSkeletonToCrestConnectionColor()));
     }
 
     const auto srep = d->activeSRepNode->GetSRep();

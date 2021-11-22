@@ -25,7 +25,7 @@
         <item row="0" column="0">
          <widget class="QLabel" name="label">
           <property name="text">
-           <string>Input File:</string>
+           <string>Input File</string>
           </property>
          </widget>
         </item>
@@ -146,7 +146,7 @@
            <bool>true</bool>
           </property>
           <property name="text">
-           <string>Visibility:</string>
+           <string>Visibility</string>
           </property>
          </widget>
         </item>
@@ -181,6 +181,109 @@
           </item>
          </layout>
         </item>
+        <item row="1" column="0">
+         <widget class="QLabel" name="label_6">
+          <property name="text">
+           <string>Up Spokes</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="1">
+         <widget class="ctkColorPickerButton" name="upSpokeColorButton">
+          <property name="text">
+           <string/>
+          </property>
+          <property name="color">
+           <color>
+            <red>255</red>
+            <green>99</green>
+            <blue>71</blue>
+           </color>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="0">
+         <widget class="QLabel" name="label_9">
+          <property name="text">
+           <string>Down Spokes</string>
+          </property>
+         </widget>
+        </item>
+        <item row="5" column="0">
+         <widget class="QLabel" name="label_11">
+          <property name="text">
+           <string>Skeletal Sheet</string>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="0">
+         <widget class="QLabel" name="label_10">
+          <property name="text">
+           <string>Crest Spokes</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="1">
+         <widget class="ctkColorPickerButton" name="downSpokeColorButton">
+          <property name="color">
+           <color>
+            <red>189</red>
+            <green>252</green>
+            <blue>201</blue>
+           </color>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="1">
+         <widget class="ctkColorPickerButton" name="crestSpokeColorButton">
+          <property name="color">
+           <color>
+            <red>255</red>
+            <green>215</green>
+            <blue>0</blue>
+           </color>
+          </property>
+         </widget>
+        </item>
+        <item row="5" column="1">
+         <widget class="ctkColorPickerButton" name="skeletalSheetColorButton">
+          <property name="color">
+           <color>
+            <red>255</red>
+            <green>248</green>
+            <blue>220</blue>
+           </color>
+          </property>
+         </widget>
+        </item>
+        <item row="4" column="0">
+         <widget class="QLabel" name="label_12">
+          <property name="text">
+           <string>Crest Curve</string>
+          </property>
+         </widget>
+        </item>
+        <item row="4" column="1">
+         <widget class="ctkColorPickerButton" name="crestCurveColorButton">
+          <property name="color">
+           <color>
+            <red>255</red>
+            <green>215</green>
+            <blue>0</blue>
+           </color>
+          </property>
+         </widget>
+        </item>
+        <item row="6" column="1">
+         <widget class="ctkColorPickerButton" name="skeletonToCrestConnectionColorButton"/>
+        </item>
+        <item row="6" column="0">
+         <widget class="QLabel" name="label_13">
+          <property name="text">
+           <string>Skeleton/Crest Connection</string>
+          </property>
+         </widget>
+        </item>
        </layout>
       </item>
      </layout>
@@ -197,7 +300,7 @@
         <item row="0" column="0">
          <widget class="QLabel" name="label_3">
           <property name="text">
-           <string>Output Directory:</string>
+           <string>Output Directory</string>
           </property>
          </widget>
         </item>
@@ -218,7 +321,7 @@
         <item row="1" column="0">
          <widget class="QLabel" name="label_4">
           <property name="text">
-           <string>Output Base Name:</string>
+           <string>Output Base Name</string>
           </property>
          </widget>
         </item>
@@ -275,6 +378,11 @@
    <extends>QWidget</extends>
    <header>ctkCollapsibleButton.h</header>
    <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>ctkColorPickerButton</class>
+   <extends>QPushButton</extends>
+   <header>ctkColorPickerButton.h</header>
   </customwidget>
  </customwidgets>
  <resources/>

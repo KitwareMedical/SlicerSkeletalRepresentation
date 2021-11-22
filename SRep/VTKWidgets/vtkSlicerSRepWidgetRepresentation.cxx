@@ -163,7 +163,7 @@ struct vtkSpokeIds {
 };
 }
 
-void vtkSlicerSRepWidgetRepresentation::ConvertSRepToVisualRepresentation(const srep::MeshSRepInterface& srep) {
+void vtkSlicerSRepWidgetRepresentation::ConvertSRepToVisualRepresentation(const srep::MeshSRepInterface& srep, const vtkMRMLSRepDisplayNode& displayNode) {
   //-------------------------------
   const auto insertNextPoint = [this](const srep::Point3d& point, const vtkColor3ub& color) {
     const auto id = this->Skeleton.Points->InsertNextPoint(point.AsArray().data());
@@ -220,14 +220,13 @@ void vtkSlicerSRepWidgetRepresentation::ConvertSRepToVisualRepresentation(const 
   // Start
   ///////////////////////////////////////
 
-  vtkNew<vtkNamedColors> namedColors;
-  const auto upSpokeColor = namedColors->GetColor3ub("Tomato");
-  const auto downSpokeColor = namedColors->GetColor3ub("Mint");
-  const auto upSkeletonColor = namedColors->GetColor3ub("Cornsilk");
-  const auto downSkeletonColor = namedColors->GetColor3ub("Cornsilk");
-  const auto crestCurveColor = namedColors->GetColor3ub("Gold");
-  const auto crestSpokeColor = namedColors->GetColor3ub("Gold");
-  const auto crestToSkeletonConnectionColor = namedColors->GetColor3ub("Black");
+  const auto upSpokeColor = displayNode.GetUpSpokeColor();
+  const auto downSpokeColor = displayNode.GetDownSpokeColor();
+  const auto upSkeletonColor = displayNode.GetSkeletalSheetColor();
+  const auto downSkeletonColor = displayNode.GetSkeletalSheetColor();
+  const auto crestCurveColor = displayNode.GetCrestCurveColor();
+  const auto crestSpokeColor = displayNode.GetCrestSpokeColor();
+  const auto crestToSkeletonConnectionColor = displayNode.GetSkeletonToCrestConnectionColor();
 
   this->Skeleton.Points->Reset();
   this->Skeleton.PointColors->Reset();
@@ -269,11 +268,17 @@ void vtkSlicerSRepWidgetRepresentation::UpdateFromMRML(vtkMRMLNode* caller, unsi
     return;
   }
 
+  auto displayNode = this->GetSRepDisplayNode();
+  if (!displayNode || !displayNode->GetVisibility()) {
+    this->VisibilityOff();
+    return;
+  }
+
   this->VisibilityOn();
 
   // TODO: if performance is an issue, save of a MTime or do something to only do the conversion
   // when the content of srepNode->GetSRepWorld() changes
-  this->ConvertSRepToVisualRepresentation(*srep);
+  this->ConvertSRepToVisualRepresentation(*srep, *displayNode);
 
   // set point size
   this->Skeleton.Points->ComputeBounds();
@@ -289,10 +294,7 @@ void vtkSlicerSRepWidgetRepresentation::UpdateFromMRML(vtkMRMLNode* caller, unsi
   this->Skeleton.GlyphSourceSphere->SetRadius(radius);
   this->Skeleton.TubeFilter->SetRadius(radius);
 
-  auto displayNode = this->GetSRepDisplayNode();
-  if (displayNode) {
-    this->Skeleton.Property->SetOpacity(displayNode->GetOpacity());
-  }
+  this->Skeleton.Property->SetOpacity(displayNode->GetOpacity());
 }
 
 void vtkSlicerSRepWidgetRepresentation::SetSRepDisplayNode(vtkMRMLSRepDisplayNode* srepDisplayNode) {

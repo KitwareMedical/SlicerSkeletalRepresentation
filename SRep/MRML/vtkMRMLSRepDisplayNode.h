@@ -4,6 +4,7 @@
 #include "vtkSlicerSRepModuleMRMLExport.h"
 
 #include "vtkMRMLDisplayNode.h"
+#include "vtkNamedColors.h"
 
 class vtkMRMLSRepNode;
 
@@ -42,27 +43,46 @@ public:
 
   int GetVisibility3D() override;
   void SetVisibility3D(int visible) override;
-private:
-  struct VisibilityHelper {
-    bool overall;
-    bool topSpokes;
-    bool bottomSpokes;
-    bool crestSpokes;
-    bool crestCurve;
-    bool medialMesh;
-    bool connectionToFoldCurve;
 
-    explicit VisibilityHelper(bool allOnOff);
-    VisibilityHelper();
-    ~VisibilityHelper() = default;
-    VisibilityHelper(const VisibilityHelper&) = default;
-    VisibilityHelper& operator=(const VisibilityHelper&) = default;
-    VisibilityHelper(VisibilityHelper&&) = default;
-    VisibilityHelper& operator=(VisibilityHelper&&) = default;
+  void SetUpSpokeColor(const vtkColor3ub& color);
+  const vtkColor3ub& GetUpSpokeColor() const;
+
+  void SetDownSpokeColor(const vtkColor3ub& color);
+  const vtkColor3ub& GetDownSpokeColor() const;
+
+  void SetCrestSpokeColor(const vtkColor3ub& color);
+  const vtkColor3ub& GetCrestSpokeColor() const;
+
+  void SetCrestCurveColor(const vtkColor3ub& color);
+  const vtkColor3ub& GetCrestCurveColor() const;
+
+  void SetSkeletalSheetColor(const vtkColor3ub& color);
+  const vtkColor3ub& GetSkeletalSheetColor() const;
+
+  void SetSkeletonToCrestConnectionColor(const vtkColor3ub& color);
+  const vtkColor3ub& GetSkeletonToCrestConnectionColor() const;
+
+private:
+  struct DisplayHelper {
+    bool visible;
+    vtkColor3ub color;
+
+    DisplayHelper(bool visible_, const vtkColor3ub& color_);
+    DisplayHelper();
+    ~DisplayHelper() = default;
+    DisplayHelper(const DisplayHelper&) = default;
+    DisplayHelper& operator=(const DisplayHelper&) = default;
+    DisplayHelper(DisplayHelper&&) = default;
+    DisplayHelper& operator=(DisplayHelper&&) = default;
   };
 
-  //can't just call it Visibility or it will hide the protected member from vtkMRMLDisplayNode
-  VisibilityHelper ThreeDVisibility;
+  bool OverallVisibility;
+  DisplayHelper UpSpokes;
+  DisplayHelper DownSpokes;
+  DisplayHelper CrestSpokes;
+  DisplayHelper CrestCurve;
+  DisplayHelper SkeletalSheet;
+  DisplayHelper SkeletonToCrestConnection;
 };
 
 #endif
