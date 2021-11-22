@@ -77,6 +77,8 @@ std::array<double, 3> FromRASToCoord(const std::array<double, 3>& arr, int stora
     return std::array<double, 3>{-arr[0], -arr[1], arr[2]};
   } else if (storageCoord == vtkMRMLStorageNode::CoordinateSystemRAS) {
     return arr;
+  } else {
+    throw std::invalid_argument("Unknown coordinate system type: " + std::to_string(storageCoord));
   }
 }
 
