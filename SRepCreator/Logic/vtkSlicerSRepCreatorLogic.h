@@ -50,29 +50,40 @@ public:
   ///
   /// \param dt Step size.
   /// \param smoothAmount Value between 0.0 and 2.0 with larger being more smoothing.
+  /// \param outputEveryNumIterations Adds a model of the flowed model to the scene every # iterations.
+  ///        If 0, then no intermediate models are added to the scene.
+  /// \param outputEllipsoidSRepModel Adds a model of the final best fit ellipsoid to the scene.
+  /// \returns SRep that fits the best fit ellipsoid after flowing the mesh.
   /// \sa Run, RunBackward
-  bool RunForward(
+  vtkMRMLEllipticalSRepNode* RunForward(
     vtkMRMLModelNode* model,
     size_t numFoldPoints,
-    size_t numStepsToFold,
+    size_t numStepsToCrest,
     double dt,
     double smoothAmount,
-    size_t maxIterations);
+    size_t maxIterations,
+    bool outputEllipsoidModel=false,
+    size_t outputEveryNumIterations=0);
 
   /// Takes the ellipsoidal SRep created in RunForward and fits it
   /// the model from RunForward.
+  /// \returns The initial fit SRep.
   /// \sa Run, RunForward
-  bool RunBackward();
+  vtkMRMLEllipticalSRepNode* RunBackward(size_t outputEveryNumIterations=0);
 
   /// Creates an initial SRep for the model.
+  /// \returns The initial fit SRep.
   /// \sa RunForward, RunBackward
-  bool Run(
+  vtkMRMLEllipticalSRepNode* Run(
     vtkMRMLModelNode* model,
     const size_t numFoldPoints,
     const size_t numStepsToCrest,
     const double dt,
     const double smoothAmount,
-    const size_t maxIterations);
+    const size_t maxIterations,
+    bool outputEllipsoidModel=false,
+    size_t forwardOutputEveryNumIterations=0,
+    size_t backwardOutputEveryNumIterations=0);
 
   /// Resets the state of the logic's srep creating facilities.
   void Reset();
@@ -157,7 +168,8 @@ private:
     vtkMRMLModelNode* model,
     double dt,
     double smoothAmount,
-    size_t maxIterations);
+    size_t maxIterations,
+    size_t outputEveryNumIterations);
 
   static EllipsoidParameters CalculateBestFitEllipsoid(vtkPolyData& alreadyFlowedMesh);
 
@@ -198,6 +210,7 @@ private:
 
   size_t ActualForwardIterations;
   std::string SRepNodeId;
+  std::string ModelName;
 
   static constexpr double ellipse_scale = 0.9;
   static constexpr double eps = 1e-6;

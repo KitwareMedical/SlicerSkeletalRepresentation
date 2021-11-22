@@ -56,7 +56,12 @@ qSlicerSRepCreatorModule::~qSlicerSRepCreatorModule()
 //-----------------------------------------------------------------------------
 QString qSlicerSRepCreatorModule::helpText() const
 {
-  return "This module is used to create SReps from existing models";
+  return "<p>This module initializes an SRep from a model in two steps.</p>\n"
+         "<ol>"
+         "<li>Forward Flow - creates an ellipsoid that best fits the input model and creates an SRep to fit that ellipsoid.</li>"
+         "<li>Backward Flow - adjusts the SRep created from the ellipsoid to fit the original model.</li>"
+         "</ol>"
+  ;
 }
 
 //-----------------------------------------------------------------------------

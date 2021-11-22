@@ -109,18 +109,33 @@ void qSlicerSRepCreatorModuleWidget::onRunForward() {
   const auto dt = d->stepSizeCTKSlider->value();
   const auto smoothAmount = d->smoothAmountCTKSlider->value();
   const auto maxIterations = std::lround(d->maxIterationsCTKSlider->value());
+  const auto outputEllipsoidModel = d->outputFittedEllipsoidCheckbox->isChecked();
+  const auto outputEveryNumIterations = std::lround(d->forwardOutputCTKSlider->value());
 
-  d->logic()->RunForward(model, numFoldPoints, numStepsToFold, dt, smoothAmount, maxIterations);
+  d->logic()->RunForward(model, numFoldPoints, numStepsToFold, dt, smoothAmount, maxIterations,
+    outputEllipsoidModel, outputEveryNumIterations);
 }
 
 //-----------------------------------------------------------------------------
 void qSlicerSRepCreatorModuleWidget::onRunBackward() {
   Q_D(qSlicerSRepCreatorModuleWidget);
-  d->logic()->RunBackward();
+  const auto outputEveryNumIterations = std::lround(d->backwardOutputCTKSlider->value());
+  d->logic()->RunBackward(outputEveryNumIterations);
 }
 
 //-----------------------------------------------------------------------------
 void qSlicerSRepCreatorModuleWidget::onRun() {
-  this->onRunForward();
-  this->onRunBackward();
+  Q_D(qSlicerSRepCreatorModuleWidget);
+  auto model = vtkMRMLModelNode::SafeDownCast(d->inputModelComboBox->currentNode());
+  const auto numFoldPoints = std::lround(d->numFoldPointsCTKSlider->value());
+  const auto numStepsToFold = std::lround(d->numStepsToFoldCTKSlider->value());
+  const auto dt = d->stepSizeCTKSlider->value();
+  const auto smoothAmount = d->smoothAmountCTKSlider->value();
+  const auto maxIterations = std::lround(d->maxIterationsCTKSlider->value());
+  const auto outputEllipsoidModel = d->outputFittedEllipsoidCheckbox->isChecked();
+  const auto forwardOutputEveryNumIterations = std::lround(d->forwardOutputCTKSlider->value());
+  const auto backwardOutputEveryNumIterations = std::lround(d->backwardOutputCTKSlider->value());
+
+  d->logic()->Run(model, numFoldPoints, numStepsToFold, dt, smoothAmount, maxIterations,
+    outputEllipsoidModel, forwardOutputEveryNumIterations, backwardOutputEveryNumIterations);
 }

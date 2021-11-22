@@ -121,6 +121,7 @@ vtkStandardNewMacro(vtkSlicerSRepCreatorLogic);
 vtkSlicerSRepCreatorLogic::vtkSlicerSRepCreatorLogic()
   : ActualForwardIterations(0)
   , SRepNodeId()
+  , ModelName()
 {}
 
 //----------------------------------------------------------------------------
@@ -162,7 +163,8 @@ vtkSmartPointer<vtkPolyData> vtkSlicerSRepCreatorLogic::FlowSurfaceMesh(
   vtkMRMLModelNode* model,
   const double dt,
   const double smoothAmount,
-  const size_t maxIterations)
+  const size_t maxIterations,
+  const size_t outputEveryNumIterations)
 {
   if (!model) {
     return nullptr;
@@ -248,18 +250,26 @@ vtkSmartPointer<vtkPolyData> vtkSlicerSRepCreatorLogic::FlowSurfaceMesh(
     writer->SetFileName(this->ForwardIterationFilename(i+1).c_str());
     writer->SetInputData(mesh);
     writer->Update();
+
+    if (outputEveryNumIterations != 0 && i % outputEveryNumIterations == 0) {
+      this->MakeModelNode(mesh,
+        model->GetName() + std::string("-forwardflow-") + std::to_string(i),
+        true, model->GetDisplayNode()->GetColor());
+    }
   }
   this->ActualForwardIterations = maxIterations;
 
-  this->MakeModelNode(mesh,
-    model->GetName() + std::string("-final-flowed-mesh-") + std::to_string(maxIterations),
-    true, model->GetDisplayNode()->GetColor());
+  if (outputEveryNumIterations != 0) {
+    this->MakeModelNode(mesh,
+      model->GetName() + std::string("-final-flowed-mesh-") + std::to_string(maxIterations),
+      true, model->GetDisplayNode()->GetColor());
+  }
 
   return mesh;
 }
 
 //---------------------------------------------------------------------------
-std::string vtkSlicerSRepCreatorLogic::ForwardIterationFilename(long iteration) {
+std::string vtkSlicerSRepCreatorLogic::ForwardIterationFilename(const long iteration) {
   return this->TempFolder() + "/" + std::to_string(iteration) + ".vtk";
 }
 
@@ -298,7 +308,7 @@ vtkSlicerSRepCreatorLogic::CalculateBestFitEllipsoid(vtkPolyData& alreadyFlowedM
 vtkMRMLModelNode* vtkSlicerSRepCreatorLogic::MakeEllipsoidModelNode(
   const EllipsoidParameters& ellipsoid,
   const std::string& name,
-  bool visible,
+  const bool visible,
   const double* color)
 {
   vtkNew<vtkParametricEllipsoid> parametricEllipsoid;
@@ -334,7 +344,7 @@ vtkMRMLModelNode* vtkSlicerSRepCreatorLogic::MakeEllipsoidModelNode(
 vtkMRMLModelNode* vtkSlicerSRepCreatorLogic::MakeModelNode(
   vtkPolyData* mesh,
   const std::string& name,
-  bool visible,
+  const bool visible,
   const double* color)
 {
   auto scene = this->GetMRMLScene();
@@ -369,7 +379,7 @@ vtkMRMLModelNode* vtkSlicerSRepCreatorLogic::MakeModelNode(
 vtkMRMLEllipticalSRepNode* vtkSlicerSRepCreatorLogic::MakeEllipticalSRepNode(
     std::unique_ptr<srep::EllipticalSRep> srep,
     const std::string& name,
-    bool visible)
+    const bool visible)
 {
   auto scene = this->GetMRMLScene();
   if (!scene) {
@@ -582,49 +592,60 @@ std::unique_ptr<srep::EllipticalSRep> vtkSlicerSRepCreatorLogic::GenerateSRep(
 void vtkSlicerSRepCreatorLogic::Reset() {
   this->ActualForwardIterations = 0;
   this->SRepNodeId.clear();
+  this->ModelName.clear();
 }
 
 //---------------------------------------------------------------------------
-bool vtkSlicerSRepCreatorLogic::RunForward(
+vtkMRMLEllipticalSRepNode* vtkSlicerSRepCreatorLogic::RunForward(
   vtkMRMLModelNode* model,
   const size_t numFoldPoints,
   const size_t numStepsToCrest,
   const double dt,
   const double smoothAmount,
-  const size_t maxIterations)
+  const size_t maxIterations,
+  const bool outputEllipsoidModel,
+  const size_t outputEveryNumIterations)
 {
   this->Reset();
   try {
-    auto mesh = this->FlowSurfaceMesh(model, dt, smoothAmount, maxIterations);
+    auto mesh = this->FlowSurfaceMesh(model, dt, smoothAmount, maxIterations, outputEveryNumIterations);
     if (!mesh) {
       vtkErrorMacro("Error creating flowed mesh");
-      return false;
+      this->Reset();
+      return nullptr;
     }
+    this->ModelName = model->GetName();
     const auto ellipsoidParameters = CalculateBestFitEllipsoid(*mesh);
-    this->MakeEllipsoidModelNode(ellipsoidParameters, "Best fitting ellipsoid.");
+    if (outputEllipsoidModel) {
+      this->MakeEllipsoidModelNode(ellipsoidParameters, model->GetName() + std::string("-best-fit-ellipsoid"));
+    }
 
     auto srepNode = this->MakeEllipticalSRepNode(
       this->GenerateSRep(ellipsoidParameters, numFoldPoints, numStepsToCrest),
-      "Best fitting ellipsoid SRep");
+      model->GetName() + std::string("-forward-only-srep"));
     if (srepNode) {
       this->SRepNodeId = srepNode->GetID();
-      return true;
+      auto originalModelDisplayNode = model->GetDisplayNode();
+      if (originalModelDisplayNode) {
+        originalModelDisplayNode->SetVisibility(false);
+      }
+      return srepNode;
     }
     this->Reset();
-    return false;
+    return nullptr;
   } catch (const std::exception& e) {
     vtkErrorMacro("Exception caught creating SRep: " << e.what());
     this->Reset();
-    return false;
+    return nullptr;
   } catch (...) {
     vtkErrorMacro("Unknown exception caught creating SRep");
     this->Reset();
-    return false;
+    return nullptr;
   }
 }
 
 //---------------------------------------------------------------------------
-bool vtkSlicerSRepCreatorLogic::RunBackward() {
+vtkMRMLEllipticalSRepNode* vtkSlicerSRepCreatorLogic::RunBackward(const size_t outputEveryNumIterations) {
   try {
     using TransformType = itkThinPlateSplineExtended;
     using PointType = itk::Point<double, 3>;
@@ -644,18 +665,18 @@ bool vtkSlicerSRepCreatorLogic::RunBackward() {
     auto mrmlScene = this->GetMRMLScene();
     if (!mrmlScene) {
       vtkErrorMacro("vtkSlicerSRepCreatorLogic::RunBackward() cannot find mrmlScene");
-      return false;
+      return nullptr;
     }
     auto srepNode = vtkMRMLEllipticalSRepNode::SafeDownCast(mrmlScene->GetNodeByID(this->SRepNodeId));
     if (!srepNode) {
       vtkErrorMacro("vtkSlicerSRepCreatorLogic::RunBackward() cannot find srepNode: " + this->SRepNodeId);
-      return false;
+      return nullptr;
     }
 
     auto srep = srepNode->GetEllipticalSRep();
     if (!srep) {
       vtkErrorMacro("vtkSlicerSRepCreatorLogic::RunBackward() cannot find srep: " + this->SRepNodeId);
-      return false;
+      return nullptr;
     }
     //copy the grid
     auto grid = srep->GetSkeleton();
@@ -702,30 +723,49 @@ bool vtkSlicerSRepCreatorLogic::RunBackward() {
 
       ApplyTPSInPlace(grid, tps);
 
+      if (outputEveryNumIterations != 0 && iteration % outputEveryNumIterations == 0) {
+        // deep copy the grid
+        std::unique_ptr<srep::EllipticalSRep> partiallyTransformedSRep(new srep::EllipticalSRep(grid));
+        this->MakeEllipticalSRepNode(std::move(partiallyTransformedSRep), this->ModelName + "-backflow-srep-" + std::to_string(iteration));
+      }
+
       std::swap(sourceSurfaceReader, targetSurfaceReader);
     }
 
+    // can move the grid now since we aren't transforming it anymore
     std::unique_ptr<srep::EllipticalSRep> transformedSRep(new srep::EllipticalSRep(std::move(grid)));
-    auto transformedSRepNode = this->MakeEllipticalSRepNode(std::move(transformedSRep), "Fitted SRep");
-    return transformedSRepNode != nullptr;
+    auto transformedSRepNode = this->MakeEllipticalSRepNode(std::move(transformedSRep), this->ModelName + "-srep");
+    return transformedSRepNode;
   } catch (const std::exception& e) {
     vtkErrorMacro("Exception caught backflowing SRep: " << e.what());
-    return false;
+    return nullptr;
   } catch (...) {
     vtkErrorMacro("Unknown exception caught backflowing SRep");
-    return false;
+    return nullptr;
   }
 }
 
 //---------------------------------------------------------------------------
-bool vtkSlicerSRepCreatorLogic::Run(
+vtkMRMLEllipticalSRepNode* vtkSlicerSRepCreatorLogic::Run(
   vtkMRMLModelNode* model,
   const size_t numFoldPoints,
   const size_t numStepsToCrest,
   const double dt,
   const double smoothAmount,
-  const size_t maxIterations)
+  const size_t maxIterations,
+  bool outputEllipsoidModel,
+  size_t forwardOutputEveryNumIterations,
+  size_t backwardOutputEveryNumIterations)
 {
-  return this->RunForward(model, numFoldPoints, numStepsToCrest, dt, smoothAmount, maxIterations)
-    && this->RunBackward();
+  auto ellipsoidSRep = this->RunForward(model, numFoldPoints, numStepsToCrest, dt,
+      smoothAmount, maxIterations, outputEllipsoidModel, forwardOutputEveryNumIterations);
+
+  if (ellipsoidSRep) {
+    auto initialFitSRep = this->RunBackward(backwardOutputEveryNumIterations);
+    if (!outputEllipsoidModel) {
+      this->GetMRMLScene()->RemoveNode(ellipsoidSRep);
+    }
+    return initialFitSRep;
+  }
+  return nullptr;
 }
