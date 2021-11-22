@@ -17,8 +17,9 @@
 
 // Qt includes
 #include <QDebug>
-#include "qMRMLNodeComboBox.h"
+#include <QMessageBox>
 #include <QtWidgets/QLabel>
+#include "qMRMLNodeComboBox.h"
 
 
 // Slicer includes
@@ -104,6 +105,10 @@ void qSlicerSRepCreatorModuleWidget::onNumFoldPointsValueChanged() {
 void qSlicerSRepCreatorModuleWidget::onRunForward() {
   Q_D(qSlicerSRepCreatorModuleWidget);
   auto model = vtkMRMLModelNode::SafeDownCast(d->inputModelComboBox->currentNode());
+  if (!model) {
+    QMessageBox::warning(this, "Error", "No model selected to make an SRep from.");
+    return;
+  }
   const auto numFoldPoints = std::lround(d->numFoldPointsCTKSlider->value());
   const auto numStepsToFold = std::lround(d->numStepsToFoldCTKSlider->value());
   const auto dt = d->stepSizeCTKSlider->value();
@@ -112,21 +117,31 @@ void qSlicerSRepCreatorModuleWidget::onRunForward() {
   const auto outputEllipsoidModel = d->outputFittedEllipsoidCheckbox->isChecked();
   const auto outputEveryNumIterations = std::lround(d->forwardOutputCTKSlider->value());
 
-  d->logic()->RunForward(model, numFoldPoints, numStepsToFold, dt, smoothAmount, maxIterations,
+  auto srepNode = d->logic()->RunForward(model, numFoldPoints, numStepsToFold, dt, smoothAmount, maxIterations,
     outputEllipsoidModel, outputEveryNumIterations);
+  if (!srepNode) {
+    QMessageBox::warning(this, "Error creating SRep", "SRep node from forward flow unable to be created. Try checking the error log for more details.");
+  }
 }
 
 //-----------------------------------------------------------------------------
 void qSlicerSRepCreatorModuleWidget::onRunBackward() {
   Q_D(qSlicerSRepCreatorModuleWidget);
   const auto outputEveryNumIterations = std::lround(d->backwardOutputCTKSlider->value());
-  d->logic()->RunBackward(outputEveryNumIterations);
+  auto srepNode = d->logic()->RunBackward(outputEveryNumIterations);
+  if (!srepNode) {
+    QMessageBox::warning(this, "Error creating SRep", "SRep node from backward flow unable to be created. Try checking the error log for more details.");
+  }
 }
 
 //-----------------------------------------------------------------------------
 void qSlicerSRepCreatorModuleWidget::onRun() {
   Q_D(qSlicerSRepCreatorModuleWidget);
   auto model = vtkMRMLModelNode::SafeDownCast(d->inputModelComboBox->currentNode());
+  if (!model) {
+    QMessageBox::warning(this, "Error", "No model selected to make an SRep from.");
+    return;
+  }
   const auto numFoldPoints = std::lround(d->numFoldPointsCTKSlider->value());
   const auto numStepsToFold = std::lround(d->numStepsToFoldCTKSlider->value());
   const auto dt = d->stepSizeCTKSlider->value();
@@ -136,6 +151,9 @@ void qSlicerSRepCreatorModuleWidget::onRun() {
   const auto forwardOutputEveryNumIterations = std::lround(d->forwardOutputCTKSlider->value());
   const auto backwardOutputEveryNumIterations = std::lround(d->backwardOutputCTKSlider->value());
 
-  d->logic()->Run(model, numFoldPoints, numStepsToFold, dt, smoothAmount, maxIterations,
+  auto srepNode = d->logic()->Run(model, numFoldPoints, numStepsToFold, dt, smoothAmount, maxIterations,
     outputEllipsoidModel, forwardOutputEveryNumIterations, backwardOutputEveryNumIterations);
+  if (!srepNode) {
+    QMessageBox::warning(this, "Error creating SRep", "SRep node unable to be created. Try checking the error log for more details.");
+  }
 }
