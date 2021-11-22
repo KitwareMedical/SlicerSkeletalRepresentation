@@ -45,8 +45,37 @@ public:
   vtkTypeMacro(vtkSlicerSRepCreatorLogic, vtkSlicerModuleLogic);
   void PrintSelf(ostream& os, vtkIndent indent);
 
-  /// Creates a best fit ellipsoid for the input model
-  bool RunForward(vtkMRMLModelNode* model, size_t numFoldPoints, size_t numStepsToFold, double dt, double smoothAmount, size_t maxIterations);
+  /// Creates a best fit ellipsoidal for the input model and then makes an SRep for
+  /// that ellipsoid
+  ///
+  /// \param dt Step size.
+  /// \param smoothAmount Value between 0.0 and 2.0 with larger being more smoothing.
+  /// \sa Run, RunBackward
+  bool RunForward(
+    vtkMRMLModelNode* model,
+    size_t numFoldPoints,
+    size_t numStepsToFold,
+    double dt,
+    double smoothAmount,
+    size_t maxIterations);
+
+  /// Takes the ellipsoidal SRep created in RunForward and fits it
+  /// the model from RunForward.
+  /// \sa Run, RunForward
+  bool RunBackward();
+
+  /// Creates an initial SRep for the model.
+  /// \sa RunForward, RunBackward
+  bool Run(
+    vtkMRMLModelNode* model,
+    const size_t numFoldPoints,
+    const size_t numStepsToCrest,
+    const double dt,
+    const double smoothAmount,
+    const size_t maxIterations);
+
+  /// Resets the state of the logic's srep creating facilities.
+  void Reset();
 
 protected:
   vtkSlicerSRepCreatorLogic();
@@ -164,6 +193,11 @@ private:
     std::unique_ptr<srep::EllipticalSRep> srep,
     const std::string& name,
     bool visible = true);
+
+  std::string ForwardIterationFilename(long iteration);
+
+  size_t ActualForwardIterations;
+  std::string SRepNodeId;
 
   static constexpr double ellipse_scale = 0.9;
   static constexpr double eps = 1e-6;

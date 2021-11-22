@@ -37,22 +37,10 @@ const Spoke& SkeletalPoint::GetCrestSpoke() const {
 }
 
 void SkeletalPoint::SetUpSpoke(const Spoke& spoke) {
-    Spoke oldSpoke = this->UpSpoke;
-    try {
-        this->UpSpoke = spoke;
-    } catch (...) {
-        this->UpSpoke = oldSpoke;
-        throw;
-    }
+    this->UpSpoke = spoke;
 }
 void SkeletalPoint::SetDownSpoke(const Spoke& spoke) {
-    Spoke oldSpoke = this->DownSpoke;
-    try {
-        this->DownSpoke = spoke;
-    } catch (...) {
-        this->DownSpoke = oldSpoke;
-        throw;
-    }
+    this->DownSpoke = spoke;
 }
 void SkeletalPoint::SetCrestSpoke(const Spoke* spoke) {
     if (spoke) {
@@ -62,6 +50,9 @@ void SkeletalPoint::SetCrestSpoke(const Spoke* spoke) {
         this->CrestSpoke = Spoke();
         HasCrestSpoke = false;
     }
+}
+void SkeletalPoint::SetCrestSpoke(const Spoke& spoke) {
+    this->SetCrestSpoke(&spoke);
 }
 
 bool SkeletalPoint::IsCrest() const {

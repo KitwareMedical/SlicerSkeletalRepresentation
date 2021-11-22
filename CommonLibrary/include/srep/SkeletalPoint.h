@@ -49,9 +49,11 @@ public:
     /// object will not change.
     void SetDownSpoke(const Spoke& spoke);
     /// Sets crest spoke. If nullptr is passed in, will remove crest spoke.
-    /// @note Crest spoke are also known as fold spokes.
+    /// @note Crest spokes are also known as fold spokes.
     /// @note This function does not take ownership of the pointer.
     void SetCrestSpoke(const Spoke* spoke);
+    /// Sets crest spoke.
+    void SetCrestSpoke(const Spoke& spoke);
 
 private:
     Spoke UpSpoke;

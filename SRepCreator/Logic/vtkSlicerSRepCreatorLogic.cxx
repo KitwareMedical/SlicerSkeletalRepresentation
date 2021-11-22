@@ -34,10 +34,14 @@
 #include <vtkParametricFunctionSource.h>
 #include <vtkPointData.h>
 #include <vtkPolyDataNormals.h>
+#include <vtkPolyDataReader.h>
 #include <vtkPolyDataWriter.h>
 #include <vtkWindowedSincPolyDataFilter.h>
 
 #include <vtksys/SystemTools.hxx>
+
+#include <itkThinPlateSplineExtended.h>
+#include <itkPointSet.h>
 
 // STD includes
 #include <cassert>
@@ -77,6 +81,36 @@ namespace {
   srep::Point3d PointFromEigen(const Eigen::Vector3d& v) {
     return srep::Point3d(v(0), v(1), v(2));
   }
+
+  //---------------------------------------------------------------------------
+  srep::Point3d ApplyTPS(const srep::Point3d& point, itkThinPlateSplineExtended::Pointer tps) {
+    const auto transformed = tps->TransformPoint(point.AsArray());
+    return srep::Point3d(transformed[0], transformed[1], transformed[2]);
+  }
+
+  //---------------------------------------------------------------------------
+  srep::Spoke ApplyTPS(const srep::Spoke& spoke, itkThinPlateSplineExtended::Pointer tps) {
+    return srep::Spoke(ApplyTPS(spoke.GetSkeletalPoint(), tps), ApplyTPS(spoke.GetBoundaryPoint(), tps));
+  }
+
+  //---------------------------------------------------------------------------
+  void ApplyTPSInPlace(srep::SkeletalPoint& skeletalPoint, itkThinPlateSplineExtended::Pointer tps) {
+    skeletalPoint.SetUpSpoke(ApplyTPS(skeletalPoint.GetUpSpoke(), tps));
+    skeletalPoint.SetDownSpoke(ApplyTPS(skeletalPoint.GetDownSpoke(), tps));
+    if (skeletalPoint.IsCrest()) {
+      skeletalPoint.SetCrestSpoke(ApplyTPS(skeletalPoint.GetCrestSpoke(), tps));
+    }
+  }
+
+  //---------------------------------------------------------------------------
+  void ApplyTPSInPlace(srep::EllipticalSRep::UnrolledEllipticalGrid& grid, itkThinPlateSplineExtended::Pointer tps) {
+    for (size_t i = 0; i < grid.size(); ++i) {
+      for (size_t j = 0; j < grid[i].size(); ++j) {
+        ApplyTPSInPlace(grid[i][j], tps);
+      }
+    }
+  }
+
 } // namespace {}
 
 
@@ -84,7 +118,10 @@ namespace {
 vtkStandardNewMacro(vtkSlicerSRepCreatorLogic);
 
 //----------------------------------------------------------------------------
-vtkSlicerSRepCreatorLogic::vtkSlicerSRepCreatorLogic() = default;
+vtkSlicerSRepCreatorLogic::vtkSlicerSRepCreatorLogic()
+  : ActualForwardIterations(0)
+  , SRepNodeId()
+{}
 
 //----------------------------------------------------------------------------
 vtkSlicerSRepCreatorLogic::~vtkSlicerSRepCreatorLogic() = default;
@@ -208,17 +245,22 @@ vtkSmartPointer<vtkPolyData> vtkSlicerSRepCreatorLogic::FlowSurfaceMesh(
     points->Modified();
 
     // TODO: do we need the mass stuff?
-    const auto filename = tempFolder + "/" + std::to_string(i + 1) + ".vtk";
-    writer->SetFileName(filename.c_str());
+    writer->SetFileName(this->ForwardIterationFilename(i+1).c_str());
     writer->SetInputData(mesh);
     writer->Update();
   }
+  this->ActualForwardIterations = maxIterations;
 
   this->MakeModelNode(mesh,
     model->GetName() + std::string("-final-flowed-mesh-") + std::to_string(maxIterations),
     true, model->GetDisplayNode()->GetColor());
 
   return mesh;
+}
+
+//---------------------------------------------------------------------------
+std::string vtkSlicerSRepCreatorLogic::ForwardIterationFilename(long iteration) {
+  return this->TempFolder() + "/" + std::to_string(iteration) + ".vtk";
 }
 
 //---------------------------------------------------------------------------
@@ -537,6 +579,12 @@ std::unique_ptr<srep::EllipticalSRep> vtkSlicerSRepCreatorLogic::GenerateSRep(
 }
 
 //---------------------------------------------------------------------------
+void vtkSlicerSRepCreatorLogic::Reset() {
+  this->ActualForwardIterations = 0;
+  this->SRepNodeId.clear();
+}
+
+//---------------------------------------------------------------------------
 bool vtkSlicerSRepCreatorLogic::RunForward(
   vtkMRMLModelNode* model,
   const size_t numFoldPoints,
@@ -545,6 +593,7 @@ bool vtkSlicerSRepCreatorLogic::RunForward(
   const double smoothAmount,
   const size_t maxIterations)
 {
+  this->Reset();
   try {
     auto mesh = this->FlowSurfaceMesh(model, dt, smoothAmount, maxIterations);
     if (!mesh) {
@@ -554,16 +603,129 @@ bool vtkSlicerSRepCreatorLogic::RunForward(
     const auto ellipsoidParameters = CalculateBestFitEllipsoid(*mesh);
     this->MakeEllipsoidModelNode(ellipsoidParameters, "Best fitting ellipsoid.");
 
-    this->MakeEllipticalSRepNode(
+    auto srepNode = this->MakeEllipticalSRepNode(
       this->GenerateSRep(ellipsoidParameters, numFoldPoints, numStepsToCrest),
       "Best fitting ellipsoid SRep");
-
-    return true;
+    if (srepNode) {
+      this->SRepNodeId = srepNode->GetID();
+      return true;
+    }
+    this->Reset();
+    return false;
   } catch (const std::exception& e) {
     vtkErrorMacro("Exception caught creating SRep: " << e.what());
+    this->Reset();
     return false;
   } catch (...) {
     vtkErrorMacro("Unknown exception caught creating SRep");
+    this->Reset();
     return false;
   }
+}
+
+//---------------------------------------------------------------------------
+bool vtkSlicerSRepCreatorLogic::RunBackward() {
+  try {
+    using TransformType = itkThinPlateSplineExtended;
+    using PointType = itk::Point<double, 3>;
+    using PointSetType = TransformType::PointSetType;
+    using PointIdType = PointSetType::PointIdentifier;
+
+    const auto polyDataPointToPointType = [](vtkPolyData& poly, unsigned int index) {
+      PointType pt;
+      double p[3];
+      poly.GetPoint(index, p);
+      pt[0] = p[0];
+      pt[1] = p[1];
+      pt[2] = p[2];
+      return pt;
+    };
+
+    auto mrmlScene = this->GetMRMLScene();
+    if (!mrmlScene) {
+      vtkErrorMacro("vtkSlicerSRepCreatorLogic::RunBackward() cannot find mrmlScene");
+      return false;
+    }
+    auto srepNode = vtkMRMLEllipticalSRepNode::SafeDownCast(mrmlScene->GetNodeByID(this->SRepNodeId));
+    if (!srepNode) {
+      vtkErrorMacro("vtkSlicerSRepCreatorLogic::RunBackward() cannot find srepNode: " + this->SRepNodeId);
+      return false;
+    }
+
+    auto srep = srepNode->GetEllipticalSRep();
+    if (!srep) {
+      vtkErrorMacro("vtkSlicerSRepCreatorLogic::RunBackward() cannot find srep: " + this->SRepNodeId);
+      return false;
+    }
+    //copy the grid
+    auto grid = srep->GetSkeleton();
+
+    vtkNew<vtkPolyDataReader> reader1;
+    vtkNew<vtkPolyDataReader> reader2;
+
+    vtkPolyDataReader* sourceSurfaceReader = reader1;
+    vtkPolyDataReader* targetSurfaceReader = reader2;
+
+    sourceSurfaceReader->SetFileName(this->ForwardIterationFilename(this->ActualForwardIterations).c_str());
+    sourceSurfaceReader->Update();
+
+    std::cout << "Computing backflow transformation for " << this->ActualForwardIterations << " iterations" << std::endl;
+    for (long iteration = this->ActualForwardIterations; iteration > 1; --iteration) {
+      //swap source and target at bottom because target becomes source
+      targetSurfaceReader->SetFileName(this->ForwardIterationFilename(iteration - 1).c_str());
+      targetSurfaceReader->Update();
+
+      vtkSmartPointer<vtkPolyData> polyData_source = sourceSurfaceReader->GetOutput();
+      vtkSmartPointer<vtkPolyData> polyData_target = targetSurfaceReader->GetOutput();
+
+      PointSetType::Pointer sourceLandMarks = PointSetType::New();
+      PointSetType::Pointer targetLandMarks = PointSetType::New();
+      PointSetType::PointsContainer::Pointer sourceLandMarkContainer
+                  = sourceLandMarks->GetPoints();
+      PointSetType::PointsContainer::Pointer targetLandMarkContainer
+                  = targetLandMarks->GetPoints();
+
+      // Read in the source points set
+      for(unsigned int i = 0, s = 0; i < polyData_source->GetNumberOfPoints(); i += 10, ++s) {
+          sourceLandMarkContainer->InsertElement(s, polyDataPointToPointType(*polyData_source, i));
+      }
+
+      // Read in the target points set
+      for(unsigned int i = 0, s = 0; i < polyData_target->GetNumberOfPoints(); i += 10, ++s) {
+          targetLandMarkContainer->InsertElement(s, polyDataPointToPointType(*polyData_target, i));
+      }
+
+      TransformType::Pointer tps = TransformType::New();
+      tps->SetSourceLandmarks(sourceLandMarks);
+      tps->SetTargetLandmarks(targetLandMarks);
+      tps->ComputeWMatrix();
+
+      ApplyTPSInPlace(grid, tps);
+
+      std::swap(sourceSurfaceReader, targetSurfaceReader);
+    }
+
+    std::unique_ptr<srep::EllipticalSRep> transformedSRep(new srep::EllipticalSRep(std::move(grid)));
+    auto transformedSRepNode = this->MakeEllipticalSRepNode(std::move(transformedSRep), "Fitted SRep");
+    return transformedSRepNode != nullptr;
+  } catch (const std::exception& e) {
+    vtkErrorMacro("Exception caught backflowing SRep: " << e.what());
+    return false;
+  } catch (...) {
+    vtkErrorMacro("Unknown exception caught backflowing SRep");
+    return false;
+  }
+}
+
+//---------------------------------------------------------------------------
+bool vtkSlicerSRepCreatorLogic::Run(
+  vtkMRMLModelNode* model,
+  const size_t numFoldPoints,
+  const size_t numStepsToCrest,
+  const double dt,
+  const double smoothAmount,
+  const size_t maxIterations)
+{
+  return this->RunForward(model, numFoldPoints, numStepsToCrest, dt, smoothAmount, maxIterations)
+    && this->RunBackward();
 }

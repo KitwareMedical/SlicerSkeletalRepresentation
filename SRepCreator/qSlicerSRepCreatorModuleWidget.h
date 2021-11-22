@@ -38,7 +38,6 @@ public:
   virtual ~qSlicerSRepCreatorModuleWidget();
 
 public slots:
-  void onRunForward();
   void setMRMLScene(vtkMRMLScene* scene) override;
 
 protected:
@@ -51,6 +50,9 @@ private:
   Q_DISABLE_COPY(qSlicerSRepCreatorModuleWidget);
 
   void onNumFoldPointsValueChanged();
+  void onRunForward();
+  void onRunBackward();
+  void onRun();
 };
 
 #endif

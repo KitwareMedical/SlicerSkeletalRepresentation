@@ -12,6 +12,11 @@ Spoke::Spoke(const Point3d& skeletalPoint, const Vector3d& direction)
     , Direction(direction)
 {}
 
+Spoke::Spoke(const Point3d& skeletalPoint, const Point3d& boundaryPoint)
+    : SkeletalPoint(skeletalPoint)
+    , Direction(skeletalPoint, boundaryPoint)
+{}
+
 void Spoke::SetRadius(const double radius) {
     this->Direction.Resize(radius);
 }

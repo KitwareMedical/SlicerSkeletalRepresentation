@@ -14,6 +14,11 @@ public:
     /// \param direction Direction and length of spoke
     Spoke(const Point3d& skeletalPoint, const Vector3d& direction);
 
+    /// Create a spoke
+    /// \param skeletalPoint Point on the skeleton
+    /// \param boundaryPoint Point at the boundary
+    Spoke(const Point3d& skeletalPoint, const Point3d& boundaryPoint);
+
     //copy and move defined and valid
     Spoke(const Spoke&) = default;
     Spoke& operator=(const Spoke&) = default;

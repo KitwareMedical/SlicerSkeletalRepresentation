@@ -85,6 +85,10 @@ void qSlicerSRepCreatorModuleWidget::setup()
 
   QObject::connect(d->runForwardButton, &QPushButton::clicked,
     [this](){this->onRunForward();});
+  QObject::connect(d->runBackwardButton, &QPushButton::clicked,
+    [this](){this->onRunBackward();});
+  QObject::connect(d->runButton, &QPushButton::clicked,
+    [this](){this->onRun();});
   QObject::connect(d->numFoldPointsCTKSlider, &ctkSliderWidget::valueChanged,
     [this](){this->onNumFoldPointsValueChanged();});
 }
@@ -107,4 +111,16 @@ void qSlicerSRepCreatorModuleWidget::onRunForward() {
   const auto maxIterations = std::lround(d->maxIterationsCTKSlider->value());
 
   d->logic()->RunForward(model, numFoldPoints, numStepsToFold, dt, smoothAmount, maxIterations);
+}
+
+//-----------------------------------------------------------------------------
+void qSlicerSRepCreatorModuleWidget::onRunBackward() {
+  Q_D(qSlicerSRepCreatorModuleWidget);
+  d->logic()->RunBackward();
+}
+
+//-----------------------------------------------------------------------------
+void qSlicerSRepCreatorModuleWidget::onRun() {
+  this->onRunForward();
+  this->onRunBackward();
 }
