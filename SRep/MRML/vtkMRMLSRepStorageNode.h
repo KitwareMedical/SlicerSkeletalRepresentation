@@ -22,6 +22,19 @@ public:
 
   std::string GetSRepType();
 
+  using SRepCoordinateSystemType = int;
+
+  void CoordinateSystemWriteRASOn();
+  void CoordinateSystemWriteLPSOn();
+  /// @{
+  /// Get set the coordinate system to write in.
+  ///
+  /// Choose either vtkMRMLStorageNode::CoordinateSystemRAS or vtkMRMLStorageNode::CoordinateSystemLPS
+  /// Default is LPS.
+  void SetCoordinateSystemWrite(SRepCoordinateSystemType system);
+  SRepCoordinateSystemType GetCoordinateSystemWrite() const;
+  /// @}
+
 protected:
   vtkMRMLSRepStorageNode();
   ~vtkMRMLSRepStorageNode() override;
@@ -41,6 +54,8 @@ protected:
 
   /// Write data from a  referenced node.
   int WriteDataInternal(vtkMRMLNode *refNode) override;
+private:
+  int CoordinateSystemWrite;
 };
 
 #endif

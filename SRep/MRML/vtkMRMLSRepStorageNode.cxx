@@ -38,10 +38,51 @@ namespace keys {
   const char * const CrestSpoke = "CrestSpoke";
   const char * const Direction = "Direction";
   const char * const SkeletalPoint = "SkeletalPoint";
+  const char * const Value = "Value";
 
   const char * const Display = "Display";
   const char * const Visibility = "Visibility";
   const char * const Opacity = "Opacity";
+
+  const char * const CoordinateSystem = "CoordinateSystem";
+}
+
+void writeCoordinateSystem(rapidjson::PrettyWriter<rapidjson::FileWriteStream>& writer, int storageCoord) {
+  if (storageCoord == vtkMRMLStorageNode::CoordinateSystemLPS) {
+    writer.String("LPS");
+  } else if (storageCoord == vtkMRMLStorageNode::CoordinateSystemRAS) {
+    writer.String("RAS");
+  } else {
+    throw std::invalid_argument("Unknown storage node coordinate system type: " + std::to_string(storageCoord));
+  }
+}
+
+int readCoordinateSystem(rapidjson::Value& json) {
+  if (!json.IsString()) {
+    throw std::invalid_argument("Expect string for coordinate system");
+  }
+
+  const std::string value = json.GetString();
+  if (value == "LPS") {
+    return vtkMRMLStorageNode::CoordinateSystemLPS;
+  } else if (value == "RAS") {
+    return vtkMRMLStorageNode::CoordinateSystemRAS;
+  } else {
+    throw std::invalid_argument("Unknown srep coordinate system type: " + value);
+  }
+}
+
+std::array<double, 3> FromRASToCoord(const std::array<double, 3>& arr, int storageCoord) {
+  if (storageCoord == vtkMRMLStorageNode::CoordinateSystemLPS) {
+    return std::array<double, 3>{-arr[0], -arr[1], arr[2]};
+  } else if (storageCoord == vtkMRMLStorageNode::CoordinateSystemRAS) {
+    return arr;
+  }
+}
+
+std::array<double, 3> FromCoordToRAS(const std::array<double, 3>& arr, int storageCoord) {
+  // same transformation both ways, but two functions helps keep things straight.
+  return FromRASToCoord(arr, storageCoord);
 }
 
 constexpr size_t BufferSize = 65535;
@@ -79,8 +120,12 @@ void writeSingleLineArray(rapidjson::PrettyWriter<rapidjson::FileWriteStream>& w
   writer.SetFormatOptions(rapidjson::kFormatDefault);
 }
 
-void write(rapidjson::PrettyWriter<rapidjson::FileWriteStream>& writer, const srep::Point3d& point) {
-  writeSingleLineArray(writer, point.AsArray());
+void write(rapidjson::PrettyWriter<rapidjson::FileWriteStream>& writer, const srep::Point3d& point, int coordinateSystem) {
+  writer.StartObject();
+  writer.Key(keys::CoordinateSystem); writeCoordinateSystem(writer, coordinateSystem);
+  writer.Key(keys::Value);
+  writeSingleLineArray(writer, FromRASToCoord(point.AsArray(), coordinateSystem));
+  writer.EndObject();
 }
 
 std::array<double, 3> read3dArray(rapidjson::Value& json) {
@@ -99,23 +144,37 @@ std::array<double, 3> read3dArray(rapidjson::Value& json) {
 }
 
 srep::Point3d readPoint3d(rapidjson::Value& json) {
-  return srep::Point3d(read3dArray(json));
+  if (!json.IsObject()) {
+    throw std::invalid_argument("Expected a json object for srep::Point3d");
+  }
+  return srep::Point3d(FromCoordToRAS(
+    read3dArray(SafeFindMember(json, keys::Value)->value),
+    readCoordinateSystem(SafeFindMember(json, keys::CoordinateSystem)->value)));
 }
 
-void write(rapidjson::PrettyWriter<rapidjson::FileWriteStream>& writer, const srep::Vector3d& vector) {
-  writeSingleLineArray(writer, vector.AsArray());
+void write(rapidjson::PrettyWriter<rapidjson::FileWriteStream>& writer, const srep::Vector3d& vector, int coordinateSystem) {
+  writer.StartObject();
+  writer.Key(keys::CoordinateSystem); writeCoordinateSystem(writer, coordinateSystem);
+  writer.Key(keys::Value);
+  writeSingleLineArray(writer, FromRASToCoord(vector.AsArray(), coordinateSystem));
+  writer.EndObject();
 }
 
 srep::Vector3d readVector3d(rapidjson::Value& json) {
-  return srep::Vector3d(read3dArray(json));
+  if (!json.IsObject()) {
+    throw std::invalid_argument("Expected a json object for srep::Point3d");
+  }
+  return srep::Vector3d(FromCoordToRAS(
+    read3dArray(SafeFindMember(json, keys::Value)->value),
+    readCoordinateSystem(SafeFindMember(json, keys::CoordinateSystem)->value)));
 }
 
-void write(rapidjson::PrettyWriter<rapidjson::FileWriteStream>& writer, const srep::Spoke& spoke) {
+void write(rapidjson::PrettyWriter<rapidjson::FileWriteStream>& writer, const srep::Spoke& spoke, int coordinateSystem) {
   writer.StartObject();
   writer.Key(keys::SkeletalPoint);
-  write(writer, spoke.GetSkeletalPoint());
+  write(writer, spoke.GetSkeletalPoint(), coordinateSystem);
   writer.Key(keys::Direction);
-  write(writer, spoke.GetDirection());
+  write(writer, spoke.GetDirection(), coordinateSystem);
   writer.EndObject();
 }
 
@@ -126,7 +185,7 @@ srep::Spoke readSpoke(rapidjson::Value& json) {
 }
 
 // raw write, no concept of what the rows and cols mean
-void write(rapidjson::PrettyWriter<rapidjson::FileWriteStream>& writer, const std::vector<std::vector<srep::SkeletalPoint>>& grid) {
+void write(rapidjson::PrettyWriter<rapidjson::FileWriteStream>& writer, const std::vector<std::vector<srep::SkeletalPoint>>& grid, int coordinateSystem) {
   writer.StartArray();
   for (size_t i  = 0; i < grid.size(); ++i) {
     writer.StartArray();
@@ -135,12 +194,12 @@ void write(rapidjson::PrettyWriter<rapidjson::FileWriteStream>& writer, const st
 
       writer.StartObject();
       writer.Key(keys::UpSpoke);
-      write(writer, skeletalPoint.GetUpSpoke());
+      write(writer, skeletalPoint.GetUpSpoke(), coordinateSystem);
       writer.Key(keys::DownSpoke);
-      write(writer, skeletalPoint.GetDownSpoke());
+      write(writer, skeletalPoint.GetDownSpoke(), coordinateSystem);
       if (skeletalPoint.IsCrest()) {
         writer.Key(keys::CrestSpoke);
-        write(writer, skeletalPoint.GetCrestSpoke());
+        write(writer, skeletalPoint.GetCrestSpoke(), coordinateSystem);
       }
       writer.EndObject();
     }
@@ -181,7 +240,7 @@ std::vector<std::vector<srep::SkeletalPoint>> read2DSkeletalPointVec(rapidjson::
   return grid;
 }
 
-void write(rapidjson::PrettyWriter<rapidjson::FileWriteStream>& writer, vtkMRMLRectangularGridSRepNode& mrmlSRep)
+void write(rapidjson::PrettyWriter<rapidjson::FileWriteStream>& writer, vtkMRMLRectangularGridSRepNode& mrmlSRep, int coordinateSystem)
 {
   const srep::RectangularGridSRep* srep = mrmlSRep.GetRectangularGridSRep();
   //writing out rows and cols more for people who look at the JSON
@@ -196,7 +255,7 @@ void write(rapidjson::PrettyWriter<rapidjson::FileWriteStream>& writer, vtkMRMLR
     writer.Key(keys::Cols); writer.Uint(cols);
 
     writer.Key(keys::Skeleton);
-    write(writer, grid);
+    write(writer, grid, coordinateSystem);
   }
   writer.EndObject();
 }
@@ -213,7 +272,7 @@ void read(rapidjson::Value& json, vtkMRMLRectangularGridSRepNode* rectangularGri
   rectangularGridSRep->SetRectangularGridSRep(std::unique_ptr<srep::RectangularGridSRep>(new srep::RectangularGridSRep(std::move(grid))));
 }
 
-void write(rapidjson::PrettyWriter<rapidjson::FileWriteStream>& writer, vtkMRMLEllipticalSRepNode& mrmlSRep) {
+void write(rapidjson::PrettyWriter<rapidjson::FileWriteStream>& writer, vtkMRMLEllipticalSRepNode& mrmlSRep, int coordinateSystem) {
   const auto srep = mrmlSRep.GetEllipticalSRep();
   //writing out numFoldPoints and numSteps more for people who look at the JSON
   const auto numFoldPoints = srep ? srep->GetSkeleton().size() : 0;
@@ -226,7 +285,7 @@ void write(rapidjson::PrettyWriter<rapidjson::FileWriteStream>& writer, vtkMRMLE
     writer.Key(keys::CrestPoints); writer.Uint(numFoldPoints);
     writer.Key(keys::Steps); writer.Uint(numSteps);
     writer.Key(keys::Skeleton);
-    write(writer, grid);
+    write(writer, grid, coordinateSystem);
   }
   writer.EndObject();
 }
@@ -299,12 +358,35 @@ vtkMRMLNodeNewMacro(vtkMRMLSRepStorageNode);
 
 //----------------------------------------------------------------------------
 vtkMRMLSRepStorageNode::vtkMRMLSRepStorageNode()
+  : vtkMRMLStorageNode()
+  , CoordinateSystemWrite(vtkMRMLStorageNode::CoordinateSystemLPS)
 {
   this->DefaultWriteFileExtension = "srep.json";
 }
 
 //----------------------------------------------------------------------------
 vtkMRMLSRepStorageNode::~vtkMRMLSRepStorageNode() = default;
+
+//----------------------------------------------------------------------------
+void vtkMRMLSRepStorageNode::CoordinateSystemWriteRASOn() {
+  this->SetCoordinateSystemWrite(vtkMRMLStorageNode::CoordinateSystemRAS);
+}
+
+//----------------------------------------------------------------------------
+void vtkMRMLSRepStorageNode::CoordinateSystemWriteLPSOn() {
+  this->SetCoordinateSystemWrite(vtkMRMLStorageNode::CoordinateSystemLPS);
+}
+
+//----------------------------------------------------------------------------
+void vtkMRMLSRepStorageNode::SetCoordinateSystemWrite(vtkMRMLSRepStorageNode::SRepCoordinateSystemType system) {
+  this->CoordinateSystemWrite = system;
+  this->Modified();
+}
+
+//----------------------------------------------------------------------------
+vtkMRMLSRepStorageNode::SRepCoordinateSystemType vtkMRMLSRepStorageNode::GetCoordinateSystemWrite() const {
+  return this->CoordinateSystemWrite;
+}
 
 //----------------------------------------------------------------------------
 bool vtkMRMLSRepStorageNode::CanReadInReferenceNode(vtkMRMLNode *refNode)
@@ -430,9 +512,9 @@ int vtkMRMLSRepStorageNode::WriteDataInternal(vtkMRMLNode *refNode)
 
   // cast the input node
   if (auto rectangularGridNode = vtkMRMLRectangularGridSRepNode::SafeDownCast(refNode)) {
-    write(writer, *rectangularGridNode);
+    write(writer, *rectangularGridNode, this->CoordinateSystemWrite);
   } else if (auto ellipticalNode = vtkMRMLEllipticalSRepNode::SafeDownCast(refNode)) {
-    write(writer, *ellipticalNode);
+    write(writer, *ellipticalNode, this->CoordinateSystemWrite);
   } else {
     vtkErrorMacro("vtkMRMLSRepJsonStorageNode::WriteDataInternal: Writing srep node file failed: unable to cast input node "
       << refNode->GetID() << " to a known srep node.");
