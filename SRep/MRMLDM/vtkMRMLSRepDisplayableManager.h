@@ -28,6 +28,9 @@ protected:
 
   void BatchSafeRequestRender();
   void UpdateFromMRML() override;
+  void UpdateFromMRMLScene() override;
+  void OnMRMLSceneEndClose() override;
+  void OnMRMLSceneEndImport() override;
 
 private:
   using SRepNodesSet = std::set<vtkSmartPointer<vtkMRMLSRepNode>>;

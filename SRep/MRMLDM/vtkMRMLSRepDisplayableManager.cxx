@@ -61,6 +61,25 @@ void vtkMRMLSRepDisplayableManager::BatchSafeRequestRender() {
     this->Superclass::RequestRender();
   }
 }
+
+void vtkMRMLSRepDisplayableManager::UpdateFromMRMLScene() {
+  if (this->GetMRMLDisplayableNode()) {
+     this->UpdateFromMRML();
+  }
+}
+void vtkMRMLSRepDisplayableManager::OnMRMLSceneEndClose() {
+  for (auto it = SRepNodes.begin(); it != SRepNodes.end();) {
+    it = this->RemoveSRepNode(it);
+  }
+  this->SetUpdateFromMRMLRequested(true);
+  this->RequestRender();
+}
+void vtkMRMLSRepDisplayableManager::OnMRMLSceneEndImport() {
+  this->SetUpdateFromMRMLRequested(true);
+  this->UpdateFromMRMLScene();
+  this->RequestRender();
+}
+
 void vtkMRMLSRepDisplayableManager::UpdateFromMRML() {
   // this gets called from RequestRender, so make sure to jump out quickly if possible
   if (!this->GetMRMLScene()) {
