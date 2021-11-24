@@ -43,6 +43,10 @@ namespace keys {
   const char * const Display = "Display";
   const char * const Visibility = "Visibility";
   const char * const Opacity = "Opacity";
+  const char * const Colors = "Colors";
+  const char * const SkeletalSheet = "SkeletalSheet";
+  const char * const CrestCurve = "CrestCurve";
+  const char * const SkeletonToCrestConnection = "SkeletonToCrestConnection";
 
   const char * const CoordinateSystem = "CoordinateSystem";
 }
@@ -109,6 +113,13 @@ bool readBool(rapidjson::Value& json) {
     throw std::invalid_argument("Expected a JSON bool.");
   }
   return json.GetBool();
+}
+
+int readInt(rapidjson::Value& json) {
+  if (!json.IsInt()) {
+    throw std::invalid_argument("Expected a JSON int.");
+  }
+  return json.GetInt();
 }
 
 template<size_t N>
@@ -304,6 +315,68 @@ void read(rapidjson::Value& json, vtkMRMLEllipticalSRepNode* ellipticalSRep) {
   ellipticalSRep->SetEllipticalSRep(std::unique_ptr<srep::EllipticalSRep>(new srep::EllipticalSRep(grid)));
 }
 
+void write(rapidjson::PrettyWriter<rapidjson::FileWriteStream>& writer, const vtkColor3ub& color) {
+  writer.SetFormatOptions(rapidjson::kFormatSingleLineArray);
+  writer.StartArray();
+  writer.Int(color[0]);
+  writer.Int(color[1]);
+  writer.Int(color[2]);
+  writer.EndArray();
+  writer.SetFormatOptions(rapidjson::kFormatDefault);
+}
+
+vtkColor3ub readVTKColor3ub(rapidjson::Value& json) {
+  if (!json.IsArray()) {
+    throw std::invalid_argument("Attempting to read an array that is not a json array");
+  }
+  auto jsonArray = json.GetArray();
+
+  if (jsonArray.Size() != 3) {
+    throw std::invalid_argument("Attempting to read a 3D array that doesn't have 3 dimensions");
+  }
+
+  std::array<int, 3> array;
+  std::transform(jsonArray.Begin(), jsonArray.End(), array.begin(), readInt);
+  return vtkColor3ub(array[0], array[1], array[2]);
+}
+
+void writeDisplayNodeColors(rapidjson::PrettyWriter<rapidjson::FileWriteStream>& writer, vtkMRMLSRepDisplayNode& displayNode) {
+  writer.StartObject();
+  writer.Key(keys::UpSpoke);
+  write(writer, displayNode.GetUpSpokeColor());
+  writer.Key(keys::DownSpoke);
+  write(writer, displayNode.GetDownSpokeColor());
+  writer.Key(keys::CrestSpoke);
+  write(writer, displayNode.GetCrestSpokeColor());
+  writer.Key(keys::SkeletalSheet);
+  write(writer, displayNode.GetSkeletalSheetColor());
+  writer.Key(keys::CrestCurve);
+  write(writer, displayNode.GetCrestCurveColor());
+  writer.Key(keys::SkeletonToCrestConnection);
+  write(writer, displayNode.GetSkeletonToCrestConnectionColor());
+  writer.EndObject();
+}
+
+void readDisplayNodeColors(rapidjson::Value& json, vtkMRMLSRepDisplayNode& displayNode) {
+  if (!json.IsObject()) {
+    throw std::invalid_argument("Attempting to read vtkMRMLSRepDisplayNode colors but json is not an object");
+  }
+  using SetColorFunc = void (vtkMRMLSRepDisplayNode::*)(const vtkColor3ub&);
+  const auto readAndSetIfExists = [&displayNode, &json](const char* key, SetColorFunc setColor) {
+    auto iter = json.FindMember(key);
+    if (iter != json.MemberEnd()) {
+      (displayNode.*setColor)(readVTKColor3ub(iter->value));
+    }
+  };
+
+  readAndSetIfExists(keys::UpSpoke, &vtkMRMLSRepDisplayNode::SetUpSpokeColor);
+  readAndSetIfExists(keys::DownSpoke, &vtkMRMLSRepDisplayNode::SetDownSpokeColor);
+  readAndSetIfExists(keys::CrestSpoke, &vtkMRMLSRepDisplayNode::SetCrestSpokeColor);
+  readAndSetIfExists(keys::CrestCurve, &vtkMRMLSRepDisplayNode::SetCrestCurveColor);
+  readAndSetIfExists(keys::SkeletalSheet, &vtkMRMLSRepDisplayNode::SetSkeletalSheetColor);
+  readAndSetIfExists(keys::SkeletonToCrestConnection, &vtkMRMLSRepDisplayNode::SetSkeletonToCrestConnectionColor);
+}
+
 void write(rapidjson::PrettyWriter<rapidjson::FileWriteStream>& writer, vtkMRMLSRepDisplayNode& displayNode) {
   writer.Key(keys::Display);
   writer.StartObject();
@@ -311,6 +384,8 @@ void write(rapidjson::PrettyWriter<rapidjson::FileWriteStream>& writer, vtkMRMLS
   writer.Bool(static_cast<bool>(displayNode.GetVisibility()));
   writer.Key(keys::Opacity);
   writer.Double(displayNode.GetOpacity());
+  writer.Key(keys::Colors);
+  writeDisplayNodeColors(writer, displayNode);
   writer.EndObject();
 }
 
@@ -327,6 +402,10 @@ void read(rapidjson::Value& json, vtkMRMLSRepDisplayNode& displayNode) {
   auto opacityIter = json.FindMember(keys::Opacity);
   if (opacityIter != json.MemberEnd()) {
     displayNode.SetOpacity(readDouble(opacityIter->value));
+  }
+  auto colorIter = json.FindMember(keys::Colors);
+  if (colorIter != json.MemberEnd()) {
+    readDisplayNodeColors(colorIter->value, displayNode);
   }
 }
 
