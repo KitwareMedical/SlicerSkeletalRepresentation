@@ -1,4 +1,5 @@
 #include <srep/EllipticalSRep.h>
+#include <algorithm>
 #include <memory>
 
 namespace srep {
@@ -120,26 +121,22 @@ void EllipticalSRep::CreateMeshRepresentation() {
     }
   };
 
+  const auto getNeighbors = [this, toUpDownMeshIndex](size_t line, size_t step) {
+    const auto lineStepNeighbors = GetNeighbors(this->Skeleton, line, step);
+    std::vector<IndexType> neighbors;
+    std::transform(lineStepNeighbors.begin(), lineStepNeighbors.end(), std::back_inserter(neighbors),
+      [toUpDownMeshIndex](const LineStep& ls) { return toUpDownMeshIndex(ls.line, ls.step); });
+    return neighbors;
+  };
+
   // do the spine first - need to ignore duplicate points
   // all duplicate points are after the second pole
   for (size_t line = 0; line < numSpinePointsWithoutDuplicates; ++line) {
-    std::vector<IndexType> neighbors;
-    //neighbors along the spine
-    if (line > 0) neighbors.push_back(toUpDownMeshIndex(line-1, 0));
-    if (line < numSpinePointsWithoutDuplicates-1) neighbors.push_back(toUpDownMeshIndex(line+1, 0));
-    //neighbor down my line, if statement should always be true
-    if (numStepsPlusCrest > 1) neighbors.push_back(toUpDownMeshIndex(line, 1));
-    //neighbor down my opposite line, if it exists
-    if (0 < line && line < numSpinePointsWithoutDuplicates-1 && numStepsPlusCrest > 1) {
-      //opposite line is numLines - 1 - (line - 1) which equates to numLines - line
-      // numLines - 1 --> to go from size to last index
-      // (line - 1) --> to account for index 0 being the pole
-      neighbors.push_back(toUpDownMeshIndex(numLines-line, 1));
-    }
+    auto neighbors = getNeighbors(line, 0);
 
     const auto& skeletalPoint = this->Skeleton[line][0];
     this->SkeletonAsMesh.UpSpokes.AddSpoke(skeletalPoint.GetUpSpoke(), neighbors);
-    this->SkeletonAsMesh.DownSpokes.AddSpoke(skeletalPoint.GetDownSpoke(), neighbors);
+    this->SkeletonAsMesh.DownSpokes.AddSpoke(skeletalPoint.GetDownSpoke(), std::move(neighbors));
     const auto index = toUpDownMeshIndex(line, 0);
     this->SkeletonAsMesh.Spine.push_back(std::make_pair(index, index));
   }
@@ -147,26 +144,19 @@ void EllipticalSRep::CreateMeshRepresentation() {
   for (size_t line = 0; line < this->Skeleton.size(); ++line) {
     // no duplicate points because we aren't on the spine
     for (size_t step = 1; step < this->Skeleton[line].size(); ++step) {
-      std::vector<IndexType> neighbors;
-      //neighbors from neighboring lines
-      neighbors.push_back(toUpDownMeshIndex((numLines + line + 1) % numLines, step));
-      neighbors.push_back(toUpDownMeshIndex((numLines + line - 1) % numLines, step));
-      //outer neighbor
-      if (step < this->Skeleton[line].size() - 1) {
-        neighbors.push_back(toUpDownMeshIndex(line, step + 1));
-      }
-      //inner neighbor
-      neighbors.push_back(toUpDownMeshIndex(line, step - 1));
+      auto neighbors = getNeighbors(line, step);
 
       const auto& skeletalPoint = this->Skeleton[line][step];
       this->SkeletonAsMesh.UpSpokes.AddSpoke(skeletalPoint.GetUpSpoke(), neighbors);
-      this->SkeletonAsMesh.DownSpokes.AddSpoke(skeletalPoint.GetDownSpoke(), neighbors);
+      this->SkeletonAsMesh.DownSpokes.AddSpoke(skeletalPoint.GetDownSpoke(), std::move(neighbors));
     }
   }
 
   // crest spokes and connections
   for (size_t line = 0; line < this->Skeleton.size(); ++line) {
     const auto& skeletalPoint = this->Skeleton[line][crestStepIndex];
+
+    //manually get neighbors here because we only want neighboring crests
     std::vector<IndexType> neighbors;
     neighbors.push_back((numLines + line - 1) % numLines);
     neighbors.push_back((numLines + line + 1) % numLines);
@@ -176,5 +166,135 @@ void EllipticalSRep::CreateMeshRepresentation() {
     this->SkeletonAsMesh.CrestSkeletalConnections.push_back(std::make_pair(index, index));
   }
 }
+
+namespace {
+  void verifyInGrid(const EllipticalSRep::UnrolledEllipticalGrid& grid, size_t line, size_t step) {
+    if (line >= grid.size()) {
+      throw std::invalid_argument("Line not in UnrolledEllipticalGrid");
+    }
+    if (step >= grid[line].size()) {
+      throw std::invalid_argument("Step not in UnrolledEllipticalGrid");
+    }
+  }
+} //namespace {}
+
+std::pair<LineStep, bool> GetLeftNeighbor(const EllipticalSRep::UnrolledEllipticalGrid& grid, size_t line, size_t step) {
+  verifyInGrid(grid, line, step);
+  if (line == 0) {
+    // left pole, left-right are steps
+    if (step == grid[line].size() - 1) {
+      return std::make_pair(LineStep(), false);
+    }
+    return std::make_pair(LineStep(line, step+1), true);
+  } else if (line == grid.size() / 2) {
+    //right pole, left-right are steps
+    if (step == 0) {
+      return std::make_pair(LineStep(), false);
+    }
+    return std::make_pair(LineStep(line, step-1), true);
+  } else {
+    if (line < grid.size() / 2) {
+      //top half of the ellipse
+      return std::make_pair(LineStep(line - 1, step), true);
+    } else {
+      //bottom half of the ellipse
+      return std::make_pair(LineStep((line + 1) % grid.size(), step), true);
+    }
+  }
+}
+std::pair<LineStep, bool> GetRightNeighbor(const EllipticalSRep::UnrolledEllipticalGrid& grid, size_t line, size_t step) {
+  verifyInGrid(grid, line, step);
+  if (line == 0) {
+    // left pole, left-right are steps
+    if (step == 0) {
+      return std::make_pair(LineStep(), false);
+    }
+    return std::make_pair(LineStep(line, step-1), true);
+  } else if (line == grid.size() / 2) {
+    //right pole, left-right are steps
+    if (step == grid[line].size() - 1) {
+      return std::make_pair(LineStep(), false);
+    }
+    return std::make_pair(LineStep(line, step+1), true);
+  } else {
+    if (line < grid.size() / 2) {
+      //top half of the ellipse
+      return std::make_pair(LineStep(line + 1, step), true);
+    } else {
+      //bottom half of the ellipse
+      return std::make_pair(LineStep((grid.size() + line - 1) % grid.size(), step), true);
+    }
+  }
+}
+std::pair<LineStep, bool> GetTopNeighbor(const EllipticalSRep::UnrolledEllipticalGrid& grid, size_t line, size_t step) {
+  verifyInGrid(grid, line, step);
+  if ((line == 0 || line == grid.size() / 2) && step == 0) {
+    // poles have a spine point with no top or bottom neighbors
+    return std::make_pair(LineStep(), false);
+  }
+
+  if (line < grid.size() / 2) {
+    //top half of the ellipse
+    if (step == grid[line].size() - 1) {
+      //top edge
+      return std::make_pair(LineStep(), false);
+    }
+    return std::make_pair(LineStep(line, step+1), true);
+  } else {
+    //bottom half of the ellipse
+    if (step == 0) {
+      //we are crossing the spine
+      return std::make_pair(LineStep(grid.size() - line, 1), true);
+    }
+    return std::make_pair(LineStep(line, step-1), true);
+  }
+}
+std::pair<LineStep, bool> GetBottomNeighbor(const EllipticalSRep::UnrolledEllipticalGrid& grid, size_t line, size_t step) {
+  verifyInGrid(grid, line, step);
+  if ((line == 0 || line == grid.size() / 2) && step == 0) {
+    // poles have a spine point with no top or bottom neighbors
+    return std::make_pair(LineStep(), false);
+  }
+  if (line < grid.size() / 2) {
+    //top half of the ellipse
+    if (step == 0) {
+      //we are crossing the spine
+      return std::make_pair(LineStep(grid.size() - line, 1), true);
+    }
+    return std::make_pair(LineStep(line, step-1), true);
+  } else {
+    //bottom half of the ellipse
+    if (step == grid[line].size() - 1) {
+      //bottom edge
+      return std::make_pair(LineStep(), false);
+    }
+    return std::make_pair(LineStep(line, step+1), true);
+  }
+}
+
+std::vector<LineStep> GetNeighbors(const EllipticalSRep::UnrolledEllipticalGrid& grid, size_t line, size_t step) {
+  std::vector<LineStep> neighbors;
+  const std::array<GetNeighborFunc, 4> funcs {
+    GetTopNeighbor, GetBottomNeighbor, GetLeftNeighbor, GetRightNeighbor
+  };
+
+  for (auto f : funcs) {
+    const auto neighbor = f(grid, line, step);
+    if (neighbor.second) {
+      neighbors.push_back(neighbor.first);
+    }
+  }
+  return neighbors;
+}
+
+LineStep::LineStep()
+  : line(0)
+  , step(0)
+{}
+
+LineStep::LineStep(size_t line_, size_t step_)
+  : line(line_)
+  , step(step_)
+{}
 
 } // namespace srep
