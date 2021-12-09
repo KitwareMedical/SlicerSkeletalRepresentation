@@ -150,20 +150,6 @@
           </property>
          </widget>
         </item>
-        <item row="2" column="1">
-         <widget class="ctkColorPickerButton" name="upSpokeColorButton">
-          <property name="text">
-           <string/>
-          </property>
-          <property name="color">
-           <color>
-            <red>255</red>
-            <green>99</green>
-            <blue>71</blue>
-           </color>
-          </property>
-         </widget>
-        </item>
         <item row="3" column="0">
          <widget class="QLabel" name="label_9">
           <property name="text">
@@ -185,59 +171,12 @@
           </property>
          </widget>
         </item>
-        <item row="3" column="1">
-         <widget class="ctkColorPickerButton" name="downSpokeColorButton">
-          <property name="color">
-           <color>
-            <red>189</red>
-            <green>252</green>
-            <blue>201</blue>
-           </color>
-          </property>
-         </widget>
-        </item>
-        <item row="4" column="1">
-         <widget class="ctkColorPickerButton" name="crestSpokeColorButton">
-          <property name="color">
-           <color>
-            <red>255</red>
-            <green>215</green>
-            <blue>0</blue>
-           </color>
-          </property>
-         </widget>
-        </item>
-        <item row="6" column="1">
-         <widget class="ctkColorPickerButton" name="skeletalSheetColorButton">
-          <property name="color">
-           <color>
-            <red>255</red>
-            <green>248</green>
-            <blue>220</blue>
-           </color>
-          </property>
-         </widget>
-        </item>
         <item row="5" column="0">
          <widget class="QLabel" name="label_12">
           <property name="text">
            <string>Crest Curve</string>
           </property>
          </widget>
-        </item>
-        <item row="5" column="1">
-         <widget class="ctkColorPickerButton" name="crestCurveColorButton">
-          <property name="color">
-           <color>
-            <red>255</red>
-            <green>215</green>
-            <blue>0</blue>
-           </color>
-          </property>
-         </widget>
-        </item>
-        <item row="7" column="1">
-         <widget class="ctkColorPickerButton" name="skeletonToCrestConnectionColorButton"/>
         </item>
         <item row="7" column="0">
          <widget class="QLabel" name="label_13">
@@ -278,6 +217,194 @@
             </property>
             <property name="maximum">
              <double>1.000000000000000</double>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item row="2" column="1">
+         <layout class="QHBoxLayout" name="horizontalLayout_5">
+          <item>
+           <widget class="QCheckBox" name="upSpokeVisibleCheckbox">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="ctkColorPickerButton" name="upSpokeColorButton">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+            <property name="color">
+             <color>
+              <red>255</red>
+              <green>99</green>
+              <blue>71</blue>
+             </color>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item row="3" column="1">
+         <layout class="QHBoxLayout" name="horizontalLayout_6">
+          <item>
+           <widget class="QCheckBox" name="downSpokeVisibleCheckbox">
+            <property name="text">
+             <string/>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="ctkColorPickerButton" name="downSpokeColorButton">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="color">
+             <color>
+              <red>189</red>
+              <green>252</green>
+              <blue>201</blue>
+             </color>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item row="4" column="1">
+         <layout class="QHBoxLayout" name="horizontalLayout_7">
+          <item>
+           <widget class="QCheckBox" name="crestSpokeVisibleCheckbox">
+            <property name="text">
+             <string/>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="ctkColorPickerButton" name="crestSpokeColorButton">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="color">
+             <color>
+              <red>255</red>
+              <green>215</green>
+              <blue>0</blue>
+             </color>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item row="5" column="1">
+         <layout class="QHBoxLayout" name="horizontalLayout_8">
+          <item>
+           <widget class="QCheckBox" name="crestCurveVisibleCheckbox">
+            <property name="text">
+             <string/>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="ctkColorPickerButton" name="crestCurveColorButton">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="color">
+             <color>
+              <red>255</red>
+              <green>215</green>
+              <blue>0</blue>
+             </color>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item row="6" column="1">
+         <layout class="QHBoxLayout" name="horizontalLayout_9">
+          <item>
+           <widget class="QCheckBox" name="skeletalSheetVisibleCheckbox">
+            <property name="text">
+             <string/>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="ctkColorPickerButton" name="skeletalSheetColorButton">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="color">
+             <color>
+              <red>255</red>
+              <green>248</green>
+              <blue>220</blue>
+             </color>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item row="7" column="1">
+         <layout class="QHBoxLayout" name="horizontalLayout_10">
+          <item>
+           <widget class="QCheckBox" name="skeletonToCrestConnectionVisibleCheckbox">
+            <property name="text">
+             <string/>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="ctkColorPickerButton" name="skeletonToCrestConnectionColorButton">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
             </property>
            </widget>
           </item>

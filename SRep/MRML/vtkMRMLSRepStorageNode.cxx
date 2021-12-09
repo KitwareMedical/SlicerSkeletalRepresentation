@@ -42,6 +42,7 @@ namespace keys {
 
   const char * const Display = "Display";
   const char * const Visibility = "Visibility";
+  const char * const PiecewiseVisibility = "PiecewiseVisibility";
   const char * const Opacity = "Opacity";
   const char * const Colors = "Colors";
   const char * const SkeletalSheet = "SkeletalSheet";
@@ -380,6 +381,43 @@ void readDisplayNodeColors(rapidjson::Value& json, vtkMRMLSRepDisplayNode& displ
   readAndSetIfExists(keys::SkeletonToCrestConnection, &vtkMRMLSRepDisplayNode::SetSkeletonToCrestConnectionColor);
 }
 
+void writeDisplayNodePiecewiseVisibilities(rapidjson::PrettyWriter<rapidjson::FileWriteStream>& writer, vtkMRMLSRepDisplayNode& displayNode) {
+  writer.StartObject();
+  writer.Key(keys::UpSpoke);
+  writer.Bool(displayNode.GetUpSpokeVisibility());
+  writer.Key(keys::DownSpoke);
+  writer.Bool(displayNode.GetDownSpokeVisibility());
+  writer.Key(keys::CrestSpoke);
+  writer.Bool(displayNode.GetCrestSpokeVisibility());
+  writer.Key(keys::SkeletalSheet);
+  writer.Bool(displayNode.GetSkeletalSheetVisibility());
+  writer.Key(keys::CrestCurve);
+  writer.Bool(displayNode.GetCrestCurveVisibility());
+  writer.Key(keys::SkeletonToCrestConnection);
+  writer.Bool(displayNode.GetSkeletonToCrestConnectionVisibility());
+  writer.EndObject();
+}
+
+void readDisplayNodePiecewiseVisibilities(rapidjson::Value& json, vtkMRMLSRepDisplayNode& displayNode) {
+  if (!json.IsObject()) {
+    throw std::invalid_argument("Attempting to read vtkMRMLSRepDisplayNode colors but json is not an object");
+  }
+  using SetVisibilityFunc = void (vtkMRMLSRepDisplayNode::*)(bool);
+  const auto readAndSetIfExists = [&displayNode, &json](const char* key, SetVisibilityFunc setVisibility) {
+    auto iter = json.FindMember(key);
+    if (iter != json.MemberEnd()) {
+      (displayNode.*setVisibility)(readBool(iter->value));
+    }
+  };
+
+  readAndSetIfExists(keys::UpSpoke, &vtkMRMLSRepDisplayNode::SetUpSpokeVisibility);
+  readAndSetIfExists(keys::DownSpoke, &vtkMRMLSRepDisplayNode::SetDownSpokeVisibility);
+  readAndSetIfExists(keys::CrestSpoke, &vtkMRMLSRepDisplayNode::SetCrestSpokeVisibility);
+  readAndSetIfExists(keys::CrestCurve, &vtkMRMLSRepDisplayNode::SetCrestCurveVisibility);
+  readAndSetIfExists(keys::SkeletalSheet, &vtkMRMLSRepDisplayNode::SetSkeletalSheetVisibility);
+  readAndSetIfExists(keys::SkeletonToCrestConnection, &vtkMRMLSRepDisplayNode::SetSkeletonToCrestConnectionVisibility);
+}
+
 void write(rapidjson::PrettyWriter<rapidjson::FileWriteStream>& writer, vtkMRMLSRepDisplayNode& displayNode) {
   writer.Key(keys::Display);
   writer.StartObject();
@@ -395,6 +433,8 @@ void write(rapidjson::PrettyWriter<rapidjson::FileWriteStream>& writer, vtkMRMLS
   writer.Bool(displayNode.GetUseAbsoluteThickness());
   writer.Key(keys::Colors);
   writeDisplayNodeColors(writer, displayNode);
+  writer.Key(keys::PiecewiseVisibility);
+  writeDisplayNodePiecewiseVisibilities(writer, displayNode);
   writer.EndObject();
 }
 
@@ -415,6 +455,10 @@ void read(rapidjson::Value& json, vtkMRMLSRepDisplayNode& displayNode) {
   auto colorIter = json.FindMember(keys::Colors);
   if (colorIter != json.MemberEnd()) {
     readDisplayNodeColors(colorIter->value, displayNode);
+  }
+  auto piecewiseVisibilitiesIter = json.FindMember(keys::PiecewiseVisibility);
+  if (piecewiseVisibilitiesIter != json.MemberEnd()) {
+    readDisplayNodePiecewiseVisibilities(piecewiseVisibilitiesIter->value, displayNode);
   }
   auto relativeThicknessIter = json.FindMember(keys::RelativeThickness);
   if (relativeThicknessIter != json.MemberEnd()) {

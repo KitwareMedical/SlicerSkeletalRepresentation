@@ -20,6 +20,8 @@
 
 #include <vtkMRMLFolderDisplayNode.h>
 
+#include <functional>
+
 vtkStandardNewMacro(vtkSlicerSRepWidgetRepresentation);
 
 vtkSlicerSRepWidgetRepresentation::PointsRep::PointsRep()
@@ -181,36 +183,46 @@ void vtkSlicerSRepWidgetRepresentation::ConvertSRepToVisualRepresentation(const 
 
   //-------------------------------
   const auto addSpokeMesh = [this, insertNextPoint, insertNextLine]
-    (const srep::SpokeMesh& mesh, const vtkColor3ub& spokeColor, const vtkColor3ub& connectionColor) -> std::vector<vtkSpokeIds>{
+    (const srep::SpokeMesh& mesh, const vtkColor3ub& spokeColor, const vtkColor3ub& connectionColor, bool addSpokes, bool addConnections, std::function<bool(long i)> forceAddSkeletalPoint) -> std::vector<vtkSpokeIds>{
     std::vector<vtkSpokeIds> spokesToVTKPointIds;
 
     // add all the points and the spoke lines
     for (long i = 0; i < mesh.GetNumberOfSpokes(); ++i) {
       vtkSpokeIds ids;
-      ids.skeletonId = insertNextPoint(mesh[i].GetSkeletalPoint(), spokeColor);
-      ids.boundaryId = insertNextPoint(mesh[i].GetBoundaryPoint(), spokeColor);
-      insertNextLine(ids.skeletonId, ids.boundaryId, spokeColor);
+      if (addSpokes || addConnections || forceAddSkeletalPoint(i)) {
+        ids.skeletonId = insertNextPoint(mesh[i].GetSkeletalPoint(), spokeColor);
+      } else {
+        ids.skeletonId = -1;
+      }
+      if (addSpokes) {
+        ids.boundaryId = insertNextPoint(mesh[i].GetBoundaryPoint(), spokeColor);
+        insertNextLine(ids.skeletonId, ids.boundaryId, spokeColor);
+      } else {
+        ids.boundaryId = -1;
+      }
       spokesToVTKPointIds.push_back(ids);
     }
 
     // add the connection lines. It is essentially a bidirectional graph, so only add one line between two points, even if
     // it shows up twice "once in each direction"
-    std::set<std::pair<vtkIdType, vtkIdType>> connections;
-    for (long i = 0; i < mesh.GetNumberOfSpokes(); ++i) {
-      const auto neighbors = mesh.GetNeighbors(i);
-      for (size_t neighbor : neighbors) {
-        vtkIdType point1 = spokesToVTKPointIds[i].skeletonId;
-        vtkIdType point2 = spokesToVTKPointIds[neighbor].skeletonId;
-        //sort the points
-        if (point1 > point2) {
-          std::swap(point1, point2);
+    if (addConnections) {
+      std::set<std::pair<vtkIdType, vtkIdType>> connections;
+      for (long i = 0; i < mesh.GetNumberOfSpokes(); ++i) {
+        const auto neighbors = mesh.GetNeighbors(i);
+        for (size_t neighbor : neighbors) {
+          vtkIdType point1 = spokesToVTKPointIds[i].skeletonId;
+          vtkIdType point2 = spokesToVTKPointIds[neighbor].skeletonId;
+          //sort the points
+          if (point1 > point2) {
+            std::swap(point1, point2);
+          }
+          connections.insert(std::make_pair(point1, point2));
         }
-        connections.insert(std::make_pair(point1, point2));
       }
-    }
 
-    for (const auto connection : connections) {
-      insertNextLine(connection.first, connection.second, connectionColor);
+      for (const auto connection : connections) {
+        insertNextLine(connection.first, connection.second, connectionColor);
+      }
     }
 
     return spokesToVTKPointIds;
@@ -233,21 +245,38 @@ void vtkSlicerSRepWidgetRepresentation::ConvertSRepToVisualRepresentation(const 
   this->Skeleton.Lines->Reset();
   this->Skeleton.LineColors->Reset();
 
-  const auto upSpokeToPointIds = addSpokeMesh(srep.GetUpSpokes(), upSpokeColor, upSkeletonColor);
-  const auto downSpokeToPointIds = addSpokeMesh(srep.GetDownSpokes(), downSpokeColor, downSkeletonColor);
-  const auto crestSpokeToPointIds = addSpokeMesh(srep.GetCrestSpokes(), crestSpokeColor, crestCurveColor);
+  using UpDownIndices = srep::MeshSRepInterface::UpDownIndices;
+
+  const auto crestSkeletonConnections = srep.GetCrestSkeletalConnections();
+  const auto upSpokeToPointIds = addSpokeMesh(srep.GetUpSpokes(), upSpokeColor, upSkeletonColor, displayNode.GetUpSpokeVisibility(), displayNode.GetSkeletalSheetVisibility(),
+    [&](long i) {
+      return displayNode.GetSkeletonToCrestConnectionVisibility() && crestSkeletonConnections.end() != std::find_if(crestSkeletonConnections.begin(), crestSkeletonConnections.end(),
+        [&](const UpDownIndices& ud) {
+          return i == ud.first;
+        });
+      });
+  const auto downSpokeToPointIds = addSpokeMesh(srep.GetDownSpokes(), downSpokeColor, downSkeletonColor, displayNode.GetDownSpokeVisibility(), displayNode.GetSkeletalSheetVisibility(),
+    [&](long i) {
+      return displayNode.GetSkeletonToCrestConnectionVisibility() && crestSkeletonConnections.end() != std::find_if(crestSkeletonConnections.begin(), crestSkeletonConnections.end(),
+        [&](const UpDownIndices& ud) {
+          return i == ud.second; 
+        });
+      });
+  const auto crestSpokeToPointIds = addSpokeMesh(srep.GetCrestSpokes(), crestSpokeColor, crestCurveColor, displayNode.GetCrestSpokeVisibility(), displayNode.GetCrestCurveVisibility(),
+    [&](long){ return displayNode.GetSkeletonToCrestConnectionVisibility(); });
 
   // connect the crest to skeleton
-  const auto crestSkeletonConnections = srep.GetCrestSkeletalConnections();
-  for (size_t crestIndex = 0; crestIndex < crestSkeletonConnections.size(); ++crestIndex) {
-    const auto upDownIndices = crestSkeletonConnections[crestIndex];
+  if (displayNode.GetSkeletonToCrestConnectionVisibility()) {
+    for (size_t crestIndex = 0; crestIndex < crestSkeletonConnections.size(); ++crestIndex) {
+      const auto upDownIndices = crestSkeletonConnections[crestIndex];
 
-    // connect to both up and down skeleton points to account for the up and down spokes
-    // possibly having their skeletal points at different points in space
-    insertNextLine(crestSpokeToPointIds[crestIndex].skeletonId, upSpokeToPointIds[upDownIndices.first].skeletonId,
-      crestToSkeletonConnectionColor);
-    insertNextLine(crestSpokeToPointIds[crestIndex].skeletonId, downSpokeToPointIds[upDownIndices.second].skeletonId,
-      crestToSkeletonConnectionColor);
+      // connect to both up and down skeleton points to account for the up and down spokes
+      // possibly having their skeletal points at different points in space
+      insertNextLine(crestSpokeToPointIds[crestIndex].skeletonId, upSpokeToPointIds[upDownIndices.first].skeletonId,
+        crestToSkeletonConnectionColor);
+      insertNextLine(crestSpokeToPointIds[crestIndex].skeletonId, downSpokeToPointIds[upDownIndices.second].skeletonId,
+        crestToSkeletonConnectionColor);
+    }
   }
 }
 

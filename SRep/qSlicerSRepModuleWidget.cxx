@@ -55,10 +55,12 @@ public:
   vtkWeakPointer<vtkMRMLSRepNode> activeSRepNode;
 private:
   using SetColorFunc = void (vtkMRMLSRepDisplayNode::*)(const vtkColor3ub&);
+  using SetVisibilityFunc = void (vtkMRMLSRepDisplayNode::*)(bool);
 
   qSlicerSRepModuleWidget* const q_ptr;
 
   void onColorChanged(ctkColorPickerButton* button, SetColorFunc setFunc);
+  void onVisibilityChanged(QCheckBox* checkbox, SetVisibilityFunc setFunc);
   void setupThicknessSlider(bool isAbsolute);
 };
 
@@ -122,7 +124,7 @@ void qSlicerSRepModuleWidgetPrivate::setupSRepUi(qSlicerWidget* widget) {
   QObject::connect(this->outputDirectoryBrowseButton, SIGNAL(clicked()), q, SLOT(onExportDirectoryBrowse()));
   QObject::connect(this->exportButton, SIGNAL(clicked()), q, SLOT(onExport()));
 
-  //visibility
+  //overall visibility
   QObject::connect(this->visibilityCheckbox, SIGNAL(clicked()), q, SLOT(onVisibilityChanged()));
 
   //opacity
@@ -143,6 +145,20 @@ void qSlicerSRepModuleWidgetPrivate::setupSRepUi(qSlicerWidget* widget) {
   QObject::connect(this->skeletonToCrestConnectionColorButton, &ctkColorPickerButton::colorChanged,
     [this](){ this->onColorChanged(this->skeletonToCrestConnectionColorButton, &vtkMRMLSRepDisplayNode::SetSkeletonToCrestConnectionColor);});
 
+  //visibilities
+  QObject::connect(this->upSpokeVisibleCheckbox, &QCheckBox::stateChanged,
+    [this](){ this->onVisibilityChanged(this->upSpokeVisibleCheckbox, &vtkMRMLSRepDisplayNode::SetUpSpokeVisibility);});
+  QObject::connect(this->downSpokeVisibleCheckbox, &QCheckBox::stateChanged,
+    [this](){ this->onVisibilityChanged(this->downSpokeVisibleCheckbox, &vtkMRMLSRepDisplayNode::SetDownSpokeVisibility);});
+  QObject::connect(this->crestSpokeVisibleCheckbox, &QCheckBox::stateChanged,
+    [this](){ this->onVisibilityChanged(this->crestSpokeVisibleCheckbox, &vtkMRMLSRepDisplayNode::SetCrestSpokeVisibility);});
+  QObject::connect(this->skeletalSheetVisibleCheckbox, &QCheckBox::stateChanged,
+    [this](){ this->onVisibilityChanged(this->skeletalSheetVisibleCheckbox, &vtkMRMLSRepDisplayNode::SetSkeletalSheetVisibility);});
+  QObject::connect(this->crestCurveVisibleCheckbox, &QCheckBox::stateChanged,
+    [this](){ this->onVisibilityChanged(this->crestCurveVisibleCheckbox, &vtkMRMLSRepDisplayNode::SetCrestCurveVisibility);});
+  QObject::connect(this->skeletonToCrestConnectionVisibleCheckbox, &QCheckBox::stateChanged,
+    [this](){ this->onVisibilityChanged(this->skeletonToCrestConnectionVisibleCheckbox, &vtkMRMLSRepDisplayNode::SetSkeletonToCrestConnectionVisibility);});
+
   QObject::connect(widget, SIGNAL(mrmlSceneChanged(vtkMRMLScene*)),
     this->interpolationOutputNodeCbox, SLOT(setMRMLScene(vtkMRMLScene*)));
   QObject::connect(this->interpolateButton, SIGNAL(clicked()), q, SLOT(onInterpolate()));
@@ -159,6 +175,14 @@ void qSlicerSRepModuleWidgetPrivate::onColorChanged(ctkColorPickerButton* button
   auto displayNode = this->activeSRepNode->GetSRepDisplayNode();
   if (displayNode) {
     (displayNode->*setFunc)(toVTKColor3ub(button->color()));
+  }
+}
+
+//-----------------------------------------------------------------------------
+void qSlicerSRepModuleWidgetPrivate::onVisibilityChanged(QCheckBox* checkbox, SetVisibilityFunc setFunc) {
+  auto displayNode = this->activeSRepNode->GetSRepDisplayNode();
+  if (displayNode) {
+    (displayNode->*setFunc)(checkbox->isChecked());
   }
 }
 
@@ -371,6 +395,12 @@ void qSlicerSRepModuleWidget::updateWidgetFromMRML() {
       d->crestCurveColorButton->setColor(toQColor(displayNode->GetCrestCurveColor()));
       d->skeletalSheetColorButton->setColor(toQColor(displayNode->GetSkeletalSheetColor()));
       d->skeletonToCrestConnectionColorButton->setColor(toQColor(displayNode->GetSkeletonToCrestConnectionColor()));
+      d->upSpokeVisibleCheckbox->setChecked(displayNode->GetUpSpokeVisibility());
+      d->downSpokeVisibleCheckbox->setChecked(displayNode->GetDownSpokeVisibility());
+      d->crestSpokeVisibleCheckbox->setChecked(displayNode->GetCrestSpokeVisibility());
+      d->crestCurveVisibleCheckbox->setChecked(displayNode->GetCrestCurveVisibility());
+      d->skeletalSheetVisibleCheckbox->setChecked(displayNode->GetSkeletalSheetVisibility());
+      d->skeletonToCrestConnectionVisibleCheckbox->setChecked(displayNode->GetSkeletonToCrestConnectionVisibility());
     }
 
     const auto srep = d->activeSRepNode->GetSRep();

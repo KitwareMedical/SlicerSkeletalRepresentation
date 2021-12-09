@@ -44,21 +44,33 @@ public:
   int GetVisibility3D() override;
   void SetVisibility3D(int visible) override;
 
+  void SetUpSpokeVisibility(bool visible);
+  bool GetUpSpokeVisibility() const;
   void SetUpSpokeColor(const vtkColor3ub& color);
   const vtkColor3ub& GetUpSpokeColor() const;
 
+  void SetDownSpokeVisibility(bool visible);
+  bool GetDownSpokeVisibility() const;
   void SetDownSpokeColor(const vtkColor3ub& color);
   const vtkColor3ub& GetDownSpokeColor() const;
 
+  void SetCrestSpokeVisibility(bool visible);
+  bool GetCrestSpokeVisibility() const;
   void SetCrestSpokeColor(const vtkColor3ub& color);
   const vtkColor3ub& GetCrestSpokeColor() const;
 
+  void SetCrestCurveVisibility(bool visible);
+  bool GetCrestCurveVisibility() const;
   void SetCrestCurveColor(const vtkColor3ub& color);
   const vtkColor3ub& GetCrestCurveColor() const;
 
+  void SetSkeletalSheetVisibility(bool visible);
+  bool GetSkeletalSheetVisibility() const;
   void SetSkeletalSheetColor(const vtkColor3ub& color);
   const vtkColor3ub& GetSkeletalSheetColor() const;
 
+  void SetSkeletonToCrestConnectionVisibility(bool visible);
+  bool GetSkeletonToCrestConnectionVisibility() const;
   void SetSkeletonToCrestConnectionColor(const vtkColor3ub& color);
   const vtkColor3ub& GetSkeletonToCrestConnectionColor() const;
 
@@ -88,9 +100,9 @@ private:
   };
 
   bool OverallVisibility;
-  DisplayHelper UpSpokes;
-  DisplayHelper DownSpokes;
-  DisplayHelper CrestSpokes;
+  DisplayHelper UpSpoke;
+  DisplayHelper DownSpoke;
+  DisplayHelper CrestSpoke;
   DisplayHelper CrestCurve;
   DisplayHelper SkeletalSheet;
   DisplayHelper SkeletonToCrestConnection;

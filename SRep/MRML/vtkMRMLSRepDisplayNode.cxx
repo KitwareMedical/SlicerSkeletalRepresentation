@@ -22,9 +22,9 @@ vtkMRMLNodeNewMacro(vtkMRMLSRepDisplayNode);
 vtkMRMLSRepDisplayNode::vtkMRMLSRepDisplayNode()
     : vtkMRMLDisplayNode()
     , OverallVisibility(true)
-    , UpSpokes(true, vtkColor3ub{255, 99, 71}) // Tomato
-    , DownSpokes(true, vtkColor3ub{189, 252, 201}) // Mint
-    , CrestSpokes(true, vtkColor3ub{255, 215, 0}) // Gold
+    , UpSpoke(true, vtkColor3ub{255, 99, 71}) // Tomato
+    , DownSpoke(true, vtkColor3ub{189, 252, 201}) // Mint
+    , CrestSpoke(true, vtkColor3ub{255, 215, 0}) // Gold
     , CrestCurve(true, vtkColor3ub{255, 215, 0}) // Gold
     , SkeletalSheet(true, vtkColor3ub{255, 248, 220}) // Cornsilk
     , SkeletonToCrestConnection(true, vtkColor3ub{0, 0, 0}) // Black
@@ -63,65 +63,32 @@ void vtkMRMLSRepDisplayNode::PrintSelf(ostream& os, vtkIndent indent)
   os << "SRep";
 }
 
-void vtkMRMLSRepDisplayNode::SetUpSpokeColor(const vtkColor3ub& color) {
-    if (this->UpSpokes.color != color) {
-        this->UpSpokes.color = color;
-        this->Modified();
+#define SREP_DISPLAY_NODE_DISPLAY_HELPER_FUNCTIONS(name) \
+    void vtkMRMLSRepDisplayNode::Set##name##Visibility(bool visible) { \
+        if (this->name.visible != visible) { \
+            this->name.visible = visible; \
+            this->Modified(); \
+        } \
+    } \
+    bool vtkMRMLSRepDisplayNode::Get##name##Visibility() const { \
+        return this->name.visible; \
+    } \
+    void vtkMRMLSRepDisplayNode::Set##name##Color(const vtkColor3ub& color) { \
+        if (this->name.color != color) { \
+            this->name.color = color; \
+            this->Modified(); \
+        } \
+    } \
+    const vtkColor3ub& vtkMRMLSRepDisplayNode::Get##name##Color() const { \
+        return this->name.color; \
     }
-}
-const vtkColor3ub& vtkMRMLSRepDisplayNode::GetUpSpokeColor() const {
-    return this->UpSpokes.color;
-}
 
-void vtkMRMLSRepDisplayNode::SetDownSpokeColor(const vtkColor3ub& color) {
-    if (this->DownSpokes.color != color) {
-        this->DownSpokes.color = color;
-        this->Modified();
-    }
-}
-const vtkColor3ub& vtkMRMLSRepDisplayNode::GetDownSpokeColor() const {
-    return this->DownSpokes.color;
-}
-
-void vtkMRMLSRepDisplayNode::SetCrestSpokeColor(const vtkColor3ub& color) {
-    if (this->CrestSpokes.color != color) {
-        this->CrestSpokes.color = color;
-        this->Modified();
-    }
-}
-const vtkColor3ub& vtkMRMLSRepDisplayNode::GetCrestSpokeColor() const {
-    return this->CrestSpokes.color;
-}
-
-void vtkMRMLSRepDisplayNode::SetCrestCurveColor(const vtkColor3ub& color) {
-    if (this->CrestCurve.color != color) {
-        this->CrestCurve.color = color;
-        this->Modified();
-    }
-}
-const vtkColor3ub& vtkMRMLSRepDisplayNode::GetCrestCurveColor() const {
-    return this->CrestCurve.color;
-}
-
-void vtkMRMLSRepDisplayNode::SetSkeletalSheetColor(const vtkColor3ub& color) {
-    if (this->SkeletalSheet.color != color) {
-        this->SkeletalSheet.color = color;
-        this->Modified();
-    }
-}
-const vtkColor3ub& vtkMRMLSRepDisplayNode::GetSkeletalSheetColor() const {
-    return this->SkeletalSheet.color;
-}
-
-void vtkMRMLSRepDisplayNode::SetSkeletonToCrestConnectionColor(const vtkColor3ub& color) {
-    if (this->SkeletonToCrestConnection.color != color) {
-        this->SkeletonToCrestConnection.color = color;
-        this->Modified();
-    }
-}
-const vtkColor3ub& vtkMRMLSRepDisplayNode::GetSkeletonToCrestConnectionColor() const {
-    return this->SkeletonToCrestConnection.color;
-}
+SREP_DISPLAY_NODE_DISPLAY_HELPER_FUNCTIONS(UpSpoke)
+SREP_DISPLAY_NODE_DISPLAY_HELPER_FUNCTIONS(DownSpoke)
+SREP_DISPLAY_NODE_DISPLAY_HELPER_FUNCTIONS(CrestSpoke)
+SREP_DISPLAY_NODE_DISPLAY_HELPER_FUNCTIONS(CrestCurve)
+SREP_DISPLAY_NODE_DISPLAY_HELPER_FUNCTIONS(SkeletalSheet)
+SREP_DISPLAY_NODE_DISPLAY_HELPER_FUNCTIONS(SkeletonToCrestConnection)
 
 void vtkMRMLSRepDisplayNode::SetRelativeThickness(double relativeThickness) {
     if (relativeThickness < 0 || 1 < relativeThickness) {
