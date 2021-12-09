@@ -29,7 +29,9 @@
 
 
 // MRML includes
-#include <vtkMRMLSRepNode.h>
+#include "vtkMRMLSRepNode.h"
+#include "vtkMRMLEllipticalSRepNode.h"
+
 
 // STD includes
 #include <cstdlib>
@@ -80,6 +82,15 @@ public:
   /// otherwise. Adds the appropriate storage and display nodes to the scene
   /// as well.
   const char* LoadSRep(const char* fileName, const char* nodeName=nullptr);
+
+  /// Creates a new SRep from srepNode with interpolated spokes
+  /// @param srepNode The srep to interpolate.
+  /// @param interpolationlevel How much denser to make the spokes as a power to 2. An interpolation level of 3 would
+  ///        increase density by 8 times (2^3).
+  /// @returns The id of the newly created interpolated SRep node
+  std::string InterpolateSRep(vtkMRMLEllipticalSRepNode* srepNode, size_t interpolationlevel, const std::string& newNodeName = "");
+
+  bool InterpolateSRep(vtkMRMLEllipticalSRepNode* srepNode, size_t interpolationlevel, vtkMRMLEllipticalSRepNode* destination);
 
 protected:
   vtkSlicerSRepLogic();

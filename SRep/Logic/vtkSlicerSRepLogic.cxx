@@ -32,8 +32,8 @@
 #include <cassert>
 
 #include "vtkMRMLSRepNode.h"
-#include "vtkMRMLEllipticalSRepNode.h"
 #include "vtkMRMLRectangularGridSRepNode.h"
+#include "SRepInterpolation.h"
 
 //----------------------------------------------------------------------------
 vtkStandardNewMacro(vtkSlicerSRepLogic);
@@ -246,4 +246,65 @@ const char* vtkSlicerSRepLogic::LoadSRep(const char* fileName, const char* nodeN
   }
   return srepNode->GetID();
 
+}
+
+//----------------------------------------------------------------------------
+std::string vtkSlicerSRepLogic::InterpolateSRep(vtkMRMLEllipticalSRepNode* srepNode, size_t interpolationlevel, const std::string& newNodeName) {
+  auto scene = this->GetMRMLScene();
+  if (!scene) {
+    vtkErrorMacro("InterpolateSRep: no scene to add a srep node to!");
+    return "";
+  }
+
+  const auto nodeID = AddNewEllipticalSRepNode(newNodeName, scene);
+  if (nodeID.empty()) {
+    vtkErrorMacro("InterpolateSRep: Error making Elliptical SRep node");
+    return "";
+  }
+
+  auto interpolatedSRepNode = vtkMRMLEllipticalSRepNode::SafeDownCast(scene->GetNodeByID(nodeID));
+  if (!interpolatedSRepNode) {
+    vtkErrorMacro("InterpolateSRep: Unable to find newly created SRep node: " << nodeID);
+    return "";
+  }
+
+  const bool success = this->InterpolateSRep(srepNode, interpolationlevel, interpolatedSRepNode);
+  if (!success) {
+    scene->RemoveNode(interpolatedSRepNode);
+    return "";
+  }
+  return nodeID;
+}
+
+//----------------------------------------------------------------------------
+bool vtkSlicerSRepLogic::InterpolateSRep(vtkMRMLEllipticalSRepNode* srepNode, size_t interpolationlevel, vtkMRMLEllipticalSRepNode* destination) {
+  if (!destination) {
+    vtkErrorMacro("InterpolateSRep: no destination");
+    return false;
+  }
+  
+  if (!srepNode) {
+    vtkErrorMacro("InterpolateSRep: input node is nullptr");
+    return false;
+  }
+
+  auto srep = srepNode->GetEllipticalSRep();
+  if (!srep) {
+    vtkErrorMacro("InterpolateSRep: input node does not have an SRep");
+    return false;
+  }
+
+  if (interpolationlevel < 1) {
+    vtkErrorMacro("InterpolateSRep: interpolationlevel must be greater than 1");
+    return false;
+  }
+
+  auto interpolatedSRep = sreplogic::InterpolateSRep(interpolationlevel, *srep);
+  if (!interpolatedSRep) {
+    vtkErrorMacro("InterpolateSRep: Unable to interpolate SRep");
+    return false;
+  }
+
+  destination->SetEllipticalSRep(std::move(interpolatedSRep));
+  return true;
 }

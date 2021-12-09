@@ -118,6 +118,10 @@ void qSlicerSRepModuleWidgetPrivate::setupSRepUi(qSlicerWidget* widget) {
     [this](){ this->onColorChanged(this->crestCurveColorButton, &vtkMRMLSRepDisplayNode::SetCrestCurveColor);});
   QObject::connect(this->skeletonToCrestConnectionColorButton, &ctkColorPickerButton::colorChanged,
     [this](){ this->onColorChanged(this->skeletonToCrestConnectionColorButton, &vtkMRMLSRepDisplayNode::SetSkeletonToCrestConnectionColor);});
+
+  QObject::connect(widget, SIGNAL(mrmlSceneChanged(vtkMRMLScene*)),
+    this->interpolationOutputNodeCbox, SLOT(setMRMLScene(vtkMRMLScene*)));
+  QObject::connect(this->interpolateButton, SIGNAL(clicked()), q, SLOT(onInterpolate()));
 }
 
 //-----------------------------------------------------------------------------
@@ -305,6 +309,7 @@ void qSlicerSRepModuleWidget::updateWidgetFromMRML() {
   d->displayContainer->setEnabled(haveActiveSRepNode);
   d->exportContainer->setEnabled(haveActiveSRepNode);
   d->informationContainer->setEnabled(haveActiveSRepNode);
+  d->interpolationContainer->setEnabled(haveActiveSRepNode && nullptr != vtkMRMLEllipticalSRepNode::SafeDownCast(d->activeSRepNode));
 
   if (haveActiveSRepNode) {
     auto displayNode = d->activeSRepNode->GetSRepDisplayNode();
@@ -445,6 +450,7 @@ bool qSlicerSRepModuleWidget::setEditedNode(vtkMRMLNode* node, QString role, QSt
   }
   return false;
 }
+
 //-----------------------------------------------------------------------------
 double qSlicerSRepModuleWidget::nodeEditable(vtkMRMLNode* node) {
   if (vtkMRMLSRepNode::SafeDownCast(node)
@@ -453,4 +459,19 @@ double qSlicerSRepModuleWidget::nodeEditable(vtkMRMLNode* node) {
     return 0.5;
   }
   return 0.0;
+}
+
+//-----------------------------------------------------------------------------
+void qSlicerSRepModuleWidget::onInterpolate() {
+  Q_D(qSlicerSRepModuleWidget);
+  
+  const size_t interpolationLevel = std::lround(d->interpolationLevelCTKSlider->value());
+  auto srepNode = vtkMRMLEllipticalSRepNode::SafeDownCast(d->activeSRepTreeView->currentNode());
+  auto destination = vtkMRMLEllipticalSRepNode::SafeDownCast(d->interpolationOutputNodeCbox->currentNode());
+  if (!destination) {
+    QMessageBox::warning(this, "Error", "No SRep node selected to put interpolated SRep into.");
+    return;
+  }
+
+  d->logic()->InterpolateSRep(srepNode, interpolationLevel, destination);
 }

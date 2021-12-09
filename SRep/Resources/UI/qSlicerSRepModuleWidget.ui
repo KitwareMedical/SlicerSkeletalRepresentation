@@ -7,54 +7,13 @@
     <x>0</x>
     <y>0</y>
     <width>525</width>
-    <height>721</height>
+    <height>926</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Form</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
-   <item>
-    <widget class="ctkCollapsibleButton" name="CTKCollapsibleButton">
-     <property name="text">
-      <string>Import</string>
-     </property>
-     <layout class="QVBoxLayout" name="verticalLayout_3">
-      <item>
-       <layout class="QFormLayout" name="formLayout">
-        <item row="0" column="0">
-         <widget class="QLabel" name="label">
-          <property name="text">
-           <string>Input File</string>
-          </property>
-         </widget>
-        </item>
-        <item row="0" column="1">
-         <layout class="QHBoxLayout" name="horizontalLayout">
-          <item>
-           <widget class="QLineEdit" name="inputFileLineEdit"/>
-          </item>
-          <item>
-           <widget class="QPushButton" name="inputFileBrowseButton">
-            <property name="text">
-             <string>Browse</string>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </item>
-       </layout>
-      </item>
-      <item>
-       <widget class="QPushButton" name="importButton">
-        <property name="text">
-         <string>Import</string>
-        </property>
-       </widget>
-      </item>
-     </layout>
-    </widget>
-   </item>
    <item>
     <widget class="qMRMLSubjectHierarchyTreeView" name="activeSRepTreeView">
      <property name="editMenuActionVisible">
@@ -68,7 +27,7 @@
       <string>Information</string>
      </property>
      <property name="collapsed">
-      <bool>false</bool>
+      <bool>true</bool>
      </property>
      <layout class="QVBoxLayout" name="verticalLayout_5">
       <item>
@@ -133,6 +92,9 @@
     <widget class="qMRMLCollapsibleButton" name="displayContainer">
      <property name="text">
       <string>Display</string>
+     </property>
+     <property name="collapsed">
+      <bool>true</bool>
      </property>
      <property name="flat">
       <bool>false</bool>
@@ -290,51 +252,169 @@
     </widget>
    </item>
    <item>
-    <widget class="ctkCollapsibleButton" name="exportContainer">
+    <widget class="ctkCollapsibleButton" name="interpolationContainer">
      <property name="text">
-      <string>Export</string>
+      <string>Interpolation - EllipticalSRep Only</string>
      </property>
-     <layout class="QVBoxLayout" name="verticalLayout_4">
+     <layout class="QVBoxLayout" name="verticalLayout_7">
       <item>
-       <layout class="QFormLayout" name="formLayout_3">
+       <layout class="QFormLayout" name="formLayout_5">
         <item row="0" column="0">
-         <widget class="QLabel" name="label_3">
+         <widget class="QLabel" name="label_14">
           <property name="text">
-           <string>Output Directory</string>
+           <string>Interpolation level</string>
           </property>
          </widget>
         </item>
         <item row="0" column="1">
-         <layout class="QHBoxLayout" name="horizontalLayout_3">
-          <item>
-           <widget class="QLineEdit" name="outputDirectoryLineEdit"/>
-          </item>
-          <item>
-           <widget class="QPushButton" name="outputDirectoryBrowseButton">
-            <property name="text">
-             <string>Browse</string>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </item>
-        <item row="1" column="0">
-         <widget class="QLabel" name="label_4">
-          <property name="text">
-           <string>Output Base Name</string>
+         <widget class="ctkSliderWidget" name="interpolationLevelCTKSlider">
+          <property name="decimals">
+           <number>0</number>
+          </property>
+          <property name="pageStep">
+           <double>5.000000000000000</double>
+          </property>
+          <property name="minimum">
+           <double>1.000000000000000</double>
+          </property>
+          <property name="maximum">
+           <double>15.000000000000000</double>
+          </property>
+          <property name="value">
+           <double>3.000000000000000</double>
           </property>
          </widget>
         </item>
         <item row="1" column="1">
-         <widget class="QLineEdit" name="outputBaseNameLineEdit"/>
+         <widget class="qMRMLNodeComboBox" name="interpolationOutputNodeCbox">
+          <property name="enabled">
+           <bool>true</bool>
+          </property>
+          <property name="nodeTypes">
+           <stringlist>
+            <string>vtkMRMLEllipticalSRepNode</string>
+           </stringlist>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="0">
+         <widget class="QLabel" name="label_15">
+          <property name="text">
+           <string>Output node</string>
+          </property>
+         </widget>
         </item>
        </layout>
       </item>
       <item>
-       <widget class="QPushButton" name="exportButton">
+       <widget class="QPushButton" name="interpolateButton">
+        <property name="text">
+         <string>Interpolate</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="ctkCollapsibleButton" name="oldStyleXMLContainer">
+     <property name="text">
+      <string>Old Style XML</string>
+     </property>
+     <property name="collapsed">
+      <bool>true</bool>
+     </property>
+     <layout class="QVBoxLayout" name="verticalLayout_6">
+      <item>
+       <widget class="ctkCollapsibleButton" name="CTKCollapsibleButton">
+        <property name="text">
+         <string>Import</string>
+        </property>
+        <layout class="QVBoxLayout" name="verticalLayout_3">
+         <item>
+          <layout class="QFormLayout" name="formLayout">
+           <item row="0" column="0">
+            <widget class="QLabel" name="label">
+             <property name="text">
+              <string>Input File</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <layout class="QHBoxLayout" name="horizontalLayout">
+             <item>
+              <widget class="QLineEdit" name="inputFileLineEdit"/>
+             </item>
+             <item>
+              <widget class="QPushButton" name="inputFileBrowseButton">
+               <property name="text">
+                <string>Browse</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <widget class="QPushButton" name="importButton">
+           <property name="text">
+            <string>Import</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item>
+       <widget class="ctkCollapsibleButton" name="exportContainer">
         <property name="text">
          <string>Export</string>
         </property>
+        <layout class="QVBoxLayout" name="verticalLayout_4">
+         <item>
+          <layout class="QFormLayout" name="formLayout_3">
+           <item row="0" column="0">
+            <widget class="QLabel" name="label_3">
+             <property name="text">
+              <string>Output Directory</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <layout class="QHBoxLayout" name="horizontalLayout_3">
+             <item>
+              <widget class="QLineEdit" name="outputDirectoryLineEdit"/>
+             </item>
+             <item>
+              <widget class="QPushButton" name="outputDirectoryBrowseButton">
+               <property name="text">
+                <string>Browse</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+           <item row="1" column="0">
+            <widget class="QLabel" name="label_4">
+             <property name="text">
+              <string>Output Base Name</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
+            <widget class="QLineEdit" name="outputBaseNameLineEdit"/>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <widget class="QPushButton" name="exportButton">
+           <property name="text">
+            <string>Export</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
        </widget>
       </item>
      </layout>
@@ -363,6 +443,12 @@
    <container>1</container>
   </customwidget>
   <customwidget>
+   <class>qMRMLNodeComboBox</class>
+   <extends>QWidget</extends>
+   <header>qMRMLNodeComboBox.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
    <class>qSlicerWidget</class>
    <extends>QWidget</extends>
    <header>qSlicerWidget.h</header>
@@ -383,6 +469,11 @@
    <class>ctkColorPickerButton</class>
    <extends>QPushButton</extends>
    <header>ctkColorPickerButton.h</header>
+  </customwidget>
+  <customwidget>
+   <class>ctkSliderWidget</class>
+   <extends>QWidget</extends>
+   <header>ctkSliderWidget.h</header>
   </customwidget>
  </customwidgets>
  <resources/>

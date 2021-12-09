@@ -25,6 +25,8 @@ public:
     Point3d& operator=(Point3d&&) = default;
     ~Point3d() = default;
 
+    const double& operator[](size_t i) const;
+
     /// Gets the X component of the point.
     inline double GetX() const {
         return this->X;

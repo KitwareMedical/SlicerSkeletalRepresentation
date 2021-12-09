@@ -32,6 +32,8 @@ public:
     Vector3d& operator=(Vector3d&&) = default;
     ~Vector3d() = default;
 
+    const double& operator[](size_t i) const;
+
     /// Gets the X component of the vector.
     inline double GetX() const {
         return this->X;

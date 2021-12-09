@@ -1,6 +1,7 @@
 #include <srep/EllipticalSRep.h>
 #include <algorithm>
 #include <memory>
+#include <sstream>
 
 namespace srep {
 
@@ -73,13 +74,24 @@ void EllipticalSRep::Validate(const UnrolledEllipticalGrid& skeleton) {
     }
   }
   // Bottom "row" are all crest points while nothing else is
-  for (const auto& line : skeleton) {
+
+  const auto debugSkeleton = [](size_t line, size_t step, const UnrolledEllipticalGrid& skeleton) {
+    //making a stringstream and returning a string isn't the most efficient, but this shouldn't
+    //be called often
+    std::stringstream ss;
+    ss << "Error at (" << line << ", " << step << ") of skeleton size "
+      << skeleton.size() << "x" << (skeleton.empty() ? 0 : skeleton[0].size());
+    return ss.str();
+  };
+
+  for (size_t l = 0; l < skeleton.size(); ++l) {
+    const auto& line = skeleton[l];
     for (size_t s = 0; s < line.size(); ++s) {
       if (s == line.size() - 1 && !line[s].IsCrest()) {
-        throw InvalidSkeletalGridException("Expected the last step of each line to be a crest point (" + std::to_string(s) + ")");
+        throw InvalidSkeletalGridException("Expected the last step of each line to be a crest point. " + debugSkeleton(l,s,skeleton));
       }
       if (s < line.size() - 1 && line[s].IsCrest()) {
-        throw InvalidSkeletalGridException("Expected all steps except the last to not be crest points (" + std::to_string(s) + ")");
+        throw InvalidSkeletalGridException("Expected all steps except the last to not be crest points. " + debugSkeleton(l,s,skeleton));
       }
     }
   }
@@ -296,5 +308,29 @@ LineStep::LineStep(size_t line_, size_t step_)
   : line(line_)
   , step(step_)
 {}
+
+bool operator<(const LineStep& a, const LineStep& b) {
+  return a.line != b.line ? a.line < b.line : a.step < b.step;
+}
+bool operator>(const LineStep& a, const LineStep& b) {
+  return b > a;
+}
+bool operator<=(const LineStep& a, const LineStep& b) {
+  return !(b > a);
+}
+bool operator>=(const LineStep& a, const LineStep& b) {
+  return !(a < b);
+}
+bool operator==(const LineStep& a, const LineStep& b) {
+  return !(a < b) && !(b < a);
+}
+bool operator!=(const LineStep& a, const LineStep& b) {
+  return !(a == b);
+}
+
+std::ostream& operator<<(std::ostream& os, const LineStep& ls) {
+  os << "(" << ls.line << ", " << ls.step << ")";
+  return os;
+}
 
 } // namespace srep

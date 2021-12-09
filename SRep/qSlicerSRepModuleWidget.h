@@ -54,6 +54,7 @@ public slots:
   void onExportDirectoryBrowse();
   void onImport();
   void onInputFileBrowse();
+  void onInterpolate();
   void onOpacitySliderChanged();
   void onOpacitySpinboxChanged();
   void onVisibilityChanged();

@@ -29,6 +29,19 @@ Vector3d::Vector3d(const std::array<double, 3>& p)
     : Vector3d(p[0], p[1], p[2])
 {}
 
+const double& Vector3d::operator[](size_t i) const {
+    if (i == 0) {
+        return this->X;
+    }
+    if (i == 1) {
+        return this->Y;
+    }
+    if (i == 2) {
+        return this->Z;
+    }
+    throw std::out_of_range("srep::Vector3d brackets only accept 0, 1, or 2. Found " + std::to_string(i));
+}
+
 void Vector3d::SetX(double x) {
     if (std::isnan(x)) {
         throw std::invalid_argument("Point cannot have a nan component");

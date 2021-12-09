@@ -114,6 +114,15 @@ struct LineStep {
   ~LineStep() = default;
 };
 
+bool operator<(const LineStep& a, const LineStep& b);
+bool operator>(const LineStep& a, const LineStep& b);
+bool operator<=(const LineStep& a, const LineStep& b);
+bool operator>=(const LineStep& a, const LineStep& b);
+bool operator==(const LineStep& a, const LineStep& b);
+bool operator!=(const LineStep& a, const LineStep& b);
+
+std::ostream& operator<<(std::ostream& os, const LineStep& ls);
+
 /// @{
 /// Gets the neighbor in the specified direction.
 ///
