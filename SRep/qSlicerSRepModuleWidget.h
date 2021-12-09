@@ -58,6 +58,8 @@ public slots:
   void onOpacitySliderChanged();
   void onOpacitySpinboxChanged();
   void onVisibilityChanged();
+  void onThicknessChanged();
+  void onUseAbsoluteThicknessChanged();
 
   // MRML change related slots
   void onActiveSRepItemChanged(vtkIdType);

@@ -62,6 +62,17 @@ public:
   void SetSkeletonToCrestConnectionColor(const vtkColor3ub& color);
   const vtkColor3ub& GetSkeletonToCrestConnectionColor() const;
 
+  void SetAbsoluteThickness(double absoluteThickness);
+  double GetAbsoluteThickness() const;
+
+  void SetRelativeThickness(double relativeThickness);
+  double GetRelativeThickness() const;
+
+  bool GetUseAbsoluteThickness() const;
+  void SetUseAbsoluteThickness(bool use);
+  void UseAbsoluteThicknessOn();
+  void UseAbsoluteThicknessOff();
+
 private:
   struct DisplayHelper {
     bool visible;
@@ -83,6 +94,9 @@ private:
   DisplayHelper CrestCurve;
   DisplayHelper SkeletalSheet;
   DisplayHelper SkeletonToCrestConnection;
+  double RelativeThickness;
+  double AbsoluteThickness;
+  bool UseAbsoluteThickness;
 };
 
 #endif

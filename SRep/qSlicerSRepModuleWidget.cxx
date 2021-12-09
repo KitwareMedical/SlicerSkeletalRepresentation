@@ -19,6 +19,7 @@
 #include <QDebug>
 #include <QFileDialog>
 #include <QMessageBox>
+#include <QSignalBlocker>
 
 // Slicer includes
 #include "qSlicerSRepModuleWidget.h"
@@ -58,6 +59,7 @@ private:
   qSlicerSRepModuleWidget* const q_ptr;
 
   void onColorChanged(ctkColorPickerButton* button, SetColorFunc setFunc);
+  void setupThicknessSlider(bool isAbsolute);
 };
 
 //-----------------------------------------------------------------------------
@@ -65,7 +67,8 @@ private:
 
 //-----------------------------------------------------------------------------
 qSlicerSRepModuleWidgetPrivate::qSlicerSRepModuleWidgetPrivate(qSlicerSRepModuleWidget& object)
-  : q_ptr(&object)
+  : activeSRepNode(nullptr)
+  , q_ptr(&object)
 {
 }
 
@@ -74,6 +77,27 @@ vtkSlicerSRepLogic* qSlicerSRepModuleWidgetPrivate::logic() const
 {
     Q_Q(const qSlicerSRepModuleWidget);
     return vtkSlicerSRepLogic::SafeDownCast(q->logic());
+}
+
+//-----------------------------------------------------------------------------
+void qSlicerSRepModuleWidgetPrivate::setupThicknessSlider(bool isAbsolute) {
+  if (isAbsolute) {
+    this->useAbsoluteThicknessButton->setText("absolute");
+    this->thicknessCTKSlider->setDecimals(2);
+    this->thicknessCTKSlider->setMinimum(0.01);
+    this->thicknessCTKSlider->setMaximum(10.0);
+    this->thicknessCTKSlider->setSingleStep(0.01);
+    this->thicknessCTKSlider->setPageStep(1);
+    this->thicknessCTKSlider->setSuffix("mm");
+  } else {
+    this->useAbsoluteThicknessButton->setText("relative");
+    this->thicknessCTKSlider->setDecimals(1);
+    this->thicknessCTKSlider->setMinimum(0.1);
+    this->thicknessCTKSlider->setMaximum(10);
+    this->thicknessCTKSlider->setSingleStep(0.1);
+    this->thicknessCTKSlider->setPageStep(2);
+    this->thicknessCTKSlider->setSuffix("%");
+  }
 }
 
 //-----------------------------------------------------------------------------
@@ -122,6 +146,12 @@ void qSlicerSRepModuleWidgetPrivate::setupSRepUi(qSlicerWidget* widget) {
   QObject::connect(widget, SIGNAL(mrmlSceneChanged(vtkMRMLScene*)),
     this->interpolationOutputNodeCbox, SLOT(setMRMLScene(vtkMRMLScene*)));
   QObject::connect(this->interpolateButton, SIGNAL(clicked()), q, SLOT(onInterpolate()));
+
+  QObject::connect(this->thicknessCTKSlider, SIGNAL(valueChanged(double)),
+    q, SLOT(onThicknessChanged()));
+  QObject::connect(this->useAbsoluteThicknessButton, SIGNAL(clicked()),
+    q , SLOT(onUseAbsoluteThicknessChanged()));
+  this->setupThicknessSlider(false);
 }
 
 //-----------------------------------------------------------------------------
@@ -301,9 +331,10 @@ void qSlicerSRepModuleWidget::onOpacitySpinboxChanged() {
 void qSlicerSRepModuleWidget::updateWidgetFromMRML() {
   Q_D(qSlicerSRepModuleWidget);
 
-  const bool wasBlocked = d->activeSRepTreeView->blockSignals(true);
-  d->activeSRepTreeView->setCurrentNode(d->activeSRepNode);
-  d->activeSRepTreeView->blockSignals(wasBlocked);
+  {
+    QSignalBlocker block(d->activeSRepTreeView);
+    d->activeSRepTreeView->setCurrentNode(d->activeSRepNode);
+  }
 
   const bool haveActiveSRepNode = static_cast<bool>(d->activeSRepNode);
   d->displayContainer->setEnabled(haveActiveSRepNode);
@@ -314,9 +345,25 @@ void qSlicerSRepModuleWidget::updateWidgetFromMRML() {
   if (haveActiveSRepNode) {
     auto displayNode = d->activeSRepNode->GetSRepDisplayNode();
     if (displayNode) {
+      QSignalBlocker block1(d->thicknessCTKSlider);
+      QSignalBlocker block2(d->useAbsoluteThicknessButton);
+
       d->visibilityCheckbox->setChecked(displayNode->GetVisibility());
       d->opacitySlider->setValue(static_cast<int>(displayNode->GetOpacity() * 100));
       d->opacitySpinbox->setValue(displayNode->GetOpacity());
+      if (displayNode->GetUseAbsoluteThickness()) {
+        if (!d->useAbsoluteThicknessButton->isChecked()) {
+          d->useAbsoluteThicknessButton->click();
+        }
+        d->setupThicknessSlider(true);
+        d->thicknessCTKSlider->setValue(displayNode->GetAbsoluteThickness());
+      } else {
+        if (d->useAbsoluteThicknessButton->isChecked()) {
+          d->useAbsoluteThicknessButton->click();
+        }
+        d->setupThicknessSlider(false);
+        d->thicknessCTKSlider->setValue(displayNode->GetRelativeThickness() * 100.);
+      }
 
       d->upSpokeColorButton->setColor(toQColor(displayNode->GetUpSpokeColor()));
       d->downSpokeColorButton->setColor(toQColor(displayNode->GetDownSpokeColor()));
@@ -464,7 +511,7 @@ double qSlicerSRepModuleWidget::nodeEditable(vtkMRMLNode* node) {
 //-----------------------------------------------------------------------------
 void qSlicerSRepModuleWidget::onInterpolate() {
   Q_D(qSlicerSRepModuleWidget);
-  
+
   const size_t interpolationLevel = std::lround(d->interpolationLevelCTKSlider->value());
   auto srepNode = vtkMRMLEllipticalSRepNode::SafeDownCast(d->activeSRepTreeView->currentNode());
   auto destination = vtkMRMLEllipticalSRepNode::SafeDownCast(d->interpolationOutputNodeCbox->currentNode());
@@ -474,4 +521,32 @@ void qSlicerSRepModuleWidget::onInterpolate() {
   }
 
   d->logic()->InterpolateSRep(srepNode, interpolationLevel, destination);
+}
+
+//-----------------------------------------------------------------------------
+void qSlicerSRepModuleWidget::onThicknessChanged() {
+  Q_D(qSlicerSRepModuleWidget);
+
+  if (d->activeSRepNode) {
+    auto displayNode = d->activeSRepNode->GetSRepDisplayNode();
+    if (displayNode) {
+      if (displayNode->GetUseAbsoluteThickness()) {
+        displayNode->SetAbsoluteThickness(d->thicknessCTKSlider->value());
+      } else {
+        displayNode->SetRelativeThickness(d->thicknessCTKSlider->value() / 100.);
+      }
+    }
+  }
+}
+
+//-----------------------------------------------------------------------------
+void qSlicerSRepModuleWidget::onUseAbsoluteThicknessChanged() {
+  Q_D(qSlicerSRepModuleWidget);
+
+  if (d->activeSRepNode) {
+    auto displayNode = d->activeSRepNode->GetSRepDisplayNode();
+    if (displayNode) {
+      displayNode->SetUseAbsoluteThickness(d->useAbsoluteThicknessButton->isChecked());
+    }
+  }
 }

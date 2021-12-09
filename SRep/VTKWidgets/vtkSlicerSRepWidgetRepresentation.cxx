@@ -281,16 +281,20 @@ void vtkSlicerSRepWidgetRepresentation::UpdateFromMRML(vtkMRMLNode* caller, unsi
   this->ConvertSRepToVisualRepresentation(*srep, *displayNode);
 
   // set point size
-  this->Skeleton.Points->ComputeBounds();
-  double bounds[6];
-  this->Skeleton.Points->GetBounds(bounds);
+  double radius = 0;
+  if (displayNode->GetUseAbsoluteThickness()) {
+    radius = displayNode->GetAbsoluteThickness();
+  } else {
+    this->Skeleton.Points->ComputeBounds();
+    double bounds[6];
+    this->Skeleton.Points->GetBounds(bounds);
 
-  const double minPoint[] = {bounds[0], bounds[2], bounds[4]};
-  const double maxPoint[] = {bounds[1], bounds[3], bounds[5]};
-  const double distSquared = sqrt(vtkMath::Distance2BetweenPoints(minPoint, maxPoint));
+    const double minPoint[] = {bounds[0], bounds[2], bounds[4]};
+    const double maxPoint[] = {bounds[1], bounds[3], bounds[5]};
+    const double dist = sqrt(vtkMath::Distance2BetweenPoints(minPoint, maxPoint));
+    radius = dist * displayNode->GetRelativeThickness();
+  }
 
-  constexpr double divisor = 500;
-  const double radius = distSquared / divisor;
   this->Skeleton.GlyphSourceSphere->SetRadius(radius);
   this->Skeleton.TubeFilter->SetRadius(radius);
 

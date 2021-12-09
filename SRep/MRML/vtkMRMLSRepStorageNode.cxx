@@ -47,6 +47,9 @@ namespace keys {
   const char * const SkeletalSheet = "SkeletalSheet";
   const char * const CrestCurve = "CrestCurve";
   const char * const SkeletonToCrestConnection = "SkeletonToCrestConnection";
+  const char * const RelativeThickness = "RelativeThickness";
+  const char * const AbsoluteThickness = "AbsoluteThickness";
+  const char * const UseAbsoluteThickness = "UseAbsoluteThickness";
 
   const char * const CoordinateSystem = "CoordinateSystem";
 }
@@ -384,6 +387,12 @@ void write(rapidjson::PrettyWriter<rapidjson::FileWriteStream>& writer, vtkMRMLS
   writer.Bool(static_cast<bool>(displayNode.GetVisibility()));
   writer.Key(keys::Opacity);
   writer.Double(displayNode.GetOpacity());
+  writer.Key(keys::RelativeThickness);
+  writer.Double(displayNode.GetRelativeThickness());
+  writer.Key(keys::AbsoluteThickness);
+  writer.Double(displayNode.GetAbsoluteThickness());
+  writer.Key(keys::UseAbsoluteThickness);
+  writer.Bool(displayNode.GetUseAbsoluteThickness());
   writer.Key(keys::Colors);
   writeDisplayNodeColors(writer, displayNode);
   writer.EndObject();
@@ -406,6 +415,18 @@ void read(rapidjson::Value& json, vtkMRMLSRepDisplayNode& displayNode) {
   auto colorIter = json.FindMember(keys::Colors);
   if (colorIter != json.MemberEnd()) {
     readDisplayNodeColors(colorIter->value, displayNode);
+  }
+  auto relativeThicknessIter = json.FindMember(keys::RelativeThickness);
+  if (relativeThicknessIter != json.MemberEnd()) {
+    displayNode.SetRelativeThickness(readDouble(relativeThicknessIter->value));
+  }
+  auto absoluteThicknessIter = json.FindMember(keys::AbsoluteThickness);
+  if (absoluteThicknessIter != json.MemberEnd()) {
+    displayNode.SetAbsoluteThickness(readDouble(absoluteThicknessIter->value));
+  }
+  auto useAbsoluteThicknessIter = json.FindMember(keys::UseAbsoluteThickness);
+  if (useAbsoluteThicknessIter != json.MemberEnd()) {
+    displayNode.SetUseAbsoluteThickness(readBool(useAbsoluteThicknessIter->value));
   }
 }
 
