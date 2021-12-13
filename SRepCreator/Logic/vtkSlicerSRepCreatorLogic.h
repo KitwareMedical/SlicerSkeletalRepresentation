@@ -171,6 +171,13 @@ private:
     size_t maxIterations,
     size_t outputEveryNumIterations);
 
+  EllipsoidParameters FlowSurfaceMeshToEllipsoid(
+    vtkMRMLModelNode* model,
+    const double dt,
+    const double smoothAmount,
+    const size_t maxIterations,
+    const size_t outputEveryNumIterations);
+
   static EllipsoidParameters CalculateBestFitEllipsoid(vtkPolyData& alreadyFlowedMesh);
 
   std::unique_ptr<srep::EllipticalSRep> GenerateSRep(
@@ -188,6 +195,8 @@ private:
     const EllipsoidParameters& ellipsoid,
     const size_t numFoldPoints,
     const size_t numStepsToCrest);
+
+  static vtkSmartPointer<vtkPolyData> MakeEllipsoidPolyData(const EllipsoidParameters& ellipsoid);
 
   vtkMRMLModelNode* MakeEllipsoidModelNode(
     const EllipsoidParameters& ellipsoid,
@@ -207,6 +216,10 @@ private:
     bool visible = true);
 
   std::string ForwardIterationFilename(long iteration);
+
+  static vtkSmartPointer<vtkPolyData> SnapFlowedMeshToEllipsoid(
+    vtkPolyData& alreadyFlowedMesh,
+    const EllipsoidParameters& ellipsoid);
 
   size_t ActualForwardIterations;
   std::string SRepNodeId;

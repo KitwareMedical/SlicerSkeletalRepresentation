@@ -24,8 +24,10 @@
 #include <vtkMRMLDisplayNode.h>
 
 // VTK includes
+#include <vtkCellLocator.h>
 #include <vtkCurvatures.h>
 #include <vtkDoubleArray.h>
+#include <vtkGenericCell.h>
 #include <vtkIntArray.h>
 #include <vtkMassProperties.h>
 #include <vtkNew.h>
@@ -159,6 +161,37 @@ std::string vtkSlicerSRepCreatorLogic::TempFolder() {
 }
 
 //---------------------------------------------------------------------------
+vtkSlicerSRepCreatorLogic::EllipsoidParameters vtkSlicerSRepCreatorLogic::FlowSurfaceMeshToEllipsoid(
+  vtkMRMLModelNode* model,
+  const double dt,
+  const double smoothAmount,
+  const size_t maxIterations,
+  const size_t outputEveryNumIterations)
+{
+  auto flowedMesh = this->FlowSurfaceMesh(model, dt, smoothAmount, maxIterations, outputEveryNumIterations);
+  if (!flowedMesh) {
+    throw std::runtime_error("Error creating flowed mesh");
+  }
+
+  const auto ellipsoidParameters = CalculateBestFitEllipsoid(*flowedMesh);
+  auto ellipsoidalMesh = this->SnapFlowedMeshToEllipsoid(*flowedMesh, ellipsoidParameters);
+
+  vtkNew<vtkPolyDataWriter> writer;
+  writer->SetFileName(this->ForwardIterationFilename(maxIterations+1).c_str());
+  writer->SetInputData(ellipsoidalMesh);
+  writer->Update();
+  ++this->ActualForwardIterations;
+
+  if (outputEveryNumIterations != 0) {
+    this->MakeModelNode(ellipsoidalMesh,
+      model->GetName() + std::string("-final-flowed-ellipsoidal-mesh-") + std::to_string(maxIterations+1),
+      true, model->GetDisplayNode()->GetColor());
+  }
+
+  return ellipsoidParameters;
+}
+
+//---------------------------------------------------------------------------
 vtkSmartPointer<vtkPolyData> vtkSlicerSRepCreatorLogic::FlowSurfaceMesh(
   vtkMRMLModelNode* model,
   const double dt,
@@ -274,6 +307,38 @@ std::string vtkSlicerSRepCreatorLogic::ForwardIterationFilename(const long itera
 }
 
 //---------------------------------------------------------------------------
+vtkSmartPointer<vtkPolyData> vtkSlicerSRepCreatorLogic::SnapFlowedMeshToEllipsoid(vtkPolyData& alreadyFlowedMesh, const EllipsoidParameters& ellipsoid) {
+  auto ellipsoidPolyData = vtkSlicerSRepCreatorLogic::MakeEllipsoidPolyData(ellipsoid);
+  if (!ellipsoidPolyData) {
+    throw std::runtime_error("Error creating ellipsoid PolyData");
+  }
+
+  vtkNew<vtkCellLocator> cellLocator;
+  cellLocator->SetDataSet(ellipsoidPolyData);
+  cellLocator->BuildLocator();
+
+  double point[3];
+  double closestPoint[3];
+  vtkNew<vtkGenericCell> cell;
+  vtkIdType cellId;
+  int subId;
+  double distanceSquared;
+
+  vtkNew<vtkPoints> snappedMeshPoints;
+  for (auto i = 0; i < alreadyFlowedMesh.GetNumberOfPoints(); ++i) {
+    alreadyFlowedMesh.GetPoint(i, point);
+    cellLocator->FindClosestPoint(point, closestPoint, cell, cellId, subId, distanceSquared);
+    snappedMeshPoints->InsertNextPoint(closestPoint);
+  }
+
+  vtkNew<vtkPolyData> snappedMeshPolyData;
+  snappedMeshPolyData->SetPoints(snappedMeshPoints);
+  snappedMeshPolyData->SetPolys(alreadyFlowedMesh.GetPolys());
+  snappedMeshPolyData->Modified();
+  return snappedMeshPolyData;
+}
+
+//---------------------------------------------------------------------------
 vtkSlicerSRepCreatorLogic::EllipsoidParameters
 vtkSlicerSRepCreatorLogic::CalculateBestFitEllipsoid(vtkPolyData& alreadyFlowedMesh) {
   EllipsoidParameters result;
@@ -305,12 +370,7 @@ vtkSlicerSRepCreatorLogic::CalculateBestFitEllipsoid(vtkPolyData& alreadyFlowedM
 }
 
 //---------------------------------------------------------------------------
-vtkMRMLModelNode* vtkSlicerSRepCreatorLogic::MakeEllipsoidModelNode(
-  const EllipsoidParameters& ellipsoid,
-  const std::string& name,
-  const bool visible,
-  const double* color)
-{
+vtkSmartPointer<vtkPolyData> vtkSlicerSRepCreatorLogic::MakeEllipsoidPolyData(const EllipsoidParameters& ellipsoid) {
   vtkNew<vtkParametricEllipsoid> parametricEllipsoid;
   parametricEllipsoid->SetXRadius(ellipsoid.radii(0));
   parametricEllipsoid->SetYRadius(ellipsoid.radii(1));
@@ -337,7 +397,18 @@ vtkMRMLModelNode* vtkSlicerSRepCreatorLogic::MakeEllipsoidModelNode(
   bestFitEllipsoidPolyData->SetPolys(ellipsoid_polydata->GetPolys());
   bestFitEllipsoidPolyData->Modified();
 
-  return MakeModelNode(bestFitEllipsoidPolyData, name, visible, color);
+  return bestFitEllipsoidPolyData;
+}
+
+//---------------------------------------------------------------------------
+vtkMRMLModelNode* vtkSlicerSRepCreatorLogic::MakeEllipsoidModelNode(
+  const EllipsoidParameters& ellipsoid,
+  const std::string& name,
+  const bool visible,
+  const double* color)
+{
+  auto ellipsoidPolyData = this->MakeEllipsoidPolyData(ellipsoid);
+  return MakeModelNode(ellipsoidPolyData, name, visible, color);
 }
 
 //---------------------------------------------------------------------------
@@ -608,14 +679,9 @@ vtkMRMLEllipticalSRepNode* vtkSlicerSRepCreatorLogic::RunForward(
 {
   this->Reset();
   try {
-    auto mesh = this->FlowSurfaceMesh(model, dt, smoothAmount, maxIterations, outputEveryNumIterations);
-    if (!mesh) {
-      vtkErrorMacro("Error creating flowed mesh");
-      this->Reset();
-      return nullptr;
-    }
     this->ModelName = model->GetName();
-    const auto ellipsoidParameters = CalculateBestFitEllipsoid(*mesh);
+    const auto ellipsoidParameters = this->FlowSurfaceMeshToEllipsoid(model, dt, smoothAmount, maxIterations, outputEveryNumIterations);
+
     if (outputEllipsoidModel) {
       this->MakeEllipsoidModelNode(ellipsoidParameters, model->GetName() + std::string("-best-fit-ellipsoid"));
     }
