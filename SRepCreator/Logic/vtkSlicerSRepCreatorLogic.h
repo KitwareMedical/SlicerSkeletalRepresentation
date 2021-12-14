@@ -99,6 +99,25 @@ private:
   vtkSlicerSRepCreatorLogic(vtkSlicerSRepCreatorLogic&&) = delete;
   void operator=(vtkSlicerSRepCreatorLogic&&) = delete;
 
+  class ProgressTrackerType {
+  public:
+    enum class Modes {
+      OnlyOne,
+      Both
+    };
+
+    ProgressTrackerType(vtkSlicerSRepCreatorLogic& logic);
+
+    inline void SetMode(Modes mode) { this->Mode = mode; }
+    inline Modes GetMode() const { return this->Mode; }
+    void SetForwardProgress(double progress);
+    inline void SetBackwardProgress(double progress);
+  private:
+    vtkSlicerSRepCreatorLogic& Logic;
+    double Progress;
+    Modes Mode;
+  };
+
   struct EllipsoidParameters {
     Eigen::Vector3d radii;
     Eigen::Matrix3d rotation; ///< 3 by 3 rotation relative to deformed object
@@ -224,6 +243,7 @@ private:
   size_t ActualForwardIterations;
   std::string SRepNodeId;
   std::string ModelName;
+  ProgressTrackerType ProgressTracker;
 
   static constexpr double ellipse_scale = 0.9;
   static constexpr double eps = 1e-6;

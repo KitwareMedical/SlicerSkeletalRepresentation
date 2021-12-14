@@ -115,6 +115,26 @@ namespace {
 
 } // namespace {}
 
+//---------------------------------------------------------------------------
+vtkSlicerSRepCreatorLogic::ProgressTrackerType::ProgressTrackerType(vtkSlicerSRepCreatorLogic& logic)
+  : Logic(logic)
+  , Progress(0.0)
+  , Mode(Modes::OnlyOne)
+{}
+
+//---------------------------------------------------------------------------
+void vtkSlicerSRepCreatorLogic::ProgressTrackerType::SetForwardProgress(double progress) {
+  this->Progress = this->Mode == Modes::OnlyOne ? progress : progress / 2;
+  std::cout << "ForwardProgress " << progress << " overall " << this->Progress << std::endl;
+  this->Logic.InvokeEvent(vtkCommand::ProgressEvent, &this->Progress);
+}
+
+//---------------------------------------------------------------------------
+inline void vtkSlicerSRepCreatorLogic::ProgressTrackerType::SetBackwardProgress(double progress) {
+  this->Progress = this->Mode == Modes::OnlyOne ? progress : 0.5 + progress / 2;
+  std::cout << "BackwardProgress " << progress << " overall " << this->Progress << std::endl;
+  this->Logic.InvokeEvent(vtkCommand::ProgressEvent, &this->Progress);
+}
 
 //----------------------------------------------------------------------------
 vtkStandardNewMacro(vtkSlicerSRepCreatorLogic);
@@ -124,6 +144,7 @@ vtkSlicerSRepCreatorLogic::vtkSlicerSRepCreatorLogic()
   : ActualForwardIterations(0)
   , SRepNodeId()
   , ModelName()
+  , ProgressTracker(*this)
 {}
 
 //----------------------------------------------------------------------------
@@ -239,6 +260,8 @@ vtkSmartPointer<vtkPolyData> vtkSlicerSRepCreatorLogic::FlowSurfaceMesh(
   vtkNew<vtkPolyDataWriter> writer;
 
   for (size_t i = 0; i < maxIterations; ++i) {
+    this->ProgressTracker.SetForwardProgress(static_cast<double>(i) / maxIterations);
+
     vtkSmartPointer<vtkWindowedSincPolyDataFilter> smoothFilter;
     if (smoothing) {
       //there is something weird about this filter where it doesn't work
@@ -758,6 +781,8 @@ vtkMRMLEllipticalSRepNode* vtkSlicerSRepCreatorLogic::RunBackward(const size_t o
 
     std::cout << "Computing backflow transformation for " << this->ActualForwardIterations << " iterations" << std::endl;
     for (long iteration = this->ActualForwardIterations; iteration > 1; --iteration) {
+      this->ProgressTracker.SetBackwardProgress(static_cast<double>(this->ActualForwardIterations - iteration) / this->ActualForwardIterations);
+
       //swap source and target at bottom because target becomes source
       targetSurfaceReader->SetFileName(this->ForwardIterationFilename(iteration - 1).c_str());
       targetSurfaceReader->Update();
@@ -823,6 +848,10 @@ vtkMRMLEllipticalSRepNode* vtkSlicerSRepCreatorLogic::Run(
   size_t forwardOutputEveryNumIterations,
   size_t backwardOutputEveryNumIterations)
 {
+  this->ProgressTracker.SetMode(ProgressTrackerType::Modes::Both);
+  const auto fin = srep::util::finally([this](){
+    this->ProgressTracker.SetMode(ProgressTrackerType::Modes::OnlyOne);
+  });
   auto ellipsoidSRep = this->RunForward(model, numFoldPoints, numStepsToCrest, dt,
       smoothAmount, maxIterations, outputEllipsoidModel, forwardOutputEveryNumIterations);
 
