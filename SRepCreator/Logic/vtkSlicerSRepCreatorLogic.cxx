@@ -125,14 +125,12 @@ vtkSlicerSRepCreatorLogic::ProgressTrackerType::ProgressTrackerType(vtkSlicerSRe
 //---------------------------------------------------------------------------
 void vtkSlicerSRepCreatorLogic::ProgressTrackerType::SetForwardProgress(double progress) {
   this->Progress = this->Mode == Modes::OnlyOne ? progress : progress / 2;
-  std::cout << "ForwardProgress " << progress << " overall " << this->Progress << std::endl;
   this->Logic.InvokeEvent(vtkCommand::ProgressEvent, &this->Progress);
 }
 
 //---------------------------------------------------------------------------
 inline void vtkSlicerSRepCreatorLogic::ProgressTrackerType::SetBackwardProgress(double progress) {
   this->Progress = this->Mode == Modes::OnlyOne ? progress : 0.5 + progress / 2;
-  std::cout << "BackwardProgress " << progress << " overall " << this->Progress << std::endl;
   this->Logic.InvokeEvent(vtkCommand::ProgressEvent, &this->Progress);
 }
 
@@ -779,7 +777,6 @@ vtkMRMLEllipticalSRepNode* vtkSlicerSRepCreatorLogic::RunBackward(const size_t o
     sourceSurfaceReader->SetFileName(this->ForwardIterationFilename(this->ActualForwardIterations).c_str());
     sourceSurfaceReader->Update();
 
-    std::cout << "Computing backflow transformation for " << this->ActualForwardIterations << " iterations" << std::endl;
     for (long iteration = this->ActualForwardIterations; iteration > 1; --iteration) {
       this->ProgressTracker.SetBackwardProgress(static_cast<double>(this->ActualForwardIterations - iteration) / this->ActualForwardIterations);
 

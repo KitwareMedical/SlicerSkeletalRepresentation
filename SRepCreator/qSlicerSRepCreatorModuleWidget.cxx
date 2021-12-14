@@ -52,7 +52,6 @@ private:
   void OnProgress(vtkObject *caller, unsigned long event, void* callData) {
     if (this->Widget && caller == &(this->Logic) && event == vtkCommand::ProgressEvent) {
       double progress = *reinterpret_cast<double*>(callData);
-      std::cout << "SRepCreatorProgressManager " << progress << std::endl;
       this->Widget->setValue(static_cast<int>(progress * 100));
     } else {
       std::cerr << "Unexpected event callback in SRepCreatorProgressManager" << std::endl;
