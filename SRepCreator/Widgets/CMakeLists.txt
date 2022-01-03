@@ -10,6 +10,7 @@ set(${KIT}_INCLUDE_DIRECTORIES
 set(${KIT}_SRCS
   qSlicer${MODULE_NAME}FooBarWidget.cxx
   qSlicer${MODULE_NAME}FooBarWidget.h
+  SRepProgressHelper.h
   )
 
 set(${KIT}_MOC_SRCS

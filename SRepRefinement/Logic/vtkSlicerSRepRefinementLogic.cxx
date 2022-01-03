@@ -315,6 +315,9 @@ SDFAndGradient CreateAntiAliasSignedDistanceMap(vtkPolyData* polyData, double vo
   return std::make_tuple(antiAliasedSDFImage, gradDistFilter);
 }
 
+/// Progress returned will be in range [0,1]
+using ProgressCallbackFunction = std::function<void(double)>;
+
 /// Class for doing the refinement. Do not use directly, call free function RefineSRep instead.
 class Refiner {
 public:
@@ -345,16 +348,29 @@ public:
     , m_L0Weight(L0Weight)
     , m_L1Weight(L1Weight)
     , m_L2Weight(L2Weight)
-    , m_iteration(0) //debug only
+    , m_iteration(0)
+    , m_totalProgressIterations(2 * m_maxIterations + 2 * m_srep->GetSkeleton().size()) // up and down iterations + 2 * # crest points
+    , m_progressCallback()
   {
     this->GetInitialCoefficients();
   }
+
+  void SetProgressCallback(ProgressCallbackFunction f) {
+    this->m_progressCallback = f;
+  }
+
   //---------------------------------------------------------------------------
   /// WARNING: don't call this more than once
   std::unique_ptr<srep::EllipticalSRep> Run() {
-    this->RefineSpokes(SpokeType::Up);
-    this->RefineSpokes(SpokeType::Down);
-    this->RefineSpokes(SpokeType::Crest);
+    if (!m_srep->IsEmpty()) {
+      m_iteration = 0; ReportProgress();
+      this->RefineSpokes(SpokeType::Up);
+      m_iteration = 1 * m_maxIterations; ReportProgress();
+      this->RefineSpokes(SpokeType::Down);
+      m_iteration = 2 * m_maxIterations; ReportProgress();
+      this->RefineSpokes(SpokeType::Crest);\
+      m_iteration = m_totalProgressIterations;
+    }
     return std::move(m_srep);
   }
 
@@ -398,6 +414,19 @@ private:
   double m_L1Weight;
   double m_L2Weight;
   int m_iteration;
+  int m_totalProgressIterations;
+  ProgressCallbackFunction m_progressCallback;
+
+  void IncrementIteration() {
+    ++m_iteration;
+    ReportProgress();
+  }
+  void ReportProgress() {
+    if (m_progressCallback) {
+      // we go through max iterations 3 times (up, down, crest)
+      m_progressCallback(static_cast<double>(m_iteration) / m_totalProgressIterations);
+    }
+  }
 
   //---------------------------------------------------------------------------
   void RefineSpokes(SpokeType spokeType) {
@@ -418,6 +447,7 @@ private:
     for (size_t l = 0; l < grid.size(); ++l) {
       for (size_t s = 0; s < grid[l].size(); ++s) {
         if (grid[l][s].IsCrest()) {
+          IncrementIteration();
           auto spoke = grid[l][s].GetCrestSpoke();
           double dist = implicitPolyDataDistance->FunctionValue(spoke.GetBoundaryPoint().AsArray().data());
           double oldDist = dist;
@@ -484,6 +514,7 @@ private:
     for (size_t l = 0; l < grid.size(); ++l) {
       for (size_t s = 0; s < grid[l].size(); ++s) {
         if (grid[l][s].IsCrest()) {
+          IncrementIteration();
           auto spoke = grid[l][s].GetCrestSpoke();
           const vtkIdType idNearest = locator->FindClosestPoint(spoke.GetBoundaryPoint().AsArray().data());
           const double curMax = maxC->GetValue(idNearest);
@@ -779,7 +810,8 @@ private:
     const auto srad = ComputeRSradPenalty(*interpolatedTempSRep, spokeType); // L2
 
     const auto val =  distanceSquared * m_L0Weight + normalPenalty * m_L1Weight + srad * m_L2Weight;
-    std::cout  << "Eval func " << m_iteration++ << ": " << val <<
+    this->IncrementIteration();
+    std::cout  << "Eval func " << m_iteration << ": " << val <<
       " = " << (distanceSquared * m_L0Weight) << " + " << (normalPenalty * m_L1Weight) << " + " << (srad * m_L2Weight) << std::endl;
     return val;
   }
@@ -805,17 +837,6 @@ private:
         m_flattenedDownCoeff.push_back(downUnitDir[1]);
         m_flattenedDownCoeff.push_back(downUnitDir[2]);
         m_flattenedDownCoeff.push_back(0); // initial radius starts at 0
-
-        // if (pt.IsCrest()) {
-        //   const auto crestUnitDir = grid[i][j].GetCrestSpoke().GetDirection().Unit();
-        //   coeff[i][j].crest[0] = crestUnitDir[0];
-        //   coeff[i][j].crest[1] = crestUnitDir[1];
-        //   coeff[i][j].crest[2] = crestUnitDir[2];
-        //   coeff[i][j].crest[4] = 0; // initial radius starts at 0
-        //   coeff[i][j].isCrest = true;
-        // } else {
-        //   coeff[i][j].isCrest = false;
-        // }
       }
     }
   }
@@ -831,9 +852,11 @@ std::unique_ptr<srep::EllipticalSRep> RefineSRep(
   int interpolationLevel,
   double L0Weight,
   double L1Weight,
-  double L2Weight)
+  double L2Weight,
+  ProgressCallbackFunction progressCallback)
 {
   Refiner refiner(srep, polyData, initialRegionSize, finalRegionSize, maxIterations, interpolationLevel, L0Weight, L1Weight, L2Weight);
+  refiner.SetProgressCallback(progressCallback);
   return refiner.Run();
 }
 
@@ -852,6 +875,11 @@ vtkSlicerSRepRefinementLogic::~vtkSlicerSRepRefinementLogic() = default;
 void vtkSlicerSRepRefinementLogic::PrintSelf(ostream& os, vtkIndent indent)
 {
   this->Superclass::PrintSelf(os, indent);
+}
+
+//---------------------------------------------------------------------------
+void vtkSlicerSRepRefinementLogic::ProgressCallback(double progress) {
+  this->InvokeEvent(vtkCommand::ProgressEvent, &progress);
 }
 
 //---------------------------------------------------------------------------
@@ -916,7 +944,8 @@ void vtkSlicerSRepRefinementLogic::Run(
       interpolationLevel,
       L0Weight,
       L1Weight,
-      L2Weight);
+      L2Weight,
+      [this](double p){ this->ProgressCallback(p); });
     destination->SetEllipticalSRep(std::move(refinedSRep));
   } catch (const std::exception& e) {
     vtkErrorMacro("Error running SRep refinement: " << e.what());

@@ -24,6 +24,8 @@
 #include "ui_qSlicerSRepRefinementModuleWidget.h"
 #include "vtkSlicerSRepRefinementLogic.h"
 
+#include "SRepProgressHelper.h"
+
 //-----------------------------------------------------------------------------
 /// \ingroup Slicer_QtModules_ExtensionTemplate
 class qSlicerSRepRefinementModuleWidgetPrivate: public Ui_qSlicerSRepRefinementModuleWidget
@@ -69,6 +71,7 @@ void qSlicerSRepRefinementModuleWidget::setup()
   Q_D(qSlicerSRepRefinementModuleWidget);
   d->setupUi(this);
   this->Superclass::setup();
+  d->progressBar->hide();
 
   QObject::connect(d->refineButton, SIGNAL(clicked()), this, SLOT(refine()));
 }
@@ -99,6 +102,9 @@ void qSlicerSRepRefinementModuleWidget::refine()
   const auto geometricIllegalityWeight = d->geometricIllegalityWeightCTKSlider->value();
 
   try {
+  d->progressBar->show();
+  const auto fin = srep::util::finally([&d](){ d->progressBar->hide(); });
+  SRepProgressHelper<QProgressBar> progressManager(*(d->logic()), d->progressBar);
   d->logic()->Run(
     model,
     inputSRep,
@@ -112,6 +118,6 @@ void qSlicerSRepRefinementModuleWidget::refine()
     outputSRep);
   } catch (const std::exception& e) {
     QMessageBox::warning(this, "Error refining SRep", e.what());
-  }
+  } 
 }
 

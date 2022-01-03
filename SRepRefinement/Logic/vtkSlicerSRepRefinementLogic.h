@@ -86,6 +86,7 @@ protected:
   vtkSlicerSRepRefinementLogic();
   virtual ~vtkSlicerSRepRefinementLogic();
 private:
+  void ProgressCallback(double progress);
 
   vtkSlicerSRepRefinementLogic(const vtkSlicerSRepRefinementLogic&); // Not implemented
   void operator=(const vtkSlicerSRepRefinementLogic&); // Not implemented

@@ -29,40 +29,7 @@
 
 #include <srep/RectangularGridSRep.h>
 
-namespace {
-template <class PROGRESS_WIDGET>
-class SRepCreatorProgressManager {
-public:
-  using WidgetType = PROGRESS_WIDGET;
-  SRepCreatorProgressManager(vtkSlicerSRepCreatorLogic& logic, WidgetType* widget)
-    : Logic(logic)
-    , ObservationTag(Logic.AddObserver(vtkCommand::ProgressEvent, this, &SRepCreatorProgressManager::OnProgress))
-    , Widget(widget)
-  {
-    if (this->Widget) {
-      this->Widget->setMinimum(0);
-      this->Widget->setMaximum(100);
-      this->Widget->setValue(0);
-    }
-  }
-  ~SRepCreatorProgressManager() {
-    this->Logic.RemoveObserver(this->ObservationTag);
-  }
-private:
-  void OnProgress(vtkObject *caller, unsigned long event, void* callData) {
-    if (this->Widget && caller == &(this->Logic) && event == vtkCommand::ProgressEvent) {
-      double progress = *reinterpret_cast<double*>(callData);
-      this->Widget->setValue(static_cast<int>(progress * 100));
-    } else {
-      std::cerr << "Unexpected event callback in SRepCreatorProgressManager" << std::endl;
-    }
-  }
-
-  vtkSlicerSRepCreatorLogic& Logic;
-  unsigned long ObservationTag;
-  WidgetType* Widget;
-};
-} // namespace {}
+#include "SRepProgressHelper.h"
 
 //-----------------------------------------------------------------------------
 /// \ingroup Slicer_QtModules_ExtensionTemplate
@@ -156,7 +123,7 @@ void qSlicerSRepCreatorModuleWidget::onRunForward() {
 
   d->progressBar->show();
   const auto fin = srep::util::finally([&d](){ d->progressBar->hide(); });
-  SRepCreatorProgressManager<QProgressBar> progressManager(*(d->logic()), d->progressBar);
+  SRepProgressHelper<QProgressBar> progressManager(*(d->logic()), d->progressBar);
   auto srepNode = d->logic()->RunForward(model, numFoldPoints, numStepsToFold, dt, smoothAmount, maxIterations,
     outputEllipsoidModel, outputEveryNumIterations);
   if (!srepNode) {
@@ -170,7 +137,7 @@ void qSlicerSRepCreatorModuleWidget::onRunBackward() {
   const auto outputEveryNumIterations = std::lround(d->backwardOutputCTKSlider->value());
   d->progressBar->show();
   const auto fin = srep::util::finally([&d](){ d->progressBar->hide(); });
-  SRepCreatorProgressManager<QProgressBar> progressManager(*(d->logic()), d->progressBar);
+  SRepProgressHelper<QProgressBar> progressManager(*(d->logic()), d->progressBar);
   auto srepNode = d->logic()->RunBackward(outputEveryNumIterations);
   if (!srepNode) {
     QMessageBox::warning(this, "Error creating SRep", "SRep node from backward flow unable to be created. Try checking the error log for more details.");
@@ -196,7 +163,7 @@ void qSlicerSRepCreatorModuleWidget::onRun() {
 
   d->progressBar->show();
   const auto fin = srep::util::finally([&d](){ d->progressBar->hide(); });
-  SRepCreatorProgressManager<QProgressBar> progressManager(*(d->logic()), d->progressBar);
+  SRepProgressHelper<QProgressBar> progressManager(*(d->logic()), d->progressBar);
   auto srepNode = d->logic()->Run(model, numFoldPoints, numStepsToFold, dt, smoothAmount, maxIterations,
     outputEllipsoidModel, forwardOutputEveryNumIterations, backwardOutputEveryNumIterations);
   if (!srepNode) {
