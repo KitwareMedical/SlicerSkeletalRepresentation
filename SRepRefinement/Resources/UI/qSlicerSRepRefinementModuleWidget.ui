@@ -1,0 +1,297 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>qSlicerSRepRefinementModuleWidget</class>
+ <widget class="qSlicerWidget" name="qSlicerSRepRefinementModuleWidget">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>512</width>
+    <height>596</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Form</string>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <item>
+    <layout class="QFormLayout" name="formLayout">
+     <item row="0" column="0">
+      <widget class="QLabel" name="label">
+       <property name="text">
+        <string>Input Model</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="1">
+      <widget class="qMRMLNodeComboBox" name="inputModelCbox">
+       <property name="enabled">
+        <bool>true</bool>
+       </property>
+       <property name="nodeTypes">
+        <stringlist>
+         <string>vtkMRMLModelNode</string>
+        </stringlist>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="0">
+      <widget class="QLabel" name="label_2">
+       <property name="text">
+        <string>Input SRep</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="1">
+      <widget class="qMRMLNodeComboBox" name="inputSRepCbox">
+       <property name="enabled">
+        <bool>true</bool>
+       </property>
+       <property name="nodeTypes">
+        <stringlist>
+         <string>vtkMRMLEllipticalSRepNode</string>
+        </stringlist>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="0">
+      <widget class="QLabel" name="label_3">
+       <property name="text">
+        <string>Output SRep</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="1">
+      <widget class="qMRMLNodeComboBox" name="outputSRepCbox">
+       <property name="enabled">
+        <bool>true</bool>
+       </property>
+       <property name="nodeTypes">
+        <stringlist>
+         <string>vtkMRMLEllipticalSRepNode</string>
+        </stringlist>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="0">
+      <widget class="QLabel" name="label_4">
+       <property name="text">
+        <string>Interpolation level</string>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="1">
+      <widget class="ctkSliderWidget" name="interpolationLevelCTKSlider">
+       <property name="decimals">
+        <number>0</number>
+       </property>
+       <property name="pageStep">
+        <double>5.000000000000000</double>
+       </property>
+       <property name="maximum">
+        <double>15.000000000000000</double>
+       </property>
+       <property name="value">
+        <double>3.000000000000000</double>
+       </property>
+       <property name="popupSlider">
+        <bool>false</bool>
+       </property>
+      </widget>
+     </item>
+     <item row="4" column="0">
+      <widget class="QLabel" name="label_5">
+       <property name="text">
+        <string>Initial region size</string>
+       </property>
+      </widget>
+     </item>
+     <item row="4" column="1">
+      <widget class="ctkSliderWidget" name="initialRegionSizeCTKSlider">
+       <property name="decimals">
+        <number>3</number>
+       </property>
+       <property name="singleStep">
+        <double>0.100000000000000</double>
+       </property>
+       <property name="pageStep">
+        <double>3.000000000000000</double>
+       </property>
+       <property name="minimum">
+        <double>0.001000000000000</double>
+       </property>
+       <property name="maximum">
+        <double>15.000000000000000</double>
+       </property>
+       <property name="value">
+        <double>0.010000000000000</double>
+       </property>
+      </widget>
+     </item>
+     <item row="5" column="0">
+      <widget class="QLabel" name="label_6">
+       <property name="text">
+        <string>Final region size</string>
+       </property>
+      </widget>
+     </item>
+     <item row="5" column="1">
+      <widget class="ctkSliderWidget" name="finalRegionSizeCTKSlider">
+       <property name="decimals">
+        <number>4</number>
+       </property>
+       <property name="singleStep">
+        <double>0.010000000000000</double>
+       </property>
+       <property name="pageStep">
+        <double>1.000000000000000</double>
+       </property>
+       <property name="minimum">
+        <double>0.000100000000000</double>
+       </property>
+       <property name="maximum">
+        <double>15.000000000000000</double>
+       </property>
+       <property name="value">
+        <double>0.001000000000000</double>
+       </property>
+      </widget>
+     </item>
+     <item row="6" column="0">
+      <widget class="QLabel" name="label_7">
+       <property name="text">
+        <string>Max iterations</string>
+       </property>
+      </widget>
+     </item>
+     <item row="6" column="1">
+      <widget class="ctkSliderWidget" name="maxIterationsCTKSlider">
+       <property name="decimals">
+        <number>0</number>
+       </property>
+       <property name="minimum">
+        <double>200.000000000000000</double>
+       </property>
+       <property name="maximum">
+        <double>10000.000000000000000</double>
+       </property>
+       <property name="value">
+        <double>2000.000000000000000</double>
+       </property>
+      </widget>
+     </item>
+     <item row="7" column="0">
+      <widget class="QLabel" name="label_8">
+       <property name="text">
+        <string>Image match weight</string>
+       </property>
+      </widget>
+     </item>
+     <item row="7" column="1">
+      <widget class="ctkSliderWidget" name="imageMatchWeightCTKSlider">
+       <property name="decimals">
+        <number>4</number>
+       </property>
+       <property name="pageStep">
+        <double>50.000000000000000</double>
+       </property>
+       <property name="maximum">
+        <double>1000.000000000000000</double>
+       </property>
+       <property name="value">
+        <double>0.004000000000000</double>
+       </property>
+      </widget>
+     </item>
+     <item row="8" column="0">
+      <widget class="QLabel" name="label_9">
+       <property name="text">
+        <string>Normal match weight</string>
+       </property>
+      </widget>
+     </item>
+     <item row="8" column="1">
+      <widget class="ctkSliderWidget" name="normalMatchWeightCTKSlider">
+       <property name="decimals">
+        <number>4</number>
+       </property>
+       <property name="pageStep">
+        <double>50.000000000000000</double>
+       </property>
+       <property name="maximum">
+        <double>1000.000000000000000</double>
+       </property>
+       <property name="value">
+        <double>20.000000000000000</double>
+       </property>
+      </widget>
+     </item>
+     <item row="9" column="0">
+      <widget class="QLabel" name="label_10">
+       <property name="text">
+        <string>Geometric illegality weight</string>
+       </property>
+      </widget>
+     </item>
+     <item row="9" column="1">
+      <widget class="ctkSliderWidget" name="geometricIllegalityWeightCTKSlider">
+       <property name="decimals">
+        <number>4</number>
+       </property>
+       <property name="pageStep">
+        <double>50.000000000000000</double>
+       </property>
+       <property name="maximum">
+        <double>1000.000000000000000</double>
+       </property>
+       <property name="value">
+        <double>50.000000000000000</double>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <widget class="QPushButton" name="refineButton">
+     <property name="text">
+      <string>Refine</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <spacer name="verticalSpacer">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>0</width>
+       <height>0</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+  </layout>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>qMRMLNodeComboBox</class>
+   <extends>QWidget</extends>
+   <header>qMRMLNodeComboBox.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>qSlicerWidget</class>
+   <extends>QWidget</extends>
+   <header>qSlicerWidget.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>ctkSliderWidget</class>
+   <extends>QWidget</extends>
+   <header>ctkSliderWidget.h</header>
+  </customwidget>
+ </customwidgets>
+ <resources/>
+ <connections/>
+</ui>
