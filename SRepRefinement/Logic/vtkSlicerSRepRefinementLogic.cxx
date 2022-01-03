@@ -65,6 +65,15 @@ double Clamp(double val, double min, double max) {
 }
 
 //---------------------------------------------------------------------------
+size_t Pow(size_t val, size_t exp) {
+  size_t ret = 1;
+  for (size_t i = 0; i < exp; ++i) {
+    ret *= val;
+  }
+  return ret;
+}
+
+//---------------------------------------------------------------------------
 vtkSmartPointer<vtkMatrix4x4> CreateSRepToImageCoordsTransform(const srep::EllipticalSRep& srep) {
   double bounds[6];
   vtkMRMLSRepNode::GetSRepBounds(srep, bounds);
@@ -544,8 +553,138 @@ private:
     return std::make_pair(totalDistSquared, totalNormalPenalty);
   }
 
-  double ComputeRSradPenalty(const srep::EllipticalSRep& /*srep*/, SpokeType /*spokeType*/) {
+  void ComputeRSradDerivatives(
+    const srep::EllipticalSRep& interpolatedSRep,
+    SpokeType spokeType,
+    size_t line,
+    size_t step,
+    srep::Vector3d& dxdu,
+    srep::Vector3d& dSdu,
+    double& drdu,
+    srep::Vector3d& dxdv,
+    srep::Vector3d& dSdv,
+    double& drdv)
+  {
+    const auto density = Pow(2, m_interpolationLevel);
+    const auto stepSize = 1.0 / density;
+    const auto& grid = interpolatedSRep.GetSkeleton();
+    const auto getSpoke = [&](size_t l, size_t s) {
+       auto getSpokeFunc = GetSpokeFunction(spokeType);
+       return (grid[l][s].*getSpokeFunc)();
+    };
+    const auto numLines = grid.size();
+    const auto numSteps = grid[0].size();
+
+    // U direction
+    {
+      const auto prevLine = (numLines + line - 1) % numLines;
+      const auto nextLine = (numLines + line + 1) % numLines;
+
+      const auto u1 = getSpoke(prevLine, step);
+      const auto u2 = getSpoke(nextLine, step);
+
+      drdu = (u2.GetRadius() - u1.GetRadius()) / stepSize / 2;
+      dxdu = (u2.GetDirection().Unit() - u1.GetDirection().Unit()) / stepSize / 2;
+      dSdu = (u2.GetDirection() - u1.GetDirection()) / stepSize / 2;
+    }
+
+    // V direction
+    {
+      const auto prevStep = step == 0 ? 0 : step - 1;
+      const auto nextStep = step == numSteps - 1 ? numSteps - 1 : step + 1;
+      const auto divisor = prevStep == step || nextStep == step ? 1 : 2;
+
+      const auto v1 = getSpoke(line, prevStep);
+      const auto v2 = getSpoke(line, nextStep);
+
+      drdv = (v2.GetRadius() - v1.GetRadius()) / stepSize / divisor;
+      dxdv = (v2.GetDirection().Unit() - v1.GetDirection().Unit()) / stepSize / divisor;
+      dSdv = (v2.GetDirection() - v1.GetDirection()) / stepSize / divisor;
+    }
+  }
+
+  // Uses the interpolated SRep and m_interpolationLevel to know which spokes are primary
+  double ComputeRSradPenalty(const srep::EllipticalSRep& interpolatedSRep, SpokeType spokeType) {
+    if (interpolatedSRep.IsEmpty()) {
+      return 0;
+    }
+
     double penalty = 0.0;
+    const auto density = Pow(2, m_interpolationLevel);
+
+    const auto& grid = interpolatedSRep.GetSkeleton();
+    const auto numLines = grid.size() / density;
+    const auto numSteps = grid[0].size() / density;
+    const auto getSpoke = [&](size_t l, size_t s) {
+       auto getSpokeFunc = GetSpokeFunction(spokeType);
+       return (grid[l][s].*getSpokeFunc)();
+    };
+
+    srep::Vector3d dxdu;
+    srep::Vector3d dSdu;
+    double drdu;
+    srep::Vector3d dxdv;
+    srep::Vector3d dSdv;
+    double drdv;
+
+    for (size_t i = 0; i < numLines; ++i) {
+      const auto ii = i * density;
+      for (size_t j = 0; j < numSteps; ++j) {
+        const auto jj = j * density;
+
+        // u is line-to-line direction
+        // v is step-to-step direction
+        ComputeRSradDerivatives(interpolatedSRep, spokeType, ii, jj, dxdu, dSdu, drdu, dxdv, dSdv, drdv);
+
+        const auto U = getSpoke(ii,jj).GetDirection().Unit();
+
+        // 2. construct rSrad Matrix
+        double UTU[3][3]; // UT*U - I
+        UTU[0][0] = U[0] * U[0] - 1;
+        UTU[0][1] = U[0] * U[1];
+        UTU[0][2] = U[0] * U[2];
+        UTU[1][0] = U[1] * U[0];
+        UTU[1][1] = U[1] * U[1] -1;
+        UTU[1][2] = U[1] * U[2];
+        UTU[2][0] = U[2] * U[0];
+        UTU[2][1] = U[2] * U[1];
+        UTU[2][2] = U[2] * U[2] -1;
+
+        // Notation in Han, Qiong's dissertation
+        Eigen::MatrixXd Q(2,3);
+        Q(0,0) = dxdu[0] * UTU[0][0] + dxdu[1] * UTU[1][0] + dxdu[2] * UTU[2][0];
+        Q(0,1) = dxdu[0] * UTU[0][1] + dxdu[1] * UTU[1][1] + dxdu[2] * UTU[2][1];
+        Q(0,2) = dxdu[0] * UTU[0][2] + dxdu[1] * UTU[1][2] + dxdu[2] * UTU[2][2];
+
+        Q(1,0) = dxdv[0] * UTU[0][0] + dxdv[1] * UTU[1][0] + dxdv[2] * UTU[2][0];
+        Q(1,1) = dxdv[0] * UTU[0][1] + dxdv[1] * UTU[1][1] + dxdv[2] * UTU[2][1];
+        Q(1,2) = dxdv[0] * UTU[0][2] + dxdv[1] * UTU[1][2] + dxdv[2] * UTU[2][2];
+
+        Eigen::MatrixXd leftSide(2,3), rightSide(3, 2);
+        leftSide(0,0) = dSdu[0] - drdu * U[0];
+        leftSide(0,1) = dSdu[1] - drdu * U[1];
+        leftSide(0,2) = dSdu[2] - drdu * U[2];
+
+        leftSide(1,0) = dSdv[0] - drdv * U[0];
+        leftSide(1,1) = dSdv[1] - drdv * U[1];
+        leftSide(1,2) = dSdv[2] - drdv * U[2];
+
+        Eigen::Matrix2d QQT, QQT_inv;
+        QQT = Q * Q.transpose();
+        QQT_inv = QQT.inverse();
+
+        rightSide = Q.transpose() * QQT_inv;
+
+        Eigen::Matrix2d rSradMat;
+        rSradMat = leftSide * rightSide;
+        rSradMat.transposeInPlace();
+        // 3. compute rSrad penalty
+        Eigen::SelfAdjointEigenSolver<Eigen::Matrix2d> eigensolver(rSradMat);
+        double maxEigen = eigensolver.eigenvalues()[1];
+
+        penalty += std::max(0.0, maxEigen - 1);
+      }
+    }
 
     return penalty;
   }
