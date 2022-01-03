@@ -92,6 +92,8 @@ public:
 
   bool InterpolateSRep(vtkMRMLEllipticalSRepNode* srepNode, size_t interpolationlevel, vtkMRMLEllipticalSRepNode* destination);
 
+  std::unique_ptr<srep::EllipticalSRep> InterpolateSRep(const srep::EllipticalSRep& srep, size_t interpolationlevel);
+
 protected:
   vtkSlicerSRepLogic();
   virtual ~vtkSlicerSRepLogic();

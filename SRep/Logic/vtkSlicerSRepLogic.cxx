@@ -294,17 +294,27 @@ bool vtkSlicerSRepLogic::InterpolateSRep(vtkMRMLEllipticalSRepNode* srepNode, si
     return false;
   }
 
-  if (interpolationlevel < 1) {
-    vtkErrorMacro("InterpolateSRep: interpolationlevel must be greater than 1");
-    return false;
-  }
+  if (interpolationlevel == 0) {
+    destination->SetEllipticalSRep(std::unique_ptr<srep::EllipticalSRep>(srep->Clone()));
+    return true;
+  } else {
 
-  auto interpolatedSRep = sreplogic::InterpolateSRep(interpolationlevel, *srep);
-  if (!interpolatedSRep) {
-    vtkErrorMacro("InterpolateSRep: Unable to interpolate SRep");
-    return false;
-  }
+    auto interpolatedSRep = sreplogic::InterpolateSRep(interpolationlevel, *srep);
+    if (!interpolatedSRep) {
+      vtkErrorMacro("InterpolateSRep: Unable to interpolate SRep");
+      return false;
+    }
 
-  destination->SetEllipticalSRep(std::move(interpolatedSRep));
-  return true;
+    destination->SetEllipticalSRep(std::move(interpolatedSRep));
+    return true;
+  }
+}
+
+//----------------------------------------------------------------------------
+std::unique_ptr<srep::EllipticalSRep> vtkSlicerSRepLogic::InterpolateSRep(const srep::EllipticalSRep& srep, size_t interpolationlevel) {
+  if (interpolationlevel == 0) {
+    // 2^0 == 1 so it is a just a clone as is
+    return std::unique_ptr<srep::EllipticalSRep>(srep.Clone());
+  }
+  return sreplogic::InterpolateSRep(interpolationlevel, srep);
 }
