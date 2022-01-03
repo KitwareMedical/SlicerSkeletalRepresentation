@@ -23,14 +23,18 @@
 #include <vtkMRMLScene.h>
 
 // VTK includes
+#include <vtkCurvatures.h>
+#include <vtkDoubleArray.h>
 #include <vtkImageData.h>
 #include <vtkImageMagnitude.h>
 #include <vtkImageStencil.h>
+#include <vtkImplicitPolyDataDistance.h>
 #include <vtkIntArray.h>
 #include <vtkMatrix4x4.h>
 #include <vtkNew.h>
 #include <vtkObjectFactory.h>
 #include <vtkPointData.h>
+#include <vtkPointLocator.h>
 #include <vtkPoints.h>
 #include <vtkPolyData.h>
 #include <vtkPolyDataToImageStencil.h>
@@ -326,7 +330,8 @@ public:
     double L1Weight,
     double L2Weight)
     : m_voxelSpacing(0.005)
-    , m_sdfAndGradient(CreateAntiAliasSignedDistanceMap(polyData, m_voxelSpacing))
+    , m_polyData(polyData)
+    , m_sdfAndGradient(CreateAntiAliasSignedDistanceMap(m_polyData, m_voxelSpacing))
     , m_srepToImageCoordsTransform(CreateSRepToImageCoordsTransform(srep))
     , m_flattenedUpCoeff()
     , m_flattenedDownCoeff()
@@ -382,6 +387,7 @@ private:
   friend class MinNewouaHelper;
 
   double m_voxelSpacing;
+  vtkSmartPointer<vtkPolyData> m_polyData;
   SDFAndGradient m_sdfAndGradient;
   vtkSmartPointer<vtkMatrix4x4> m_srepToImageCoordsTransform;
   std::vector<double> m_flattenedUpCoeff;
@@ -401,10 +407,110 @@ private:
   //---------------------------------------------------------------------------
   void RefineSpokes(SpokeType spokeType) {
     if (spokeType == SpokeType::Crest) {
-
+      RefineCrestSpokes();
     } else {
       RefineUpDownSpokes(spokeType);
     }
+  }
+
+  //---------------------------------------------------------------------------
+  void OptimizeCrestSpokeLengths(const double stepSize, const size_t maxIter) {
+    constexpr double epsilon = 1e-5;
+    vtkNew<vtkImplicitPolyDataDistance> implicitPolyDataDistance;
+    implicitPolyDataDistance->SetInput(m_polyData);
+
+    auto grid = m_srep->GetSkeleton(); // deep copy
+    for (size_t l = 0; l < grid.size(); ++l) {
+      for (size_t s = 0; s < grid[l].size(); ++s) {
+        if (grid[l][s].IsCrest()) {
+          auto spoke = grid[l][s].GetCrestSpoke();
+          double dist = implicitPolyDataDistance->FunctionValue(spoke.GetBoundaryPoint().AsArray().data());
+          double oldDist = dist;
+          double thisStepSize = stepSize;
+          for (size_t i = 0; i < maxIter; ++i) {
+            if (abs(dist) <= epsilon) {
+              break;
+            }
+
+            if (dist > 0) {
+              // if spoke is too long, shorten it
+              spoke.SetRadius(spoke.GetRadius() - thisStepSize);
+            } else {
+              // if spoke is too short, make it larger
+              spoke.SetRadius(spoke.GetRadius() + thisStepSize);
+            }
+
+            dist = implicitPolyDataDistance->FunctionValue(spoke.GetBoundaryPoint().AsArray().data());
+            if (oldDist * dist < 0) {
+              // changed from outside to inside (or vice versa), decay step size
+              thisStepSize /= 10;
+            }
+            oldDist = dist;
+          }
+          grid[l][s].SetCrestSpoke(spoke);
+        }
+      }
+    }
+    m_srep = std::unique_ptr<srep::EllipticalSRep>(new srep::EllipticalSRep(std::move(grid)));
+  }
+
+  //---------------------------------------------------------------------------
+  void RefineCrestSpokes() {
+    OptimizeCrestSpokeLengths(m_stepSize, m_maxIterations);
+
+    vtkNew<vtkCurvatures> curvaturesFilter;
+    curvaturesFilter->SetInputData(m_polyData);
+    curvaturesFilter->SetCurvatureTypeToMaximum();
+    curvaturesFilter->Update();
+
+    vtkSmartPointer<vtkDoubleArray> maxC =
+      vtkDoubleArray::SafeDownCast(curvaturesFilter->GetOutput()->GetPointData()->GetArray("Maximum_Curvature"));
+
+    if(!maxC) {
+      throw std::runtime_error("Error getting max curvature");
+    }
+
+    curvaturesFilter->SetCurvatureTypeToMinimum();
+    curvaturesFilter->Update();
+
+    vtkSmartPointer<vtkDoubleArray> minC =
+        vtkDoubleArray::SafeDownCast(curvaturesFilter->GetOutput()->GetPointData()->GetArray("Minimum_Curvature"));
+    if(!minC) {
+      throw std::runtime_error("Error getting min curvature");
+    }
+
+    vtkNew<vtkPointLocator> locator;
+    locator->SetDataSet(m_polyData);
+    locator->BuildLocator();
+
+    auto grid = m_srep->GetSkeleton();
+    for (size_t l = 0; l < grid.size(); ++l) {
+      for (size_t s = 0; s < grid[l].size(); ++s) {
+        if (grid[l][s].IsCrest()) {
+          auto spoke = grid[l][s].GetCrestSpoke();
+          const vtkIdType idNearest = locator->FindClosestPoint(spoke.GetBoundaryPoint().AsArray().data());
+          const double curMax = maxC->GetValue(idNearest);
+          const double curMin = minC->GetValue(idNearest);
+          const double rCrest = 1 / (max(abs(curMax), abs(curMin)));
+          const double rDiff = spoke.GetRadius() - rCrest;
+          if (rDiff <= 0) {
+            continue;
+          }
+
+          // move skeletal point of this crest outward by rDiff
+          const auto unitDir = spoke.GetDirection().Unit();
+          const auto skeletalPoint = spoke.GetSkeletalPoint();
+          spoke.SetSkeletalPoint(srep::Point3d(
+            spoke.GetSkeletalPoint()[0] + unitDir[0] * rDiff,
+            spoke.GetSkeletalPoint()[1] + unitDir[1] * rDiff,
+            spoke.GetSkeletalPoint()[2] + unitDir[2] * rDiff));
+          spoke.SetRadius(rCrest);
+
+          grid[l][s].SetCrestSpoke(spoke);
+        }
+      }
+    }
+    m_srep = std::unique_ptr<srep::EllipticalSRep>(new srep::EllipticalSRep(std::move(grid)));
   }
 
   //---------------------------------------------------------------------------
@@ -553,6 +659,7 @@ private:
     return std::make_pair(totalDistSquared, totalNormalPenalty);
   }
 
+  //---------------------------------------------------------------------------
   void ComputeRSradDerivatives(
     const srep::EllipticalSRep& interpolatedSRep,
     SpokeType spokeType,
@@ -603,6 +710,7 @@ private:
     }
   }
 
+  //---------------------------------------------------------------------------
   // Uses the interpolated SRep and m_interpolationLevel to know which spokes are primary
   double ComputeRSradPenalty(const srep::EllipticalSRep& interpolatedSRep, SpokeType spokeType) {
     if (interpolatedSRep.IsEmpty()) {
@@ -689,7 +797,6 @@ private:
     return penalty;
   }
 
-  //---------------------------------------------------------------------------
   //---------------------------------------------------------------------------
   /// Evaluates the objective function.
   ///
