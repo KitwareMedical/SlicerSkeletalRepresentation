@@ -800,20 +800,27 @@ private:
   /// Fitting unbranching skeletal structures to objects.
   /// Medical Image Analysis, 70, 102020.
   double EvaluateObjectiveFunction(double* coeff, SpokeType spokeType) {
-    auto tempSRep = this->Refine(*m_srep, coeff, spokeType);
-    auto interpolatedTempSRep = m_srepLogic->InterpolateSRep(*tempSRep, m_interpolationLevel);
+    // this function cannot throw because it will cause a memory leak in min_newuoa
+    try {
+      auto tempSRep = this->Refine(*m_srep, coeff, spokeType);
+      auto interpolatedTempSRep = m_srepLogic->InterpolateSRep(*tempSRep, m_interpolationLevel);
 
-    const auto L0AndL1 = ComputeDistanceSquaredAndNormalToImage(*interpolatedTempSRep, spokeType);
-    const auto& distanceSquared = L0AndL1.first; // L0
-    const auto& normalPenalty = L0AndL1.second; // L1
+      const auto L0AndL1 = ComputeDistanceSquaredAndNormalToImage(*interpolatedTempSRep, spokeType);
+      const auto& distanceSquared = L0AndL1.first; // L0
+      const auto& normalPenalty = L0AndL1.second; // L1
 
-    const auto srad = ComputeRSradPenalty(*interpolatedTempSRep, spokeType); // L2
+      const auto srad = ComputeRSradPenalty(*interpolatedTempSRep, spokeType); // L2
 
-    const auto val =  distanceSquared * m_L0Weight + normalPenalty * m_L1Weight + srad * m_L2Weight;
-    this->IncrementIteration();
-    std::cout  << "Eval func " << m_iteration << ": " << val <<
-      " = " << (distanceSquared * m_L0Weight) << " + " << (normalPenalty * m_L1Weight) << " + " << (srad * m_L2Weight) << std::endl;
-    return val;
+      const auto val =  distanceSquared * m_L0Weight + normalPenalty * m_L1Weight + srad * m_L2Weight;
+      this->IncrementIteration();
+      std::cout  << "Eval func " << m_iteration << ": " << val <<
+        " = " << (distanceSquared * m_L0Weight) << " + " << (normalPenalty * m_L1Weight) << " + " << (srad * m_L2Weight) << std::endl;
+      return val;
+    } catch (const std::exception& e) {
+      std::cerr << "Error in SRepRefinement evaluating objective function: " << e.what() << std::endl;
+    } catch (...) {
+      std::cerr << "Unknown error in SRepRefinement evaluating objective function" << std::endl;
+    }
   }
 
   //---------------------------------------------------------------------------
