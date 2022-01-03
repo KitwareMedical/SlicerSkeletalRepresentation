@@ -78,7 +78,7 @@ QString qSlicerSRepModule::helpText() const
 //-----------------------------------------------------------------------------
 QString qSlicerSRepModule::acknowledgementText() const
 {
-  return "This work was partially funded by NIH grant TBD";
+  return "This work was heavily based off the original SRep work by Zhiyuan Liu, Megan Stuart, Jiyao Wang, Pablo Hernandez-Cerdan, Jean-Christophe Fillion-Robin";
 }
 
 //-----------------------------------------------------------------------------

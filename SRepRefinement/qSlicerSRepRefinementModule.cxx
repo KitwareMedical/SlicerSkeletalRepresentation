@@ -92,14 +92,14 @@ QString qSlicerSRepRefinementModule::helpText() const
 //-----------------------------------------------------------------------------
 QString qSlicerSRepRefinementModule::acknowledgementText() const
 {
-  return "This work was partially funded by NIH grant NXNNXXNNNNNN-NNXN";
+  return "This work was heavily based off the original SRep work by Zhiyuan Liu, Megan Stuart, Jiyao Wang, Pablo Hernandez-Cerdan, Jean-Christophe Fillion-Robin";
 }
 
 //-----------------------------------------------------------------------------
 QStringList qSlicerSRepRefinementModule::contributors() const
 {
   QStringList moduleContributors;
-  moduleContributors << QString("John Doe (AnyWare Corp.)");
+  moduleContributors << QString("Connor Bowley (Kitware, Inc.)");
   return moduleContributors;
 }
 
