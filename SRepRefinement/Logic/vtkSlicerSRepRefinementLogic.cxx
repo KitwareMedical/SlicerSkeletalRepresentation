@@ -322,8 +322,8 @@ public:
   Refiner(
     const srep::EllipticalSRep& srep,
     vtkPolyData* polyData,
-    double stepSize,
-    double endCriterion,
+    double initialRegionSize,
+    double finalRegionSize,
     int maxIterations,
     int interpolationLevel,
     double L0Weight,
@@ -335,8 +335,8 @@ public:
     , m_srepToImageCoordsTransform(CreateSRepToImageCoordsTransform(srep))
     , m_flattenedUpCoeff()
     , m_flattenedDownCoeff()
-    , m_stepSize(stepSize)
-    , m_endCriterion(endCriterion)
+    , m_initialRegionSize(initialRegionSize)
+    , m_finalRegionSize(finalRegionSize)
     , m_maxIterations(maxIterations)
     , m_interpolationLevel(interpolationLevel)
     , m_srep(srep.Clone())
@@ -387,8 +387,8 @@ private:
   vtkSmartPointer<vtkMatrix4x4> m_srepToImageCoordsTransform;
   std::vector<double> m_flattenedUpCoeff;
   std::vector<double> m_flattenedDownCoeff;
-  double m_stepSize;
-  double m_endCriterion;
+  double m_initialRegionSize;
+  double m_finalRegionSize;
   int m_maxIterations;
   int m_interpolationLevel;
   std::unique_ptr<srep::EllipticalSRep> m_srep;
@@ -451,7 +451,9 @@ private:
 
   //---------------------------------------------------------------------------
   void RefineCrestSpokes() {
-    OptimizeCrestSpokeLengths(m_stepSize, m_maxIterations);
+    // it makes no real sense to have the initial region size for min_newuoa (not used here) be the step size for
+    // this optimization, but it was how it was before.
+    OptimizeCrestSpokeLengths(m_initialRegionSize, m_maxIterations);
 
     vtkNew<vtkCurvatures> curvaturesFilter;
     curvaturesFilter->SetInputData(m_polyData);
@@ -512,7 +514,7 @@ private:
   void RefineUpDownSpokes(SpokeType spokeType) {
     m_currentCoeff = spokeType == SpokeType::Up ? &m_flattenedUpCoeff : &m_flattenedDownCoeff;
     MinNewouaHelper helper(*this, spokeType);
-    min_newuoa(static_cast<int>(m_currentCoeff->size()), m_currentCoeff->data(), helper, m_stepSize, m_endCriterion, m_maxIterations);
+    min_newuoa(static_cast<int>(m_currentCoeff->size()), m_currentCoeff->data(), helper, m_initialRegionSize, m_finalRegionSize, m_maxIterations);
 
     auto tempSRep = this->Refine(*m_srep, m_currentCoeff->data(), spokeType);
 
@@ -823,15 +825,15 @@ private:
 std::unique_ptr<srep::EllipticalSRep> RefineSRep(
   const srep::EllipticalSRep& srep,
   vtkPolyData* polyData,
-  double stepSize,
-  double endCriterion,
+  double initialRegionSize,
+  double finalRegionSize,
   int maxIterations,
   int interpolationLevel,
   double L0Weight,
   double L1Weight,
   double L2Weight)
 {
-  Refiner refiner(srep, polyData, stepSize, endCriterion, maxIterations, interpolationLevel, L0Weight, L1Weight, L2Weight);
+  Refiner refiner(srep, polyData, initialRegionSize, finalRegionSize, maxIterations, interpolationLevel, L0Weight, L1Weight, L2Weight);
   return refiner.Run();
 }
 
@@ -856,8 +858,8 @@ void vtkSlicerSRepRefinementLogic::PrintSelf(ostream& os, vtkIndent indent)
 vtkMRMLEllipticalSRepNode* vtkSlicerSRepRefinementLogic::Run(
   vtkMRMLModelNode* model,
   vtkMRMLEllipticalSRepNode* srepNode,
-  double stepSize,
-  double endCriterion,
+  double initialRegionSize,
+  double finalRegionSize,
   int maxIterations,
   int interpolationLevel,
   double L0Weight,
@@ -870,7 +872,7 @@ vtkMRMLEllipticalSRepNode* vtkSlicerSRepRefinementLogic::Run(
   }
   vtkMRMLEllipticalSRepNode* destination = vtkMRMLEllipticalSRepNode::SafeDownCast(scene->AddNewNodeByClass("vtkMRMLEllipticalSRepNode"));
   try {
-    this->Run(model, srepNode, stepSize, endCriterion, maxIterations, interpolationLevel, L0Weight, L1Weight, L2Weight, destination);
+    this->Run(model, srepNode, initialRegionSize, finalRegionSize, maxIterations, interpolationLevel, L0Weight, L1Weight, L2Weight, destination);
     return destination;
   } catch (...) {
     scene->RemoveNode(destination);
@@ -882,8 +884,8 @@ vtkMRMLEllipticalSRepNode* vtkSlicerSRepRefinementLogic::Run(
 void vtkSlicerSRepRefinementLogic::Run(
   vtkMRMLModelNode* model,
   vtkMRMLEllipticalSRepNode* srepNode,
-  double stepSize,
-  double endCriterion,
+  double initialRegionSize,
+  double finalRegionSize,
   int maxIterations,
   int interpolationLevel,
   double L0Weight,
@@ -908,8 +910,8 @@ void vtkSlicerSRepRefinementLogic::Run(
     auto refinedSRep = RefineSRep(
       *srepNode->GetEllipticalSRep(),
       model->GetPolyData(),
-      stepSize,
-      endCriterion,
+      initialRegionSize,
+      finalRegionSize,
       maxIterations,
       interpolationLevel,
       L0Weight,
