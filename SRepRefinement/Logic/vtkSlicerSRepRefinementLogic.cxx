@@ -359,12 +359,7 @@ public:
   }
 
 private:
-  enum class SpokeType {
-    Up,
-    Down,
-    Crest
-  };
-
+  using SpokeType = srep::SkeletalPoint::SpokeType;
   using GetSpokeFunctionType = const srep::Spoke& (srep::SkeletalPoint::*)() const;
   using SetSpokeFunctionType = void (srep::SkeletalPoint::*)(const srep::Spoke&);
 
@@ -534,38 +529,10 @@ private:
           + std::to_string(finalGrid.size()) + "!=" + std::to_string(refinedGrid.size()));
       }
       for (size_t j = 0; j < finalGrid[i].size(); ++j) {
-        if (spokeType == SpokeType::Up) {
-          finalGrid[i][j].SetUpSpoke(refinedGrid[i][j].GetUpSpoke());
-        } else if (spokeType == SpokeType::Down) {
-          finalGrid[i][j].SetDownSpoke(refinedGrid[i][j].GetDownSpoke());
-        }
+        finalGrid[i][j].SetSpoke(spokeType, refinedGrid[i][j].GetSpoke(spokeType));
       }
     }
     m_srep = std::unique_ptr<srep::EllipticalSRep>(new srep::EllipticalSRep(std::move(finalGrid)));
-  }
-
-  //---------------------------------------------------------------------------
-  static GetSpokeFunctionType GetSpokeFunction(SpokeType spokeType) {
-    if (spokeType == SpokeType::Up) {
-      return &srep::SkeletalPoint::GetUpSpoke;
-    } else if (spokeType == SpokeType::Down) {
-      return &srep::SkeletalPoint::GetDownSpoke;
-    } else if (spokeType == SpokeType::Crest) {
-      return &srep::SkeletalPoint::GetCrestSpoke;
-    }
-    throw std::invalid_argument("Unknown spoke type for GetSpokeFunction: " + std::to_string(static_cast<int>(spokeType)));
-  }
-
-  //---------------------------------------------------------------------------
-  static SetSpokeFunctionType SetSpokeFunction(SpokeType spokeType) {
-    if (spokeType == SpokeType::Up) {
-      return &srep::SkeletalPoint::SetUpSpoke;
-    } else if (spokeType == SpokeType::Down) {
-      return &srep::SkeletalPoint::SetDownSpoke;
-    } else if (spokeType == SpokeType::Crest) {
-      return &srep::SkeletalPoint::SetCrestSpoke;
-    }
-    throw std::invalid_argument("Unknown spoke type for SetSpokeFunction: " + std::to_string(static_cast<int>(spokeType)));
   }
 
   //---------------------------------------------------------------------------
@@ -575,13 +542,10 @@ private:
     constexpr double tolerance = 1e-13;
     auto grid = srep.GetSkeleton(); //note this is a deep copy
     if (spokeType == SpokeType::Up || spokeType == SpokeType::Down) {
-      auto getSpoke = GetSpokeFunction(spokeType);
-      auto setSpoke = SetSpokeFunction(spokeType);
-
       size_t c = 0; //coeff index
       for (size_t i = 0; i < grid.size(); ++i) {
         for (size_t j = 0; j < grid[i].size(); ++j) {
-          const auto spoke = (grid[i][j].*getSpoke)();
+          const auto spoke = grid[i][j].GetSpoke(spokeType);
           const double oldRadius = spoke.GetRadius();
           const auto oldUnitDir = spoke.GetDirection().Unit();
 
@@ -595,7 +559,7 @@ private:
             || abs(oldUnitDir[2] - newUnitDir[2]) >= tolerance)
           {
             srep::Spoke newSpoke(spoke.GetSkeletalPoint(), newUnitDir * newRadius);
-            (grid[i][j].*setSpoke)(newSpoke);
+            grid[i][j].SetSpoke(spokeType, newSpoke);
           }
         }
       }
@@ -607,15 +571,13 @@ private:
 
   //---------------------------------------------------------------------------
   std::pair<double, double> ComputeDistanceSquaredAndNormalToImage(const srep::EllipticalSRep& srep, SpokeType spokeType) {
-    auto getSpoke = GetSpokeFunction(spokeType);
-
     double totalDistSquared = 0.0;
     double totalNormalPenalty = 0.0;
 
     const auto& grid = srep.GetSkeleton();
     for (size_t line = 0; line < grid.size(); ++line) {
       for (size_t step = 0; step < grid[line].size(); ++step) {
-        const auto spoke = (grid[line][step].*getSpoke)();
+        const auto spoke = grid[line][step].GetSpoke(spokeType);
         const auto boundaryPoint = spoke.GetBoundaryPoint();
 
         // transform boundary to image coordinate system
@@ -675,10 +637,6 @@ private:
     const auto density = Pow(2, m_interpolationLevel);
     const auto stepSize = 1.0 / density;
     const auto& grid = interpolatedSRep.GetSkeleton();
-    const auto getSpoke = [&](size_t l, size_t s) {
-       auto getSpokeFunc = GetSpokeFunction(spokeType);
-       return (grid[l][s].*getSpokeFunc)();
-    };
     const auto numLines = grid.size();
     const auto numSteps = grid[0].size();
 
@@ -687,8 +645,8 @@ private:
       const auto prevLine = (numLines + line - 1) % numLines;
       const auto nextLine = (numLines + line + 1) % numLines;
 
-      const auto u1 = getSpoke(prevLine, step);
-      const auto u2 = getSpoke(nextLine, step);
+      const auto u1 = grid[prevLine][step].GetSpoke(spokeType);
+      const auto u2 = grid[nextLine][step].GetSpoke(spokeType);
 
       drdu = (u2.GetRadius() - u1.GetRadius()) / stepSize / 2;
       dxdu = (u2.GetDirection().Unit() - u1.GetDirection().Unit()) / stepSize / 2;
@@ -701,8 +659,8 @@ private:
       const auto nextStep = step == numSteps - 1 ? numSteps - 1 : step + 1;
       const auto divisor = prevStep == step || nextStep == step ? 1 : 2;
 
-      const auto v1 = getSpoke(line, prevStep);
-      const auto v2 = getSpoke(line, nextStep);
+      const auto v1 = grid[line][prevStep].GetSpoke(spokeType);
+      const auto v2 = grid[line][nextStep].GetSpoke(spokeType);
 
       drdv = (v2.GetRadius() - v1.GetRadius()) / stepSize / divisor;
       dxdv = (v2.GetDirection().Unit() - v1.GetDirection().Unit()) / stepSize / divisor;
@@ -723,10 +681,6 @@ private:
     const auto& grid = interpolatedSRep.GetSkeleton();
     const auto numLines = grid.size() / density;
     const auto numSteps = grid[0].size() / density;
-    const auto getSpoke = [&](size_t l, size_t s) {
-       auto getSpokeFunc = GetSpokeFunction(spokeType);
-       return (grid[l][s].*getSpokeFunc)();
-    };
 
     srep::Vector3d dxdu;
     srep::Vector3d dSdu;
@@ -744,7 +698,7 @@ private:
         // v is step-to-step direction
         ComputeRSradDerivatives(interpolatedSRep, spokeType, ii, jj, dxdu, dSdu, drdu, dxdv, dSdv, drdv);
 
-        const auto U = getSpoke(ii,jj).GetDirection().Unit();
+        const auto U = grid[ii][jj].GetSpoke(spokeType).GetDirection().Unit();
 
         // 2. construct rSrad Matrix
         double UTU[3][3]; // UT*U - I

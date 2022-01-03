@@ -67,19 +67,7 @@ T MinValue(const std::array<T,N>& arr) {
 
 //----------------------------------------------------------------------------
 const srep::Spoke& SRepInterpolateHelper::GetSpoke(const Grid& grid, const LineStep& loc, SpokeType spokeType) {
-  return SRepInterpolateHelper::GetSpoke(grid[loc.line][loc.step], spokeType);
-}
-
-//----------------------------------------------------------------------------
-const srep::Spoke& SRepInterpolateHelper::GetSpoke(const srep::SkeletalPoint& pt, SpokeType spokeType) {
-  if (spokeType == SpokeType::Up) {
-    return pt.GetUpSpoke();
-  } else if (spokeType == SpokeType::Down) {
-    return pt.GetDownSpoke();
-  } else if (spokeType == SpokeType::Crest) {
-    return pt.GetCrestSpoke();
-  }
-  throw std::invalid_argument("Unknown spoke type");
+  return grid[loc.line][loc.step].GetSpoke(spokeType);
 }
 
 //----------------------------------------------------------------------------

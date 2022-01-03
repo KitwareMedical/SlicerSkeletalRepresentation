@@ -40,12 +40,7 @@ private:
   using Quad = std::array<LineStep, 4>;
   using OptionalLineStep = std::pair<LineStep, bool>;
   using SkeletalPoint = srep::SkeletalPoint;
-
-  enum class SpokeType {
-    Up,
-    Down,
-    Crest
-  };
+  using SpokeType = SkeletalPoint::SpokeType;
 
   struct UVDerivative {
     srep::Vector3d u;
@@ -62,7 +57,6 @@ private:
   static std::vector<Quad> GetOrientedQuads(const Grid& grid);
 
   static const srep::Spoke& GetSpoke(const Grid& grid, const LineStep& loc, SpokeType spokeType);
-  static const srep::Spoke& GetSpoke(const SkeletalPoint& pt, SpokeType spokeType);
   const srep::Spoke& GetInterpolatedSpoke(const LineStep& loc, SpokeType spokeType);
   const srep::SkeletalPoint& GetInterpolatedSkeletalPoint(const LineStep& loc);
 

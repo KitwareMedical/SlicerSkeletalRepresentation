@@ -14,6 +14,12 @@ public:
 
 class SkeletalPoint {
 public:
+    enum class SpokeType {
+        Up,
+        Down,
+        Crest
+    };
+
     SkeletalPoint();
     /// Constructs a non-crest skeletal point.
     SkeletalPoint(const Spoke& upSpoke, const Spoke& downSpoke);
@@ -54,6 +60,12 @@ public:
     void SetCrestSpoke(const Spoke* spoke);
     /// Sets crest spoke.
     void SetCrestSpoke(const Spoke& spoke);
+
+    /// Gets the given spoke.
+    /// @throws NotACrestException if spokeType is SpokeType::Crest and IsCrest returns false.
+    const Spoke& GetSpoke(SpokeType spokeType) const;
+    /// Sets the given spoke
+    void SetSpoke(SpokeType spokeType, const Spoke& spoke);
 
 private:
     Spoke UpSpoke;

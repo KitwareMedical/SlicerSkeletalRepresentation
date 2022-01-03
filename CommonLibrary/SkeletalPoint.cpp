@@ -59,6 +59,34 @@ bool SkeletalPoint::IsCrest() const {
     return this->HasCrestSpoke;
 }
 
+const Spoke& SkeletalPoint::GetSpoke(SpokeType spokeType) const {
+    if (spokeType == SpokeType::Up) {
+        return this->GetUpSpoke();
+    }
+    else if (spokeType == SpokeType::Down) {
+        return this->GetDownSpoke();
+    }
+    else if (spokeType == SpokeType::Crest) {
+        return this->GetCrestSpoke();
+    } else {
+        throw std::invalid_argument("Unknown spokeType " + std::to_string(static_cast<int>(spokeType)));
+    }
+}
+
+void SkeletalPoint::SetSpoke(SpokeType spokeType, const Spoke& spoke) {
+    if (spokeType == SpokeType::Up) {
+        this->SetUpSpoke(spoke);
+    }
+    else if (spokeType == SpokeType::Down) {
+        this->SetDownSpoke(spoke);
+    }
+    else if (spokeType == SpokeType::Crest) {
+        this->SetCrestSpoke(spoke);
+    } else {
+        throw std::invalid_argument("Unknown spokeType " + std::to_string(static_cast<int>(spokeType)));
+    }
+}
+
 bool operator==(const SkeletalPoint& a, const SkeletalPoint& b) {
     bool ret = a.GetUpSpoke() == b.GetUpSpoke()
         && a.GetDownSpoke() == b.GetDownSpoke()
