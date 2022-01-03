@@ -128,6 +128,11 @@ void vtkMRMLSRepNode::GetBounds(double bounds[6]) {
 }
 
 //----------------------------------------------------------------------------
+void vtkMRMLSRepNode::GetSRepBounds(const srep::MeshSRepInterface& srep, double bounds[6]) {
+  vtkMRMLSRepNode::GetSRepBounds(&srep, bounds);
+}
+
+//----------------------------------------------------------------------------
 void vtkMRMLSRepNode::GetSRepBounds(const srep::MeshSRepInterface* srep, double bounds[6]) {
   vtkBoundingBox box;
 

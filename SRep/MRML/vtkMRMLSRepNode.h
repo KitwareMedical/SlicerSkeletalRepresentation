@@ -42,6 +42,7 @@ public:
   void GetRASBounds(double bounds[6]) override;
   void GetBounds(double bounds[6]) override;
   static void GetSRepBounds(const srep::MeshSRepInterface* srep, double bounds[6]);
+  static void GetSRepBounds(const srep::MeshSRepInterface& srep, double bounds[6]);
 
   //--------------------------------------------------------------------------
   // MRMLNode methods
