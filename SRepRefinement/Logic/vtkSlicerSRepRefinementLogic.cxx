@@ -55,6 +55,7 @@
 
 #include "Private/newuoa.h"
 
+using Bounds = std::array<double, 6>;
 using Pixel = unsigned char;
 using ImageType = itk::Image<Pixel, 3>;
 using RealImage = itk::Image<float, 3>;
@@ -78,10 +79,7 @@ size_t Pow(size_t val, size_t exp) {
 }
 
 //---------------------------------------------------------------------------
-vtkSmartPointer<vtkMatrix4x4> CreateSRepToImageCoordsTransform(const srep::EllipticalSRep& srep) {
-  double bounds[6];
-  vtkMRMLSRepNode::GetSRepBounds(srep, bounds);
-
+vtkSmartPointer<vtkMatrix4x4> CreateBoundsToImageCoordsTransform(const Bounds& bounds) {
   const double xRange = bounds[1] - bounds[0];
   const double yRange = bounds[3] - bounds[2];
   const double zRange = bounds[5] - bounds[4];
@@ -122,7 +120,7 @@ vtkSmartPointer<vtkMatrix4x4> CreateSRepToImageCoordsTransform(const srep::Ellip
 }
 
 //---------------------------------------------------------------------------
-std::array<double, 6> ComputePolyDataToImageDataNewBounds(const std::array<double, 6>& bounds)
+Bounds ComputePolyDataToImageDataNewBounds(const Bounds& bounds)
 {
   const double range[3] = {
     bounds[1] - bounds[0], // The range of x coordinate
@@ -134,7 +132,7 @@ std::array<double, 6> ComputePolyDataToImageDataNewBounds(const std::array<doubl
   const double ratioZY = range[2] / range[1];
 
   const double newCenter[3] = {0.5, 0.5, 0.5};
-  std::array<double, 6> newBounds;
+  Bounds newBounds;
   // put the longest axis to [0,1], scale other coordinates accordingly
   if(range[0] >= range[1] && range[0] >= range[2])
   {
@@ -167,17 +165,14 @@ std::array<double, 6> ComputePolyDataToImageDataNewBounds(const std::array<doubl
 }
 
 //---------------------------------------------------------------------------
-vtkSmartPointer<vtkImageData> ConvertPolyDataToImageData(vtkPolyData* polydata, const double voxelSpacing)
+// bounds must be able to contain the bounds of the polydata
+vtkSmartPointer<vtkImageData> ConvertPolyDataToImageData(vtkPolyData* polydata, const Bounds& bounds, const double voxelSpacing)
 {
   if (!polydata) {
     throw std::invalid_argument("expected non null PolyData when converting PolyData to ImageData");
   }
 
-  std::array<double, 6> bounds;
-
   // 1. transform the mesh into unit cube
-  auto transMesh = vtkSmartPointer<vtkPolyData>::New();
-  polydata->GetBounds(bounds.data());
   const double range[3] = {
     bounds[1] - bounds[0], // The range of x coordinate
     bounds[3] - bounds[2],
@@ -201,6 +196,8 @@ vtkSmartPointer<vtkImageData> ConvertPolyDataToImageData(vtkPolyData* polydata, 
       newPts->InsertPoint(i, newPt);
   }
   newPts->Modified();
+
+  auto transMesh = vtkSmartPointer<vtkPolyData>::New();
   transMesh->SetPoints(newPts);
   transMesh->SetPolys(polydata->GetPolys());
 
@@ -222,9 +219,9 @@ vtkSmartPointer<vtkImageData> ConvertPolyDataToImageData(vtkPolyData* polydata, 
   whiteImage->SetExtent(0, dim[0] - 1, 0, dim[1] - 1, 0, dim[2] - 1);
 
   double origin[3];
-  origin[0] = newBounds[0]; //bounds[0] + spacing[0]/2;//0.5 * (bounds[0] + bounds[1]);
-  origin[1] = newBounds[2]; //bounds[2] + spacing[1]/2;//0.5 * (bounds[3] + bounds[2]);
-  origin[2] = newBounds[4]; //bounds[4] + spacing[2]/2;//0.5 * (bounds[5] + bounds[4]);
+  origin[0] = newBounds[0];
+  origin[1] = newBounds[2];
+  origin[2] = newBounds[4];
 
   whiteImage->SetOrigin(origin);
   whiteImage->AllocateScalars(VTK_UNSIGNED_CHAR,1);
@@ -306,13 +303,33 @@ itk::SmartPointer<VectorImage> CreateGradientDistanceFilter(itk::SmartPointer<Re
 }
 
 //---------------------------------------------------------------------------
-SDFAndGradient CreateAntiAliasSignedDistanceMap(vtkPolyData* polyData, double voxelSpacing)
+// bounds must be able to contain the bounds of the polydata
+SDFAndGradient CreateAntiAliasSignedDistanceMap(vtkPolyData* polyData, const Bounds& bounds, double voxelSpacing)
 {
-  auto imageData = ConvertPolyDataToImageData(polyData, voxelSpacing);
+  auto imageData = ConvertPolyDataToImageData(polyData, bounds, voxelSpacing);
   auto antiAliasedSDFImage = CreateApproximateSignedDistanceMap(imageData);
   auto gradDistFilter = CreateGradientDistanceFilter(antiAliasedSDFImage);
 
   return std::make_tuple(antiAliasedSDFImage, gradDistFilter);
+}
+
+//---------------------------------------------------------------------------
+Bounds ComputeMasterBounds(vtkPolyData* polyData, const srep::EllipticalSRep& srep) {
+  if (!polyData) {
+    throw std::invalid_argument("Expected existing polydata for computing bounds");
+  }
+
+  Bounds srepBounds;
+  vtkMRMLSRepNode::GetSRepBounds(srep, srepBounds.data());
+
+  Bounds polyDataBounds;
+  polyData->GetBounds(polyDataBounds.data());
+
+  return Bounds{
+    std::min(srepBounds[0], polyDataBounds[0]), std::max(srepBounds[1], polyDataBounds[1]),
+    std::min(srepBounds[2], polyDataBounds[2]), std::max(srepBounds[3], polyDataBounds[3]),
+    std::min(srepBounds[4], polyDataBounds[4]), std::max(srepBounds[5], polyDataBounds[5])
+  };
 }
 
 /// Progress returned will be in range [0,1]
@@ -334,15 +351,16 @@ public:
     double L2Weight)
     : m_voxelSpacing(0.005)
     , m_polyData(polyData)
-    , m_sdfAndGradient(CreateAntiAliasSignedDistanceMap(m_polyData, m_voxelSpacing))
-    , m_srepToImageCoordsTransform(CreateSRepToImageCoordsTransform(srep))
+    , m_srep(srep.Clone())
+    , m_masterBounds(ComputeMasterBounds(m_polyData, *m_srep))
+    , m_sdfAndGradient(CreateAntiAliasSignedDistanceMap(m_polyData, m_masterBounds, m_voxelSpacing))
+    , m_srepToImageCoordsTransform(CreateBoundsToImageCoordsTransform(m_masterBounds))
     , m_flattenedUpCoeff()
     , m_flattenedDownCoeff()
     , m_initialRegionSize(initialRegionSize)
     , m_finalRegionSize(finalRegionSize)
     , m_maxIterations(maxIterations)
     , m_interpolationLevel(interpolationLevel)
-    , m_srep(srep.Clone())
     , m_currentCoeff(nullptr)
     , m_srepLogic()
     , m_L0Weight(L0Weight)
@@ -399,6 +417,8 @@ private:
 
   double m_voxelSpacing;
   vtkSmartPointer<vtkPolyData> m_polyData;
+  std::unique_ptr<srep::EllipticalSRep> m_srep;
+  Bounds m_masterBounds;
   SDFAndGradient m_sdfAndGradient;
   vtkSmartPointer<vtkMatrix4x4> m_srepToImageCoordsTransform;
   std::vector<double> m_flattenedUpCoeff;
@@ -407,7 +427,6 @@ private:
   double m_finalRegionSize;
   int m_maxIterations;
   int m_interpolationLevel;
-  std::unique_ptr<srep::EllipticalSRep> m_srep;
   std::vector<double>* m_currentCoeff;
   vtkNew<vtkSlicerSRepLogic> m_srepLogic;
   double m_L0Weight;
@@ -417,10 +436,13 @@ private:
   int m_totalProgressIterations;
   ProgressCallbackFunction m_progressCallback;
 
+  //---------------------------------------------------------------------------
   void IncrementIteration() {
     ++m_iteration;
     ReportProgress();
   }
+
+  //---------------------------------------------------------------------------
   void ReportProgress() {
     if (m_progressCallback) {
       // we go through max iterations 3 times (up, down, crest)
@@ -818,8 +840,10 @@ private:
       return val;
     } catch (const std::exception& e) {
       std::cerr << "Error in SRepRefinement evaluating objective function: " << e.what() << std::endl;
+      return 1e10;
     } catch (...) {
       std::cerr << "Unknown error in SRepRefinement evaluating objective function" << std::endl;
+      return 1e10;
     }
   }
 
@@ -963,4 +987,3 @@ void vtkSlicerSRepRefinementLogic::Run(
     throw;
   }
 }
-
