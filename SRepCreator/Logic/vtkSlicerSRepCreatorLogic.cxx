@@ -47,6 +47,8 @@
 
 // STD includes
 #include <cassert>
+#include <numeric>
+#include <random>
 #include <sstream>
 
 namespace {
@@ -180,6 +182,23 @@ std::string vtkSlicerSRepCreatorLogic::TempFolder() {
 }
 
 //---------------------------------------------------------------------------
+void vtkSlicerSRepCreatorLogic::WriteIteration(vtkPolyData* mesh, const size_t iteration) {
+  vtkNew<vtkPoints> points;
+  double p[3];
+  for (const auto id : this->IdsToWrite) {
+    mesh->GetPoint(id, p);
+    points->InsertNextPoint(p);
+  }
+  vtkNew<vtkPolyData> polydata;
+  polydata->SetPoints(points);
+
+  vtkNew<vtkPolyDataWriter> writer;
+  writer->SetFileName(this->ForwardIterationFilename(iteration).c_str());
+  writer->SetInputData(polydata);
+  writer->Update();
+}
+
+//---------------------------------------------------------------------------
 vtkSlicerSRepCreatorLogic::EllipsoidParameters vtkSlicerSRepCreatorLogic::FlowSurfaceMeshToEllipsoid(
   vtkMRMLModelNode* model,
   const double dt,
@@ -195,10 +214,7 @@ vtkSlicerSRepCreatorLogic::EllipsoidParameters vtkSlicerSRepCreatorLogic::FlowSu
   const auto ellipsoidParameters = CalculateBestFitEllipsoid(*flowedMesh);
   auto ellipsoidalMesh = this->SnapFlowedMeshToEllipsoid(*flowedMesh, ellipsoidParameters);
 
-  vtkNew<vtkPolyDataWriter> writer;
-  writer->SetFileName(this->ForwardIterationFilename(maxIterations+1).c_str());
-  writer->SetInputData(ellipsoidalMesh);
-  writer->Update();
+  this->WriteIteration(ellipsoidalMesh, maxIterations+1);
   ++this->ActualForwardIterations;
 
   if (outputEveryNumIterations != 0) {
@@ -228,6 +244,15 @@ vtkSmartPointer<vtkPolyData> vtkSlicerSRepCreatorLogic::FlowSurfaceMesh(
     return nullptr;
   }
 
+  { // get the subset of points we will save and use for backflow
+    // we will get a random 10% of the points
+    this->IdsToWrite.resize(mesh->GetNumberOfPoints());
+    std::iota(this->IdsToWrite.begin(), this->IdsToWrite.end(), 0);
+    std::shuffle(this->IdsToWrite.begin(), this->IdsToWrite.end(), std::mt19937{std::random_device{}()});
+    this->IdsToWrite.resize(this->IdsToWrite.size() / 10);
+    std::sort(this->IdsToWrite.begin(), this->IdsToWrite.end());
+  }
+
   //create a temp folder to store stuff for backwards flow in
   const auto tempFolder = this->TempFolder();
   if (tempFolder.empty()) {
@@ -254,8 +279,6 @@ vtkSmartPointer<vtkPolyData> vtkSlicerSRepCreatorLogic::FlowSurfaceMesh(
   vtkNew<vtkCurvatures> curvatureFilter;
   curvatureFilter->SetInputConnection(normalFilter->GetOutputPort());
   curvatureFilter->SetCurvatureTypeToMean();
-
-  vtkNew<vtkPolyDataWriter> writer;
 
   for (size_t i = 0; i < maxIterations; ++i) {
     this->ProgressTracker.SetForwardProgress(static_cast<double>(i) / maxIterations);
@@ -300,10 +323,7 @@ vtkSmartPointer<vtkPolyData> vtkSlicerSRepCreatorLogic::FlowSurfaceMesh(
     }
     points->Modified();
 
-    // TODO: do we need the mass stuff?
-    writer->SetFileName(this->ForwardIterationFilename(i+1).c_str());
-    writer->SetInputData(mesh);
-    writer->Update();
+    this->WriteIteration(mesh, i+1);
 
     if (outputEveryNumIterations != 0 && i % outputEveryNumIterations == 0) {
       this->MakeModelNode(mesh,
@@ -795,13 +815,13 @@ vtkMRMLEllipticalSRepNode* vtkSlicerSRepCreatorLogic::RunBackward(const size_t o
                   = targetLandMarks->GetPoints();
 
       // Read in the source points set
-      for(unsigned int i = 0, s = 0; i < polyData_source->GetNumberOfPoints(); i += 10, ++s) {
-          sourceLandMarkContainer->InsertElement(s, polyDataPointToPointType(*polyData_source, i));
+      for(unsigned int i = 0; i < polyData_source->GetNumberOfPoints(); ++i) {
+          sourceLandMarkContainer->InsertElement(i, polyDataPointToPointType(*polyData_source, i));
       }
 
       // Read in the target points set
-      for(unsigned int i = 0, s = 0; i < polyData_target->GetNumberOfPoints(); i += 10, ++s) {
-          targetLandMarkContainer->InsertElement(s, polyDataPointToPointType(*polyData_target, i));
+      for(unsigned int i = 0; i < polyData_target->GetNumberOfPoints(); ++i) {
+          targetLandMarkContainer->InsertElement(i, polyDataPointToPointType(*polyData_target, i));
       }
 
       TransformType::Pointer tps = TransformType::New();

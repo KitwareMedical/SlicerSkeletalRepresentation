@@ -240,6 +240,9 @@ private:
     vtkPolyData& alreadyFlowedMesh,
     const EllipsoidParameters& ellipsoid);
 
+  void WriteIteration(vtkPolyData* mesh, const size_t iteration);
+
+  std::vector<vtkIdType> IdsToWrite;
   size_t ActualForwardIterations;
   std::string SRepNodeId;
   std::string ModelName;
