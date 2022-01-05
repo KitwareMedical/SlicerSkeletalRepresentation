@@ -26,6 +26,7 @@
 // VTK includes
 #include <vtkCellLocator.h>
 #include <vtkCurvatures.h>
+#include <vtkDecimatePro.h>
 #include <vtkDoubleArray.h>
 #include <vtkGenericCell.h>
 #include <vtkIntArray.h>
@@ -245,11 +246,29 @@ vtkSmartPointer<vtkPolyData> vtkSlicerSRepCreatorLogic::FlowSurfaceMesh(
   }
 
   { // get the subset of points we will save and use for backflow
-    // we will get a random 10% of the points
-    this->IdsToWrite.resize(mesh->GetNumberOfPoints());
-    std::iota(this->IdsToWrite.begin(), this->IdsToWrite.end(), 0);
-    std::shuffle(this->IdsToWrite.begin(), this->IdsToWrite.end(), std::mt19937{std::random_device{}()});
-    this->IdsToWrite.resize(this->IdsToWrite.size() / 10);
+    // Get ~10% of the points that are distributed semi-nicely across the shape
+    this->IdsToWrite.clear();
+    this->IdsToWrite.reserve(mesh->GetNumberOfPoints() / 10);
+
+    vtkNew<vtkDecimatePro> decimate;
+    decimate->SetTargetReduction(0.9);
+    decimate->SetInputData(mesh);
+    decimate->Update();
+    vtkSmartPointer<vtkPolyData> decimatedMesh = decimate->GetOutput();
+
+    std::array<double, 3> pt;
+    std::array<double, 3> dpt;
+    for (int d = 0; d < decimatedMesh->GetNumberOfPoints(); ++d) {
+      decimatedMesh->GetPoint(d, dpt.data());
+      for (int o = 0; o < mesh->GetNumberOfPoints(); ++o) {
+        mesh->GetPoint(o, pt.data());
+        if (pt == dpt) {
+          this->IdsToWrite.push_back(o);
+          break;
+        }
+      }
+    }
+
     std::sort(this->IdsToWrite.begin(), this->IdsToWrite.end());
   }
 
