@@ -74,6 +74,11 @@ public:
   void SetSkeletonToCrestConnectionColor(const vtkColor3ub& color);
   const vtkColor3ub& GetSkeletonToCrestConnectionColor() const;
 
+  void SetSpineVisibility(bool visible);
+  bool GetSpineVisibility() const;
+  void SetSpineColor(const vtkColor3ub& color);
+  const vtkColor3ub& GetSpineColor() const;
+
   void SetAbsoluteThickness(double absoluteThickness);
   double GetAbsoluteThickness() const;
 
@@ -106,6 +111,7 @@ private:
   DisplayHelper CrestCurve;
   DisplayHelper SkeletalSheet;
   DisplayHelper SkeletonToCrestConnection;
+  DisplayHelper Spine;
   double RelativeThickness;
   double AbsoluteThickness;
   bool UseAbsoluteThickness;

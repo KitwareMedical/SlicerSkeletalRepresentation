@@ -144,6 +144,8 @@ void qSlicerSRepModuleWidgetPrivate::setupSRepUi(qSlicerWidget* widget) {
     [this](){ this->onColorChanged(this->crestCurveColorButton, &vtkMRMLSRepDisplayNode::SetCrestCurveColor);});
   QObject::connect(this->skeletonToCrestConnectionColorButton, &ctkColorPickerButton::colorChanged,
     [this](){ this->onColorChanged(this->skeletonToCrestConnectionColorButton, &vtkMRMLSRepDisplayNode::SetSkeletonToCrestConnectionColor);});
+  QObject::connect(this->spineColorButton, &ctkColorPickerButton::colorChanged,
+    [this](){ this->onColorChanged(this->spineColorButton, &vtkMRMLSRepDisplayNode::SetSpineColor);});
 
   //visibilities
   QObject::connect(this->upSpokeVisibleCheckbox, &QCheckBox::stateChanged,
@@ -158,6 +160,8 @@ void qSlicerSRepModuleWidgetPrivate::setupSRepUi(qSlicerWidget* widget) {
     [this](){ this->onVisibilityChanged(this->crestCurveVisibleCheckbox, &vtkMRMLSRepDisplayNode::SetCrestCurveVisibility);});
   QObject::connect(this->skeletonToCrestConnectionVisibleCheckbox, &QCheckBox::stateChanged,
     [this](){ this->onVisibilityChanged(this->skeletonToCrestConnectionVisibleCheckbox, &vtkMRMLSRepDisplayNode::SetSkeletonToCrestConnectionVisibility);});
+  QObject::connect(this->spineVisibleCheckbox, &QCheckBox::stateChanged,
+    [this](){ this->onVisibilityChanged(this->spineVisibleCheckbox, &vtkMRMLSRepDisplayNode::SetSpineVisibility);});
 
   QObject::connect(widget, SIGNAL(mrmlSceneChanged(vtkMRMLScene*)),
     this->interpolationOutputNodeCbox, SLOT(setMRMLScene(vtkMRMLScene*)));

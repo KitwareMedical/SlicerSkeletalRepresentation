@@ -94,7 +94,7 @@
       <string>Display</string>
      </property>
      <property name="collapsed">
-      <bool>true</bool>
+      <bool>false</bool>
      </property>
      <property name="flat">
       <bool>false</bool>
@@ -143,48 +143,6 @@
           </item>
          </layout>
         </item>
-        <item row="2" column="0">
-         <widget class="QLabel" name="label_6">
-          <property name="text">
-           <string>Up Spokes</string>
-          </property>
-         </widget>
-        </item>
-        <item row="3" column="0">
-         <widget class="QLabel" name="label_9">
-          <property name="text">
-           <string>Down Spokes</string>
-          </property>
-         </widget>
-        </item>
-        <item row="6" column="0">
-         <widget class="QLabel" name="label_11">
-          <property name="text">
-           <string>Skeletal Sheet</string>
-          </property>
-         </widget>
-        </item>
-        <item row="4" column="0">
-         <widget class="QLabel" name="label_10">
-          <property name="text">
-           <string>Crest Spokes</string>
-          </property>
-         </widget>
-        </item>
-        <item row="5" column="0">
-         <widget class="QLabel" name="label_12">
-          <property name="text">
-           <string>Crest Curve</string>
-          </property>
-         </widget>
-        </item>
-        <item row="7" column="0">
-         <widget class="QLabel" name="label_13">
-          <property name="text">
-           <string>Skeleton/Crest Connection</string>
-          </property>
-         </widget>
-        </item>
         <item row="1" column="0">
          <widget class="QLabel" name="label_16">
           <property name="text">
@@ -222,6 +180,13 @@
           </item>
          </layout>
         </item>
+        <item row="2" column="0">
+         <widget class="QLabel" name="label_6">
+          <property name="text">
+           <string>Up Spokes</string>
+          </property>
+         </widget>
+        </item>
         <item row="2" column="1">
          <layout class="QHBoxLayout" name="horizontalLayout_5">
           <item>
@@ -248,6 +213,11 @@
               <verstretch>0</verstretch>
              </sizepolicy>
             </property>
+            <property name="font">
+             <font>
+              <family>Courier 10 Pitch</family>
+             </font>
+            </property>
             <property name="text">
              <string/>
             </property>
@@ -261,6 +231,13 @@
            </widget>
           </item>
          </layout>
+        </item>
+        <item row="3" column="0">
+         <widget class="QLabel" name="label_9">
+          <property name="text">
+           <string>Down Spokes</string>
+          </property>
+         </widget>
         </item>
         <item row="3" column="1">
          <layout class="QHBoxLayout" name="horizontalLayout_6">
@@ -282,6 +259,11 @@
               <verstretch>0</verstretch>
              </sizepolicy>
             </property>
+            <property name="font">
+             <font>
+              <family>Courier 10 Pitch</family>
+             </font>
+            </property>
             <property name="color">
              <color>
               <red>189</red>
@@ -292,6 +274,13 @@
            </widget>
           </item>
          </layout>
+        </item>
+        <item row="4" column="0">
+         <widget class="QLabel" name="label_10">
+          <property name="text">
+           <string>Crest Spokes</string>
+          </property>
+         </widget>
         </item>
         <item row="4" column="1">
          <layout class="QHBoxLayout" name="horizontalLayout_7">
@@ -313,6 +302,11 @@
               <verstretch>0</verstretch>
              </sizepolicy>
             </property>
+            <property name="font">
+             <font>
+              <family>Courier 10 Pitch</family>
+             </font>
+            </property>
             <property name="color">
              <color>
               <red>255</red>
@@ -323,6 +317,13 @@
            </widget>
           </item>
          </layout>
+        </item>
+        <item row="5" column="0">
+         <widget class="QLabel" name="label_12">
+          <property name="text">
+           <string>Crest Curve</string>
+          </property>
+         </widget>
         </item>
         <item row="5" column="1">
          <layout class="QHBoxLayout" name="horizontalLayout_8">
@@ -344,6 +345,11 @@
               <verstretch>0</verstretch>
              </sizepolicy>
             </property>
+            <property name="font">
+             <font>
+              <family>Courier 10 Pitch</family>
+             </font>
+            </property>
             <property name="color">
              <color>
               <red>255</red>
@@ -354,6 +360,13 @@
            </widget>
           </item>
          </layout>
+        </item>
+        <item row="6" column="0">
+         <widget class="QLabel" name="label_11">
+          <property name="text">
+           <string>Skeletal Sheet</string>
+          </property>
+         </widget>
         </item>
         <item row="6" column="1">
          <layout class="QHBoxLayout" name="horizontalLayout_9">
@@ -375,6 +388,11 @@
               <verstretch>0</verstretch>
              </sizepolicy>
             </property>
+            <property name="font">
+             <font>
+              <family>Courier 10 Pitch</family>
+             </font>
+            </property>
             <property name="color">
              <color>
               <red>255</red>
@@ -385,6 +403,13 @@
            </widget>
           </item>
          </layout>
+        </item>
+        <item row="7" column="0">
+         <widget class="QLabel" name="label_13">
+          <property name="text">
+           <string>Skeleton/Crest Connection</string>
+          </property>
+         </widget>
         </item>
         <item row="7" column="1">
          <layout class="QHBoxLayout" name="horizontalLayout_10">
@@ -405,6 +430,54 @@
               <horstretch>0</horstretch>
               <verstretch>0</verstretch>
              </sizepolicy>
+            </property>
+            <property name="font">
+             <font>
+              <family>Courier 10 Pitch</family>
+             </font>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item row="8" column="0">
+         <widget class="QLabel" name="label_17">
+          <property name="text">
+           <string>Spine</string>
+          </property>
+         </widget>
+        </item>
+        <item row="8" column="1">
+         <layout class="QHBoxLayout" name="horizontalLayout_11">
+          <item>
+           <widget class="QCheckBox" name="spineVisibleCheckbox">
+            <property name="text">
+             <string/>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="ctkColorPickerButton" name="spineColorButton">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="font">
+             <font>
+              <family>Courier 10 Pitch</family>
+             </font>
+            </property>
+            <property name="color">
+             <color>
+              <red>188</red>
+              <green>143</green>
+              <blue>143</blue>
+             </color>
             </property>
            </widget>
           </item>

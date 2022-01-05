@@ -28,6 +28,7 @@ vtkMRMLSRepDisplayNode::vtkMRMLSRepDisplayNode()
     , CrestCurve(true, vtkColor3ub{255, 215, 0}) // Gold
     , SkeletalSheet(true, vtkColor3ub{255, 248, 220}) // Cornsilk
     , SkeletonToCrestConnection(true, vtkColor3ub{0, 0, 0}) // Black
+    , Spine(true, vtkColor3ub{188, 143, 143}) // RosyBrown
     , RelativeThickness(0.001)
     , AbsoluteThickness(0.25)
     , UseAbsoluteThickness(false)
@@ -89,6 +90,7 @@ SREP_DISPLAY_NODE_DISPLAY_HELPER_FUNCTIONS(CrestSpoke)
 SREP_DISPLAY_NODE_DISPLAY_HELPER_FUNCTIONS(CrestCurve)
 SREP_DISPLAY_NODE_DISPLAY_HELPER_FUNCTIONS(SkeletalSheet)
 SREP_DISPLAY_NODE_DISPLAY_HELPER_FUNCTIONS(SkeletonToCrestConnection)
+SREP_DISPLAY_NODE_DISPLAY_HELPER_FUNCTIONS(Spine)
 
 void vtkMRMLSRepDisplayNode::SetRelativeThickness(double relativeThickness) {
     if (relativeThickness < 0 || 1 < relativeThickness) {
