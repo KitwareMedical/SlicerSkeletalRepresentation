@@ -646,9 +646,9 @@ srep::Point3d SRepInterpolateHelper::InterpolateSkeletalPointSkeletonPoint(
   huThz[3] = hu[0] * hz[0][3] + hu[1] * hz[1][3] + hu[2] * hz[2][3] + hu[3] * hz[3][3];
 
   double output[3];
-  output[0] = huThx[0] * hv[0] + huThx[1] * hv[1] + huThx[2] * hv[2];
-  output[1] = huThy[0] * hv[0] + huThy[1] * hv[1] + huThy[2] * hv[2];
-  output[2] = huThz[0] * hv[0] + huThz[1] * hv[1] + huThz[2] * hv[2];
+  output[0] = huThx[0] * hv[0] + huThx[1] * hv[1] + huThx[2] * hv[2] + huThx[3] * hv[3];
+  output[1] = huThy[0] * hv[0] + huThy[1] * hv[1] + huThy[2] * hv[2] + huThy[3] * hv[3];
+  output[2] = huThz[0] * hv[0] + huThz[1] * hv[1] + huThz[2] * hv[2] + huThz[3] * hv[3];
 
   return srep::Point3d(output);
 }
