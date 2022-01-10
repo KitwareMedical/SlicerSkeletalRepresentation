@@ -29,6 +29,10 @@ Vector3d::Vector3d(const std::array<double, 3>& p)
     : Vector3d(p[0], p[1], p[2])
 {}
 
+Vector3d::Vector3d(const vtkVector3d& p)
+    : Vector3d(p[0], p[1], p[2])
+{}
+
 const double& Vector3d::operator[](size_t i) const {
     if (i == 0) {
         return this->X;
@@ -159,6 +163,12 @@ Point3d operator-(const Point3d& a, const Vector3d& b) {
 std::ostream& operator<<(std::ostream& os, const Vector3d& point) {
     os << "<" << point.GetX() << ", " << point.GetY() << ", " << point.GetZ() << ">";
     return os;
+}
+
+void PlaceInto(const Vector3d& v1, vtkVector3d& v2) {
+    v2[0] = v1[0];
+    v2[1] = v1[1];
+    v2[2] = v1[2];
 }
 
 }

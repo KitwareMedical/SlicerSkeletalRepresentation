@@ -25,6 +25,8 @@ public:
 
     explicit Vector3d(const std::array<double, 3>& p);
 
+    explicit Vector3d(const vtkVector3d& p);
+
     //copy and move defined and valid
     Vector3d(const Vector3d&) = default;
     Vector3d& operator=(const Vector3d&) = default;
@@ -109,6 +111,8 @@ Point3d operator+(const Point3d& a, const Vector3d& b);
 Point3d operator-(const Point3d& a, const Vector3d& b);
 
 std::ostream& operator<<(std::ostream& os, const Vector3d& point);
+
+void PlaceInto(const Vector3d& v1, vtkVector3d& v2);
 
 }
 

@@ -31,6 +31,10 @@ Point3d::Point3d(const std::array<double, 3>& p)
     : Point3d(p[0], p[1], p[2])
 {}
 
+Point3d::Point3d(const vtkVector3d& p)
+    : Point3d(p[0], p[1], p[2])
+{}
+
 const double& Point3d::operator[](size_t i) const {
     if (i == 0) {
         return this->X;
@@ -97,6 +101,12 @@ bool operator>=(const Point3d& a, const Point3d& b) {
 std::ostream& operator<<(std::ostream& os, const Point3d& point) {
     os << "(" << point.GetX() << ", " << point.GetY() << ", " << point.GetZ() << ")";
     return os;
+}
+
+void PlaceInto(const Point3d& p, vtkVector3d& v) {
+    v[0] = p[0];
+    v[1] = p[1];
+    v[2] = p[2];
 }
 
 }

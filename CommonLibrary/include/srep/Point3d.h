@@ -3,6 +3,7 @@
 
 #include <array>
 #include <iostream>
+#include <vtkVector.h>
 namespace srep {
 
 class Point3d {
@@ -17,6 +18,8 @@ public:
     explicit Point3d(const double p[3]);
 
     explicit Point3d(const std::array<double, 3>& p);
+
+    explicit Point3d(const vtkVector3d& p);
 
     //copy and move defined and valid
     Point3d(const Point3d&) = default;
@@ -68,6 +71,8 @@ bool operator<=(const Point3d& a, const Point3d& b);
 bool operator>=(const Point3d& a, const Point3d& b);
 
 std::ostream& operator<<(std::ostream& os, const Point3d& point);
+
+void PlaceInto(const Point3d& p, vtkVector3d& v);
 
 
 }
