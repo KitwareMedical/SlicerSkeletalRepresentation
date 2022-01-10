@@ -2,7 +2,10 @@
 #define __vtkMRMLEllipticalSRepNode_h
 
 #include "vtkMRMLSRepNode.h"
-#include "srep/EllipticalSRep.h"
+#include "vtkEllipticalSRep.h"
+
+vtkEllipticalSRep* TransformSRep(vtkEllipticalSRep* srep, vtkAbstractTransform* transform);
+vtkSmartPointer<vtkEllipticalSRep> SmartTransformSRep(vtkEllipticalSRep* srep, vtkAbstractTransform* transform);
 
 class VTK_SLICER_SREP_MODULE_MRML_EXPORT vtkMRMLEllipticalSRepNode
   : public vtkMRMLSRepNode
@@ -38,26 +41,30 @@ public:
   //--------------------------------------------------------------------------
   /// Gets the SRep, if any, before any transforms are applied.
   /// \sa GetSRepWorld, HasSRep
-  const srep::EllipticalSRep* GetEllipticalSRep() const;
+  const vtkEllipticalSRep* GetEllipticalSRep() const;
+  vtkEllipticalSRep* GetEllipticalSRep();
 
   /// Gets the SRep, if any, after all transforms are applied.
   /// If there are no transforms, this will be the same as GetSRep
   /// \sa GetSRep, HasSRep
-  const srep::EllipticalSRep* GetEllipticalSRepWorld() const;
+  const vtkEllipticalSRep* GetEllipticalSRepWorld() const;
 
   /// Sets the SRep. Takes sole ownership.
-  void SetEllipticalSRep(std::unique_ptr<srep::EllipticalSRep> srep);
+  void SetEllipticalSRep(vtkEllipticalSRep* srep);
 
-  const srep::MeshSRepInterface* GetSRep() const override;
-  const srep::MeshSRepInterface* GetSRepWorld() const override;
+  const vtkMeshSRepInterface* GetSRep() const override;
+  const vtkMeshSRepInterface* GetSRepWorld() const override;
 
 protected:
   void DoUpdateSRepWorld(vtkAbstractTransform* transform) override;
 
 private:
   // using shared_ptr to allow easy shallow copy in CopyContent
-  std::shared_ptr<srep::EllipticalSRep> SRep;
-  std::shared_ptr<srep::EllipticalSRep> SRepWorld;
+  vtkSmartPointer<vtkEllipticalSRep> SRep;
+  unsigned long SRepObservationTag;
+  vtkSmartPointer<vtkEllipticalSRep> SRepWorld;
+
+  void onSRepModified(vtkObject *caller, unsigned long event, void* callData);
 };
 
 #endif

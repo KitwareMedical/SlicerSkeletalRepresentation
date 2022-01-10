@@ -4,7 +4,7 @@
 #include <iostream>
 #include <vector>
 
-#include <srep/Point3d.h>
+#include "srepPoint3d.h"
 
 namespace srep {
 

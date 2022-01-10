@@ -31,7 +31,14 @@ vtkEllipticalSRep::vtkEllipticalSRep() = default;
 
 //----------------------------------------------------------------------
 vtkEllipticalSRep::~vtkEllipticalSRep() {
-  this->Clear();
+  // while it would be nice to use Clear() or Resize(0,0) here, we don't want to call modified or
+  // any other virtual functions.
+
+  for (IndexType l = 0; l < GetNumberOfLines(); ++l) {
+    for (IndexType s = 0; s < GetNumberOfSteps(); ++s) {
+      this->Skeleton[l][s]->RemoveObserver(this->SkeletonObservationTags[l][s]);
+    }
+  }
 }
 
 //----------------------------------------------------------------------
@@ -153,13 +160,12 @@ vtkSRepSkeletalPoint* vtkEllipticalSRep::GetSkeletalPoint(IndexType line, IndexT
 //----------------------------------------------------------------------
 void vtkEllipticalSRep::SetSkeletalPoint(IndexType line, IndexType step, vtkSRepSkeletalPoint* skeletalPoint) {
   this->SetSkeletalPointNoMeshUpdate(line, step, skeletalPoint);
-
   // as far the mesh representation goes, nothing changes as far as neighbors because the neighbors are
   // indices. Just need to update the actual pointer in the mesh
   this->SkeletonAsMesh.UpSpokes->SetSpoke(this->LineStepToUpDownMeshIndex(line, step), this->Skeleton[line][step]->GetUpSpoke());
   this->SkeletonAsMesh.DownSpokes->SetSpoke(this->LineStepToUpDownMeshIndex(line, step), this->Skeleton[line][step]->GetDownSpoke());
   if (skeletalPoint->IsCrest()) {
-    this->SkeletonAsMesh.CrestSpokes->SetSpoke(this->LineStepToUpDownMeshIndex(line, step), this->Skeleton[line][step]->GetCrestSpoke());
+    this->SkeletonAsMesh.CrestSpokes->SetSpoke(line, this->Skeleton[line][step]->GetCrestSpoke());
   }
 
   this->Modified();
@@ -330,7 +336,7 @@ vtkSRepSpokeMesh::IndexType vtkEllipticalSRep::LineStepToUpDownMeshIndex(IndexTy
     if (line < numberOfSpinePointsWithoutDuplicates) {
       return line;
     } else {
-      return GetNumberOfLines() - numberOfSpinePointsWithoutDuplicates;
+      return GetNumberOfLines() - line;
     }
   } else {
     // all the -1s are because we are stripping off step 0 (the spine)

@@ -1,4 +1,4 @@
-#include <srep/Point3d.h>
+#include "srepPoint3d.h"
 
 #include <cmath>
 #include <stdexcept>

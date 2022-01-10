@@ -13,12 +13,13 @@ set(${KIT}_INCLUDE_DIRECTORIES
 
 set(${KIT}_SRCS
   vtkMRMLEllipticalSRepNode.cxx
-  vtkMRMLRectangularGridSRepNode.cxx
   vtkMRMLSRepNode.cxx
   vtkMRMLSRepDisplayNode.cxx
   vtkMRMLSRepStorageNode.cxx
 
   # non MRML nodes
+  srepPoint3d.cxx
+  srepVector3d.cxx
   vtkEllipticalSRep.cxx
   vtkEllipticalSRep.h
   vtkMeshSRepInterface.h
@@ -32,7 +33,6 @@ set(${KIT}_SRCS
 
 set(${KIT}_TARGET_LIBRARIES
   ${MRML_LIBRARIES}
-  srep::srep
   )
 
 #-----------------------------------------------------------------------------

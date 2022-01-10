@@ -11,19 +11,11 @@
 
 #include <memory>
 
-#include <srep/MeshSRepInterface.h>
-#include <srep/SkeletalPoint.h>
+#include "vtkMeshSRepInterface.h"
 
 class vtkAbstractTransform;
 class vtkGeneralTransform;
 class vtkMRMLTransformNode;
-
-/// Transform a grid of skeletal points
-///
-/// This makes no assumptions what rows and columns mean, it just does
-/// raw point transformations.
-std::vector<std::vector<srep::SkeletalPoint>>
-TransformSkeletalPoints(const std::vector<std::vector<srep::SkeletalPoint>>& grid, vtkAbstractTransform* transform);
 
 class VTK_SLICER_SREP_MODULE_MRML_EXPORT vtkMRMLSRepNode : public vtkMRMLDisplayableNode
 {
@@ -41,8 +33,8 @@ public:
 
   void GetRASBounds(double bounds[6]) override;
   void GetBounds(double bounds[6]) override;
-  static void GetSRepBounds(const srep::MeshSRepInterface* srep, double bounds[6]);
-  static void GetSRepBounds(const srep::MeshSRepInterface& srep, double bounds[6]);
+  static void GetSRepBounds(const vtkMeshSRepInterface* srep, double bounds[6]);
+  static void GetSRepBounds(const vtkMeshSRepInterface& srep, double bounds[6]);
 
   //--------------------------------------------------------------------------
   // MRMLNode methods
@@ -77,12 +69,12 @@ public:
 
   /// Gets the SRep, if any, before any transforms are applied.
   /// \sa GetSRepWorld, HasSRep
-  virtual const srep::MeshSRepInterface* GetSRep() const = 0;
+  virtual const vtkMeshSRepInterface* GetSRep() const = 0;
 
   /// Gets the SRep, if any, after all transforms are applied.
   /// If there are no transforms, this will be the same as GetSRep
   /// \sa GetSRep, HasSRep
-  virtual const srep::MeshSRepInterface* GetSRepWorld() const = 0;
+  virtual const vtkMeshSRepInterface* GetSRepWorld() const = 0;
 
   /// Copy node content (excludes basic data, such as name and node references).
   /// \sa vtkMRMLNode::CopyContent

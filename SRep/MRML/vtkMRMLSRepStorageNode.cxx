@@ -1,11 +1,10 @@
 #include "vtkMRMLSRepStorageNode.h"
 #include "vtkMRMLEllipticalSRepNode.h"
-#include "vtkMRMLRectangularGridSRepNode.h"
 #include "vtkMRMLMessageCollection.h"
 #include "vtkMRMLScene.h"
 #include "vtkStringArray.h"
 
-#include "srep/Util.h"
+#include "srepUtil.h"
 
 // Relax JSON standard and allow reading/writing of nan and inf
 // values. Such values should not normally occur, but if they do then
@@ -26,7 +25,6 @@ using srep::util::finally;
 namespace {
 
 namespace keys {
-  const char * const RectangularGridSRep = "RectangularGridSRep";
   const char * const EllipticalSRep = "EllipticalSRep";
   const char * const Rows = "Rows";
   const char * const Cols = "Cols";
@@ -126,6 +124,13 @@ int readInt(rapidjson::Value& json) {
   return json.GetInt();
 }
 
+int readUint(rapidjson::Value& json) {
+  if (!json.IsUint()) {
+    throw std::invalid_argument("Expected a JSON int.");
+  }
+  return json.GetUint();
+}
+
 template<size_t N>
 void writeSingleLineArray(rapidjson::PrettyWriter<rapidjson::FileWriteStream>& writer, const std::array<double, N>& arr) {
   writer.SetFormatOptions(rapidjson::kFormatSingleLineArray);
@@ -186,7 +191,7 @@ srep::Vector3d readVector3d(rapidjson::Value& json) {
     readCoordinateSystem(SafeFindMember(json, keys::CoordinateSystem)->value)));
 }
 
-void write(rapidjson::PrettyWriter<rapidjson::FileWriteStream>& writer, const srep::Spoke& spoke, int coordinateSystem) {
+void write(rapidjson::PrettyWriter<rapidjson::FileWriteStream>& writer, const vtkSRepSpoke& spoke, int coordinateSystem) {
   writer.StartObject();
   writer.Key(keys::SkeletalPoint);
   write(writer, spoke.GetSkeletalPoint(), coordinateSystem);
@@ -195,114 +200,45 @@ void write(rapidjson::PrettyWriter<rapidjson::FileWriteStream>& writer, const sr
   writer.EndObject();
 }
 
-srep::Spoke readSpoke(rapidjson::Value& json) {
+vtkSmartPointer<vtkSRepSpoke> readSpoke(rapidjson::Value& json) {
   auto skeletalIter = SafeFindMember(json, keys::SkeletalPoint);
   auto directionIter = SafeFindMember(json, keys::Direction);
-  return srep::Spoke(readPoint3d(skeletalIter->value), readVector3d(directionIter->value));
+  return vtkSRepSpoke::SmartCreate(readPoint3d(skeletalIter->value), readVector3d(directionIter->value));
 }
 
 // raw write, no concept of what the rows and cols mean
-void write(rapidjson::PrettyWriter<rapidjson::FileWriteStream>& writer, const std::vector<std::vector<srep::SkeletalPoint>>& grid, int coordinateSystem) {
-  writer.StartArray();
-  for (size_t i  = 0; i < grid.size(); ++i) {
-    writer.StartArray();
-    for (size_t j = 0; j < grid[i].size(); ++j) {
-      const auto& skeletalPoint = grid[i][j];
-
-      writer.StartObject();
-      writer.Key(keys::UpSpoke);
-      write(writer, skeletalPoint.GetUpSpoke(), coordinateSystem);
-      writer.Key(keys::DownSpoke);
-      write(writer, skeletalPoint.GetDownSpoke(), coordinateSystem);
-      if (skeletalPoint.IsCrest()) {
-        writer.Key(keys::CrestSpoke);
-        write(writer, skeletalPoint.GetCrestSpoke(), coordinateSystem);
-      }
-      writer.EndObject();
-    }
-    writer.EndArray();
-  }
-  writer.EndArray();
-}
-
-// raw read, no concept of what the rows and cols mean
-std::vector<std::vector<srep::SkeletalPoint>> read2DSkeletalPointVec(rapidjson::Value& json) {
-  if (!json.IsArray()) {
-    throw std::invalid_argument("Expected a JSON array.");
-  }
-
-  std::vector<std::vector<srep::SkeletalPoint>> grid;
-  for (auto& row : json.GetArray()) {
-    grid.push_back(std::vector<srep::SkeletalPoint>{});
-    if (!row.IsArray()) {
-      throw std::runtime_error("Error parsing in read2DSkeletalPointVec. Row is not array.");
-    }
-    for (auto& object : row.GetArray()) {
-      auto upIter = SafeFindMember(object, keys::UpSpoke);
-      auto downIter = SafeFindMember(object, keys::DownSpoke);
-
-      auto upSpoke = readSpoke(upIter->value);
-      auto downSpoke = readSpoke(downIter->value);
-
-      auto crestIter = object.FindMember(keys::CrestSpoke);
-      if (crestIter != object.MemberEnd()) {
-        auto crestSpoke = readSpoke(crestIter->value);
-        grid.back().push_back(srep::SkeletalPoint(upSpoke, downSpoke, crestSpoke));
-      } else {
-        grid.back().push_back(srep::SkeletalPoint(upSpoke, downSpoke));
-      }
-    }
-  }
-
-  return grid;
-}
-
-void write(rapidjson::PrettyWriter<rapidjson::FileWriteStream>& writer, vtkMRMLRectangularGridSRepNode& mrmlSRep, int coordinateSystem)
-{
-  const srep::RectangularGridSRep* srep = mrmlSRep.GetRectangularGridSRep();
-  //writing out rows and cols more for people who look at the JSON
-  const auto& rows = srep ? srep->GetNumRows() : 0;
-  const auto& cols = srep ? srep->GetNumCols() : 0;
-  const auto& grid = srep ? srep->GetSkeletalPoints() : srep::RectangularGridSRep::SkeletalGrid{};
-
-  writer.Key(keys::RectangularGridSRep);
-  writer.StartObject();
-  {
-    writer.Key(keys::Rows); writer.Uint(rows);
-    writer.Key(keys::Cols); writer.Uint(cols);
-
-    writer.Key(keys::Skeleton);
-    write(writer, grid, coordinateSystem);
-  }
-  writer.EndObject();
-}
-
-void read(rapidjson::Value& json, vtkMRMLRectangularGridSRepNode* rectangularGridSRep) {
-  if (!rectangularGridSRep) {
-    throw std::invalid_argument("Node is not a vtkMRMLRectangularGridSRepNode");
-  }
-
-  auto skeletonIter = SafeFindMember(json, keys::Skeleton);
-  auto grid = read2DSkeletalPointVec(skeletonIter->value);
-
-  // RectangularGridSRep constructor will throw if there are bad things like crest spokes not on the crest
-  rectangularGridSRep->SetRectangularGridSRep(std::unique_ptr<srep::RectangularGridSRep>(new srep::RectangularGridSRep(std::move(grid))));
-}
 
 void write(rapidjson::PrettyWriter<rapidjson::FileWriteStream>& writer, vtkMRMLEllipticalSRepNode& mrmlSRep, int coordinateSystem) {
+  using IndexType = vtkEllipticalSRep::IndexType;
   const auto srep = mrmlSRep.GetEllipticalSRep();
-  //writing out numFoldPoints and numSteps more for people who look at the JSON
-  const auto numFoldPoints = srep ? srep->GetSkeleton().size() : 0;
-  const auto numSteps = srep ? (srep->GetSkeleton().empty() ? 0 : srep->GetSkeleton()[0].size() - 1) : 0; // -1 because "step 0" is the spine and doesn't count
-  const auto grid = srep ? srep->GetSkeleton() : srep::EllipticalSRep::UnrolledEllipticalGrid{};
 
   writer.Key(keys::EllipticalSRep);
   writer.StartObject();
   {
-    writer.Key(keys::CrestPoints); writer.Uint(numFoldPoints);
-    writer.Key(keys::Steps); writer.Uint(numSteps);
+    writer.Key(keys::CrestPoints); writer.Uint(srep->GetNumberOfLines());
+    writer.Key(keys::Steps); writer.Uint(srep->GetNumberOfSteps() - 1);
     writer.Key(keys::Skeleton);
-    write(writer, grid, coordinateSystem);
+    writer.StartArray();
+    if (srep) {
+      for (IndexType l = 0; l < srep->GetNumberOfLines(); ++l) {
+        writer.StartArray();
+        for (IndexType s = 0; s < srep->GetNumberOfSteps(); ++s) {
+          const auto* skeletalPoint = srep->GetSkeletalPoint(l, s);
+          writer.StartObject();
+          writer.Key(keys::UpSpoke);
+          write(writer, *(skeletalPoint->GetUpSpoke()), coordinateSystem);
+          writer.Key(keys::DownSpoke);
+          write(writer, *(skeletalPoint->GetDownSpoke()), coordinateSystem);
+          if (skeletalPoint->IsCrest()) {
+            writer.Key(keys::CrestSpoke);
+            write(writer, *(skeletalPoint->GetCrestSpoke()), coordinateSystem);
+          }
+          writer.EndObject();
+        }
+        writer.EndArray();
+      }
+    }
+    writer.EndArray();
   }
   writer.EndObject();
 }
@@ -312,11 +248,42 @@ void read(rapidjson::Value& json, vtkMRMLEllipticalSRepNode* ellipticalSRep) {
     throw std::invalid_argument("Node is not a vtkMRMLEllipticalSRepNode");
   }
 
-  auto skeletonIter = SafeFindMember(json, keys::Skeleton);
-  auto grid = read2DSkeletalPointVec(skeletonIter->value);
+  const auto numFoldPoints = readUint(SafeFindMember(json, keys::CrestPoints)->value);
+  const auto numSteps = readUint(SafeFindMember(json, keys::Steps)->value);
 
-  // RectangularGridSRep constructor will throw if there are bad things like crest spokes not on the crest
-  ellipticalSRep->SetEllipticalSRep(std::unique_ptr<srep::EllipticalSRep>(new srep::EllipticalSRep(grid)));
+  vtkNew<vtkEllipticalSRep> srep;
+  srep->Resize(numFoldPoints, numSteps + 1);
+
+  auto& skeleton = SafeFindMember(json, keys::Skeleton)->value;
+  if (!skeleton.IsArray()) {
+    throw std::invalid_argument("Expected a JSON array.");
+  }
+
+  vtkEllipticalSRep::IndexType line = 0;
+  for (auto& row : skeleton.GetArray()) { //row is the line
+    vtkEllipticalSRep::IndexType step = 0;
+    if (!row.IsArray()) {
+      throw std::runtime_error("Error parsing in vtkMRMLEllipticalSRepNode. Row is not array.");
+    }
+    for (auto& object : row.GetArray()) {
+      auto upIter = SafeFindMember(object, keys::UpSpoke);
+      auto downIter = SafeFindMember(object, keys::DownSpoke);
+
+      auto upSpoke = readSpoke(upIter->value);
+      auto downSpoke = readSpoke(downIter->value);
+
+      auto crestIter = object.FindMember(keys::CrestSpoke);
+      vtkSmartPointer<vtkSRepSpoke> crestSpoke = nullptr;
+      if (crestIter != object.MemberEnd()) {
+        crestSpoke = readSpoke(crestIter->value);
+      }
+      srep->SetSkeletalPoint(line, step, vtkSRepSkeletalPoint::SmartCreate(upSpoke, downSpoke, crestSpoke));
+      ++step;
+    }
+    ++line;
+  }
+
+  ellipticalSRep->SetEllipticalSRep(srep);
 }
 
 void write(rapidjson::PrettyWriter<rapidjson::FileWriteStream>& writer, const vtkColor3ub& color) {
@@ -552,9 +519,7 @@ std::string vtkMRMLSRepStorageNode::GetSRepType() {
   try {
     auto jsonRoot = CreateJsonDocumentFromFile(filePath);
 
-    if (jsonRoot->HasMember(keys::RectangularGridSRep)) {
-      return "vtkMRMLRectangularGridSRepNode";
-    } else if (jsonRoot->HasMember(keys::EllipticalSRep)) {
+    if (jsonRoot->HasMember(keys::EllipticalSRep)) {
       return "vtkMRMLEllipticalSRepNode";
     } else {
       vtkErrorMacro("vtkMRMLSRepStorageNode::GetSRepType failed: unable to find valid srep type");
@@ -596,9 +561,7 @@ int vtkMRMLSRepStorageNode::ReadDataInternal(vtkMRMLNode * refNode)
     auto jsonRootPtr = CreateJsonDocumentFromFile(filePath);
     auto& jsonRoot = *jsonRootPtr;
 
-    if (jsonRoot.HasMember(keys::RectangularGridSRep)) {
-      read(jsonRoot[keys::RectangularGridSRep], vtkMRMLRectangularGridSRepNode::SafeDownCast(srepNode));
-    } else if (jsonRoot.HasMember(keys::EllipticalSRep)) {
+    if (jsonRoot.HasMember(keys::EllipticalSRep)) {
       read(jsonRoot[keys::EllipticalSRep], vtkMRMLEllipticalSRepNode::SafeDownCast(srepNode));
     } else {
       vtkErrorMacro("vtkMRMLSRepStorageNode::ReadDataInternal failed because no known srep found");
@@ -657,9 +620,7 @@ int vtkMRMLSRepStorageNode::WriteDataInternal(vtkMRMLNode *refNode)
   writer.StartObject();
 
   // cast the input node
-  if (auto rectangularGridNode = vtkMRMLRectangularGridSRepNode::SafeDownCast(refNode)) {
-    write(writer, *rectangularGridNode, this->CoordinateSystemWrite);
-  } else if (auto ellipticalNode = vtkMRMLEllipticalSRepNode::SafeDownCast(refNode)) {
+  if (auto ellipticalNode = vtkMRMLEllipticalSRepNode::SafeDownCast(refNode)) {
     write(writer, *ellipticalNode, this->CoordinateSystemWrite);
   } else {
     vtkErrorMacro("vtkMRMLSRepJsonStorageNode::WriteDataInternal: Writing srep node file failed: unable to cast input node "

@@ -1,8 +1,8 @@
 #ifndef __vtkSRepSpoke_h
 #define __vtkSRepSpoke_h
 
-#include <srep/Point3d.h>
-#include <srep/Vector3d.h>
+#include "srepPoint3d.h"
+#include "srepVector3d.h"
 #include <vtkObject.h>
 #include <vtkSmartPointer.h>
 #include <vtkVector.h>

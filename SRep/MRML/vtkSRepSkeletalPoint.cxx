@@ -107,9 +107,7 @@ SPOKE_OPERATIONS(Crest, true)
 
 //----------------------------------------------------------------------
 const vtkSRepSpoke* vtkSRepSkeletalPoint::GetSpoke(SpokeOrientation spokeType) const {
-  std::cout << "const GetSpoke" << std::endl;
   if (spokeType == UpOrientation) {
-    std::cout << "const GetSpoke Up" << std::endl;
     return this->GetUpSpoke();
   } else if (spokeType == DownOrientation) {
     return this->GetDownSpoke();
@@ -122,7 +120,6 @@ const vtkSRepSpoke* vtkSRepSkeletalPoint::GetSpoke(SpokeOrientation spokeType) c
 
 //----------------------------------------------------------------------
 vtkSRepSpoke* vtkSRepSkeletalPoint::GetSpoke(SpokeOrientation spokeType) {
-  std::cout << "non-const GetSpoke" << std::endl;
   return const_cast<vtkSRepSpoke*>(const_cast<const vtkSRepSkeletalPoint*>(this)->GetSpoke(spokeType));
 }
 
@@ -168,10 +165,10 @@ vtkSRepSkeletalPoint* vtkSRepSkeletalPoint::Clone() const {
 //----------------------------------------------------------------------
 vtkSmartPointer<vtkSRepSkeletalPoint> vtkSRepSkeletalPoint::SmartClone() const {
   auto clone = vtkSmartPointer<vtkSRepSkeletalPoint>::New();
-  clone->SetUpSpoke(this->GetUpSpoke()->Clone());
-  clone->SetDownSpoke(this->GetDownSpoke()->Clone());
+  clone->SetUpSpoke(vtkSmartPointer<vtkSRepSpoke>::Take(this->GetUpSpoke()->Clone()));
+  clone->SetDownSpoke(vtkSmartPointer<vtkSRepSpoke>::Take(this->GetDownSpoke()->Clone()));
   if (this->IsCrest()) {
-    clone->SetCrestSpoke(this->GetCrestSpoke()->Clone());
+    clone->SetCrestSpoke(vtkSmartPointer<vtkSRepSpoke>::Take(this->GetCrestSpoke()->Clone()));
   }
   return clone;
 }

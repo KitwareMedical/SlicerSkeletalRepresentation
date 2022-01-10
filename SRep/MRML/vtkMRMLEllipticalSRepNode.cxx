@@ -1,6 +1,52 @@
 #include "vtkMRMLEllipticalSRepNode.h"
 #include <vtkAbstractTransform.h>
-#include <srep/SRepIO.h>
+#include <vtkCommand.h>
+
+//----------------------------------------------------------------------------
+vtkEllipticalSRep* TransformSRep(vtkEllipticalSRep* srep, vtkAbstractTransform* transform) {
+  auto transformed = SmartTransformSRep(srep, transform);
+  if (transformed) {
+    transformed->Register(nullptr);
+  }
+  return transformed;
+}
+
+//----------------------------------------------------------------------------
+vtkSmartPointer<vtkEllipticalSRep> SmartTransformSRep(vtkEllipticalSRep* srep, vtkAbstractTransform* transform) {
+  if (!srep) {
+    return nullptr;
+  }
+
+  auto transformed = vtkSmartPointer<vtkEllipticalSRep>::Take(srep->Clone());
+  if (transform) {
+    using IndexType = vtkEllipticalSRep::IndexType;
+
+    for (IndexType l = 0; l < transformed->GetNumberOfLines(); ++l) {
+      for (IndexType s = 0; s < transformed->GetNumberOfSteps(); ++s) {
+        auto* skeletalPoint = transformed->GetSkeletalPoint(l, s);
+        std::vector<vtkSRepSpoke*> spokes;
+        spokes.push_back(skeletalPoint->GetUpSpoke());
+        spokes.push_back(skeletalPoint->GetDownSpoke());
+        if (skeletalPoint->IsCrest()) {
+          spokes.push_back(skeletalPoint->GetCrestSpoke());
+        }
+
+        for (auto* spoke : spokes) {
+          double transformedBoundary[3];
+          double transformedSkeletal[3];
+
+          transform->TransformPoint(spoke->GetSkeletalPoint().AsArray().data(), transformedSkeletal);
+          transform->TransformPoint(spoke->GetBoundaryPoint().AsArray().data(), transformedBoundary);
+
+          spoke->SetSkeletalPoint(srep::Point3d(transformedSkeletal));
+          spoke->SetDirectionAndMagnitude(srep::Vector3d(srep::Point3d(transformedSkeletal), srep::Point3d(transformedBoundary)));
+        }
+      }
+    }
+  }
+
+  return transformed;
+}
 
 //----------------------------------------------------------------------------
 vtkMRMLNodeNewMacro(vtkMRMLEllipticalSRepNode);
@@ -9,37 +55,51 @@ vtkMRMLNodeNewMacro(vtkMRMLEllipticalSRepNode);
 vtkMRMLEllipticalSRepNode::vtkMRMLEllipticalSRepNode()
   : vtkMRMLSRepNode()
   , SRep()
+  , SRepObservationTag()
   , SRepWorld()
 {}
 
 //----------------------------------------------------------------------------
-vtkMRMLEllipticalSRepNode::~vtkMRMLEllipticalSRepNode() = default;
+vtkMRMLEllipticalSRepNode::~vtkMRMLEllipticalSRepNode() {
+  if (this->SRep) {
+    this->SRep->RemoveObserver(this->SRepObservationTag);
+  }
+};
 
 //----------------------------------------------------------------------------
-const srep::EllipticalSRep* vtkMRMLEllipticalSRepNode::GetEllipticalSRep() const {
-  return this->SRep.get();
+const vtkEllipticalSRep* vtkMRMLEllipticalSRepNode::GetEllipticalSRep() const {
+  return this->SRep;
 }
 
 //----------------------------------------------------------------------------
-const srep::EllipticalSRep* vtkMRMLEllipticalSRepNode::GetEllipticalSRepWorld() const {
-  return this->SRepWorld.get();
+vtkEllipticalSRep* vtkMRMLEllipticalSRepNode::GetEllipticalSRep() {
+  return this->SRep;
 }
 
 //----------------------------------------------------------------------------
-void vtkMRMLEllipticalSRepNode::SetEllipticalSRep(std::unique_ptr<srep::EllipticalSRep> srep) {
-  this->SRep = std::move(srep);
+const vtkEllipticalSRep* vtkMRMLEllipticalSRepNode::GetEllipticalSRepWorld() const {
+  return this->SRepWorld;
+}
+
+//----------------------------------------------------------------------------
+void vtkMRMLEllipticalSRepNode::SetEllipticalSRep(vtkEllipticalSRep* srep) {
+  if (this->SRep) {
+    this->SRep->RemoveObserver(this->SRepObservationTag);
+  }
+  this->SRep = srep;
+  this->SRepObservationTag = this->SRep->AddObserver(vtkCommand::ModifiedEvent, this, &vtkMRMLEllipticalSRepNode::onSRepModified);
   this->UpdateSRepWorld();
   this->Modified();
 }
 
 //----------------------------------------------------------------------------
-const srep::MeshSRepInterface* vtkMRMLEllipticalSRepNode::GetSRep() const {
-  return this->SRep.get();
+const vtkMeshSRepInterface* vtkMRMLEllipticalSRepNode::GetSRep() const {
+  return this->SRep;
 }
 
 //----------------------------------------------------------------------------
-const srep::MeshSRepInterface* vtkMRMLEllipticalSRepNode::GetSRepWorld() const {
-  return this->SRepWorld.get();
+const vtkMeshSRepInterface* vtkMRMLEllipticalSRepNode::GetSRepWorld() const {
+  return this->SRepWorld;
 }
 
 //---------------------------------------------------------------------------
@@ -48,13 +108,7 @@ void vtkMRMLEllipticalSRepNode::DoUpdateSRepWorld(vtkAbstractTransform* transfor
     return;
   }
 
-  if (!transform) {
-    // no transform, both are the same. Shallow copy.
-    this->SRepWorld = this->SRep;
-    return;
-  }
-  this->SRepWorld = std::make_shared<srep::EllipticalSRep>(
-    TransformSkeletalPoints(this->SRep->GetSkeleton(), transform));
+  this->SRepWorld = SmartTransformSRep(this->SRep, transform);
 }
 
 //---------------------------------------------------------------------------
@@ -65,11 +119,8 @@ void vtkMRMLEllipticalSRepNode::ApplyTransform(vtkAbstractTransform* transform)
   }
 
   this->DoUpdateSRepWorld(transform);
-  if (this->SRep.get() != this->SRepWorld.get()) {
-    // deep copy unless transform == nullptr so they are the same
-    this->SRep = std::shared_ptr<srep::EllipticalSRep>(this->SRepWorld->Clone());
-  }
-  this->Modified();
+  this->SetEllipticalSRep(vtkSmartPointer<vtkEllipticalSRep>::Take(this->SRepWorld->Clone()));
+  // SetEllipticalSRep will call modified
 }
 
 
@@ -82,14 +133,18 @@ void vtkMRMLEllipticalSRepNode::CopyContent(vtkMRMLNode* anode, bool deepCopy/*=
   if (node) {
     if (deepCopy) {
       if (node->SRep) {
-        this->SRep = std::shared_ptr<srep::EllipticalSRep>(node->SRep->Clone());
+        this->SetEllipticalSRep(vtkSmartPointer<vtkEllipticalSRep>::Take(node->SRep->Clone()));
       } else {
-        this->SRep.reset();
+        this->SetEllipticalSRep(nullptr);
       }
     } else {
       //shallow copy
-      this->SRep = node->SRep;
+      this->SetEllipticalSRep(node->SRep);
     }
-    this->UpdateSRepWorld();
   }
+}
+
+//----------------------------------------------------------------------------
+void vtkMRMLEllipticalSRepNode::onSRepModified(vtkObject */*caller*/, unsigned long /*event*/, void* /*callData*/) {
+  this->Modified();
 }

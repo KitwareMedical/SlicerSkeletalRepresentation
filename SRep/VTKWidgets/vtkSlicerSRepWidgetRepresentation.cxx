@@ -167,7 +167,7 @@ struct vtkSpokeIds {
 };
 }
 
-void vtkSlicerSRepWidgetRepresentation::ConvertSRepToVisualRepresentation(const srep::MeshSRepInterface& srep, const vtkMRMLSRepDisplayNode& displayNode) {
+void vtkSlicerSRepWidgetRepresentation::ConvertSRepToVisualRepresentation(const vtkMeshSRepInterface& srep, const vtkMRMLSRepDisplayNode& displayNode) {
   //-------------------------------
   const auto insertNextPoint = [this](const srep::Point3d& point, const vtkColor3ub& color) {
     const auto id = this->Skeleton.Points->InsertNextPoint(point.AsArray().data());
@@ -185,12 +185,12 @@ void vtkSlicerSRepWidgetRepresentation::ConvertSRepToVisualRepresentation(const 
 
   //-------------------------------
   const auto addSpokeMesh = [this, insertNextPoint, insertNextLine]
-    (const srep::SpokeMesh& mesh,
+    (const vtkSRepSpokeMesh& mesh,
      bool addSpokes,
      const vtkColor3ub& spokeColor,
      bool addConnections,
      const vtkColor3ub& connectionColor,
-     const std::vector<srep::MeshSRepInterface::IndexType> spine,
+     const std::vector<vtkMeshSRepInterface::IndexType> spine,
      const vtkColor3ub& spineColor,
      std::function<bool(long i)> forceAddSkeletalPoint) -> std::vector<vtkSpokeIds>{
     std::vector<vtkSpokeIds> spokesToVTKPointIds;
@@ -203,12 +203,12 @@ void vtkSlicerSRepWidgetRepresentation::ConvertSRepToVisualRepresentation(const 
     for (long i = 0; i < mesh.GetNumberOfSpokes(); ++i) {
       vtkSpokeIds ids;
       if (addSpokes || addConnections || isSpine(i) || forceAddSkeletalPoint(i)) {
-        ids.skeletonId = insertNextPoint(mesh[i].GetSkeletalPoint(), spokeColor);
+        ids.skeletonId = insertNextPoint(mesh[i]->GetSkeletalPoint(), spokeColor);
       } else {
         ids.skeletonId = -1;
       }
       if (addSpokes) {
-        ids.boundaryId = insertNextPoint(mesh[i].GetBoundaryPoint(), spokeColor);
+        ids.boundaryId = insertNextPoint(mesh[i]->GetBoundaryPoint(), spokeColor);
         insertNextLine(ids.skeletonId, ids.boundaryId, spokeColor);
       } else {
         ids.boundaryId = -1;
@@ -281,57 +281,31 @@ void vtkSlicerSRepWidgetRepresentation::ConvertSRepToVisualRepresentation(const 
   this->Skeleton.Lines->Reset();
   this->Skeleton.LineColors->Reset();
 
-  using UpDownIndices = srep::MeshSRepInterface::UpDownIndices;
+  const auto visibleUpSpineIndexes = displayNode.GetSpineVisibility() ? srep.GetUpSpine() : vtkSRepSpokeMesh::NeighborList{};
+  const auto visibleDownSpineIndexes = displayNode.GetSpineVisibility() ? srep.GetDownSpine() : vtkSRepSpokeMesh::NeighborList{};
 
-  const auto visibleUpSpineIndexes = [&]() {
-    std::vector<srep::MeshSRepInterface::IndexType> ret;
-
-    if (displayNode.GetSpineVisibility()) {
-      const auto spine = srep.GetSpine();
-      std::transform(spine.begin(), spine.end(), std::back_inserter(ret),
-        [](const srep::MeshSRepInterface::UpDownIndices& i) { return i.first; });
-    }
-    return ret;
-  }();
-
-  const auto visibleDownSpineIndexes = [&]() {
-    std::vector<srep::MeshSRepInterface::IndexType> ret;
-
-    if (displayNode.GetSpineVisibility()) {
-      const auto spine = srep.GetSpine();
-      std::transform(spine.begin(), spine.end(), std::back_inserter(ret),
-        [](const srep::MeshSRepInterface::UpDownIndices& i) { return i.second; });
-    }
-    return ret;
-  }();
-
-  const auto crestSkeletonConnections = srep.GetCrestSkeletalConnections();
   const auto upSpokeToPointIds = addSpokeMesh(
-    srep.GetUpSpokes(),
+    *srep.GetUpSpokes(),
     displayNode.GetUpSpokeVisibility(), upSpokeColor,
     displayNode.GetSkeletalSheetVisibility(), upSkeletonColor,
     visibleUpSpineIndexes, spineColor,
     [&](long i) {
-      return displayNode.GetSkeletonToCrestConnectionVisibility() && crestSkeletonConnections.end() != std::find_if(crestSkeletonConnections.begin(), crestSkeletonConnections.end(),
-        [&](const UpDownIndices& ud) {
-          return i == ud.first;
-        });
+      const auto crestSkeletonConnections = srep.GetCrestToUpSpokeConnections();
+      return displayNode.GetSkeletonToCrestConnectionVisibility() && crestSkeletonConnections.end() != std::find(crestSkeletonConnections.begin(), crestSkeletonConnections.end(), i);
       });
 
   const auto downSpokeToPointIds = addSpokeMesh(
-    srep.GetDownSpokes(),
+    *srep.GetDownSpokes(),
     displayNode.GetDownSpokeVisibility(), downSpokeColor,
     displayNode.GetSkeletalSheetVisibility(), downSkeletonColor,
     visibleDownSpineIndexes, spineColor,
     [&](long i) {
-      return displayNode.GetSkeletonToCrestConnectionVisibility() && crestSkeletonConnections.end() != std::find_if(crestSkeletonConnections.begin(), crestSkeletonConnections.end(),
-        [&](const UpDownIndices& ud) {
-          return i == ud.second; 
-        });
+      const auto crestSkeletonConnections = srep.GetCrestToDownSpokeConnections();
+      return displayNode.GetSkeletonToCrestConnectionVisibility() && crestSkeletonConnections.end() != std::find(crestSkeletonConnections.begin(), crestSkeletonConnections.end(), i);
       });
 
   const auto crestSpokeToPointIds = addSpokeMesh(
-    srep.GetCrestSpokes(),
+    *srep.GetCrestSpokes(),
     displayNode.GetCrestSpokeVisibility(), crestSpokeColor,
     displayNode.GetCrestCurveVisibility(), crestCurveColor,
     {}, vtkColor3ub(), // no spine for crest
@@ -339,14 +313,14 @@ void vtkSlicerSRepWidgetRepresentation::ConvertSRepToVisualRepresentation(const 
 
   // connect the crest to skeleton
   if (displayNode.GetSkeletonToCrestConnectionVisibility()) {
-    for (size_t crestIndex = 0; crestIndex < crestSkeletonConnections.size(); ++crestIndex) {
-      const auto upDownIndices = crestSkeletonConnections[crestIndex];
-
-      // connect to both up and down skeleton points to account for the up and down spokes
-      // possibly having their skeletal points at different points in space
-      insertNextLine(crestSpokeToPointIds[crestIndex].skeletonId, upSpokeToPointIds[upDownIndices.first].skeletonId,
+    for (size_t crestIndex = 0; crestIndex < srep.GetCrestToUpSpokeConnections().size(); ++crestIndex) {
+      const auto skeletonIndex = srep.GetCrestToUpSpokeConnections()[crestIndex];
+      insertNextLine(crestSpokeToPointIds[crestIndex].skeletonId, upSpokeToPointIds[skeletonIndex].skeletonId,
         crestToSkeletonConnectionColor);
-      insertNextLine(crestSpokeToPointIds[crestIndex].skeletonId, downSpokeToPointIds[upDownIndices.second].skeletonId,
+    }
+    for (size_t crestIndex = 0; crestIndex < srep.GetCrestToDownSpokeConnections().size(); ++crestIndex) {
+      const auto skeletonIndex = srep.GetCrestToDownSpokeConnections()[crestIndex];
+      insertNextLine(crestSpokeToPointIds[crestIndex].skeletonId, downSpokeToPointIds[skeletonIndex].skeletonId,
         crestToSkeletonConnectionColor);
     }
   }
