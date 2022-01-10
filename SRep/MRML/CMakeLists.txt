@@ -17,6 +17,17 @@ set(${KIT}_SRCS
   vtkMRMLSRepNode.cxx
   vtkMRMLSRepDisplayNode.cxx
   vtkMRMLSRepStorageNode.cxx
+
+  # non MRML nodes
+  vtkEllipticalSRep.cxx
+  vtkEllipticalSRep.h
+  vtkMeshSRepInterface.h
+  vtkSRepSkeletalPoint.cxx
+  vtkSRepSkeletalPoint.h
+  vtkSRepSpoke.cxx
+  vtkSRepSpoke.h
+  vtkSRepSpokeMesh.cxx
+  vtkSRepSpokeMesh.h
   )
 
 set(${KIT}_TARGET_LIBRARIES
