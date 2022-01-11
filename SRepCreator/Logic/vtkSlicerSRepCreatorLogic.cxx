@@ -46,6 +46,8 @@
 #include <itkThinPlateSplineExtended.h>
 #include <itkPointSet.h>
 
+#include <srepUtil.h>
+
 // STD includes
 #include <cassert>
 #include <numeric>
@@ -94,24 +96,25 @@ namespace {
   }
 
   //---------------------------------------------------------------------------
-  srep::Spoke ApplyTPS(const srep::Spoke& spoke, itkThinPlateSplineExtended::Pointer tps) {
-    return srep::Spoke(ApplyTPS(spoke.GetSkeletalPoint(), tps), ApplyTPS(spoke.GetBoundaryPoint(), tps));
+  vtkSmartPointer<vtkSRepSpoke> ApplyTPS(const vtkSRepSpoke& spoke, itkThinPlateSplineExtended::Pointer tps) {
+    return vtkSRepSpoke::SmartCreate(ApplyTPS(spoke.GetSkeletalPoint(), tps), ApplyTPS(spoke.GetBoundaryPoint(), tps));
   }
 
   //---------------------------------------------------------------------------
-  void ApplyTPSInPlace(srep::SkeletalPoint& skeletalPoint, itkThinPlateSplineExtended::Pointer tps) {
-    skeletalPoint.SetUpSpoke(ApplyTPS(skeletalPoint.GetUpSpoke(), tps));
-    skeletalPoint.SetDownSpoke(ApplyTPS(skeletalPoint.GetDownSpoke(), tps));
+  void ApplyTPSInPlace(vtkSRepSkeletalPoint& skeletalPoint, itkThinPlateSplineExtended::Pointer tps) {
+    skeletalPoint.SetUpSpoke(ApplyTPS(*skeletalPoint.GetUpSpoke(), tps));
+    skeletalPoint.SetDownSpoke(ApplyTPS(*skeletalPoint.GetDownSpoke(), tps));
     if (skeletalPoint.IsCrest()) {
-      skeletalPoint.SetCrestSpoke(ApplyTPS(skeletalPoint.GetCrestSpoke(), tps));
+      skeletalPoint.SetCrestSpoke(ApplyTPS(*skeletalPoint.GetCrestSpoke(), tps));
     }
   }
 
   //---------------------------------------------------------------------------
-  void ApplyTPSInPlace(srep::EllipticalSRep::UnrolledEllipticalGrid& grid, itkThinPlateSplineExtended::Pointer tps) {
-    for (size_t i = 0; i < grid.size(); ++i) {
-      for (size_t j = 0; j < grid[i].size(); ++j) {
-        ApplyTPSInPlace(grid[i][j], tps);
+  void ApplyTPSInPlace(vtkEllipticalSRep& srep, itkThinPlateSplineExtended::Pointer tps) {
+    using IndexType = vtkEllipticalSRep::IndexType;
+    for (IndexType l = 0; l < srep.GetNumberOfLines(); ++l) {
+      for (IndexType s = 0; s < srep.GetNumberOfSteps(); ++s) {
+        ApplyTPSInPlace(*srep.GetSkeletalPoint(l, s), tps);
       }
     }
   }
@@ -508,7 +511,7 @@ vtkMRMLModelNode* vtkSlicerSRepCreatorLogic::MakeModelNode(
 
 //---------------------------------------------------------------------------
 vtkMRMLEllipticalSRepNode* vtkSlicerSRepCreatorLogic::MakeEllipticalSRepNode(
-    std::unique_ptr<srep::EllipticalSRep> srep,
+    vtkEllipticalSRep* srep,
     const std::string& name,
     const bool visible)
 {
@@ -522,7 +525,7 @@ vtkMRMLEllipticalSRepNode* vtkSlicerSRepCreatorLogic::MakeEllipticalSRepNode(
     return nullptr;
   }
   auto srepNode = vtkMRMLEllipticalSRepNode::SafeDownCast(scene->GetNodeByID(srepNodeId));
-  srepNode->SetEllipticalSRep(std::move(srep));
+  srepNode->SetEllipticalSRep(srep);
   srepNode->GetDisplayNode()->SetVisibility(visible);
   return srepNode;
 }
@@ -677,40 +680,35 @@ vtkSlicerSRepCreatorLogic::GenerateEigenSRep(
 }
 
 //---------------------------------------------------------------------------
-std::unique_ptr<srep::EllipticalSRep> vtkSlicerSRepCreatorLogic::ConvertEigenSRepToEllipticalSRep(
+vtkSmartPointer<vtkEllipticalSRep> vtkSlicerSRepCreatorLogic::ConvertEigenSRepToEllipticalSRep(
   const EigenSRep& eigenSRep)
 {
-  srep::EllipticalSRep::UnrolledEllipticalGrid grid;
+  using IndexType = vtkEllipticalSRep::IndexType;
 
-  grid.reserve(eigenSRep.numFoldPoints);
-  for (size_t i = 0; i < eigenSRep.numFoldPoints; ++i) {
-    grid.resize(grid.size() + 1);
-    grid.back().reserve(eigenSRep.numStepsToCrest + 1);
-    for (size_t j = 0; j < eigenSRep.numStepsToCrest + 1; ++j) {
-      const auto upDownSkeletonIndex = i * (eigenSRep.numStepsToCrest + 1) + j;
+  auto srep = vtkSmartPointer<vtkEllipticalSRep>::New();
+  srep->Resize(eigenSRep.numFoldPoints, eigenSRep.numStepsToCrest + 1);
+  for (IndexType l = 0; l < srep->GetNumberOfLines(); ++l) {
+    for (IndexType s = 0; s < srep->GetNumberOfSteps(); ++s) {
+      const auto upDownSkeletonIndex = l * (eigenSRep.numStepsToCrest + 1) + s;
       const auto skeletalPoint = PointFromEigen(eigenSRep.skeletalPoints.row(upDownSkeletonIndex));
       const auto upBoundaryPoint = PointFromEigen(eigenSRep.upSpokeBoundaryPoints.row(upDownSkeletonIndex));
       const auto downBoundaryPoint = PointFromEigen(eigenSRep.downSpokeBoundaryPoints.row(upDownSkeletonIndex));
-      srep::Spoke upSpoke = srep::Spoke(skeletalPoint, srep::Vector3d(skeletalPoint, upBoundaryPoint));
-      srep::Spoke downSpoke = srep::Spoke(skeletalPoint, srep::Vector3d(skeletalPoint, downBoundaryPoint));
+      srep->GetSkeletalPoint(l, s)->SetUpSpoke(vtkSRepSpoke::SmartCreate(skeletalPoint, upBoundaryPoint));
+      srep->GetSkeletalPoint(l, s)->SetDownSpoke(vtkSRepSpoke::SmartCreate(skeletalPoint, downBoundaryPoint));
 
-      if (j == eigenSRep.numStepsToCrest) {
+      if (s == eigenSRep.numStepsToCrest) {
         //crest
-        const auto crestSkeletalPoint = PointFromEigen(eigenSRep.crestSkeletalPoints.row(i));
-        const auto crestBoundaryPoint = PointFromEigen(eigenSRep.crestSpokeBoundaryPoints.row(i));
-        srep::Spoke crestSpoke = srep::Spoke(crestSkeletalPoint, srep::Vector3d(crestSkeletalPoint, crestBoundaryPoint));
-        grid.back().emplace_back(std::move(upSpoke), std::move(downSpoke), std::move(crestSpoke));
-      } else {
-        //interior, not crest
-        grid.back().emplace_back(std::move(upSpoke), std::move(downSpoke));
+        const auto crestSkeletalPoint = PointFromEigen(eigenSRep.crestSkeletalPoints.row(l));
+        const auto crestBoundaryPoint = PointFromEigen(eigenSRep.crestSpokeBoundaryPoints.row(l));
+        srep->GetSkeletalPoint(l, s)->SetCrestSpoke(vtkSRepSpoke::SmartCreate(crestSkeletalPoint, crestBoundaryPoint));
       }
     }
   }
-  return std::unique_ptr<srep::EllipticalSRep>(new srep::EllipticalSRep(std::move(grid)));
+  return srep;
 }
 
 //---------------------------------------------------------------------------
-std::unique_ptr<srep::EllipticalSRep> vtkSlicerSRepCreatorLogic::GenerateSRep(
+vtkSmartPointer<vtkEllipticalSRep> vtkSlicerSRepCreatorLogic::GenerateSRep(
   const EllipsoidParameters& ellipsoid,
   const size_t numFoldPoints,
   const size_t numStepsToCrest)
@@ -804,8 +802,8 @@ vtkMRMLEllipticalSRepNode* vtkSlicerSRepCreatorLogic::RunBackward(const size_t o
       vtkErrorMacro("vtkSlicerSRepCreatorLogic::RunBackward() cannot find srep: " + this->SRepNodeId);
       return nullptr;
     }
-    //copy the grid
-    auto grid = srep->GetSkeleton();
+    //copy the srep
+    auto backflowedSRep = srep->SmartClone();
 
     vtkNew<vtkPolyDataReader> reader1;
     vtkNew<vtkPolyDataReader> reader2;
@@ -848,20 +846,17 @@ vtkMRMLEllipticalSRepNode* vtkSlicerSRepCreatorLogic::RunBackward(const size_t o
       tps->SetTargetLandmarks(targetLandMarks);
       tps->ComputeWMatrix();
 
-      ApplyTPSInPlace(grid, tps);
+      ApplyTPSInPlace(*backflowedSRep, tps);
 
       if (outputEveryNumIterations != 0 && iteration % outputEveryNumIterations == 0) {
-        // deep copy the grid
-        std::unique_ptr<srep::EllipticalSRep> partiallyTransformedSRep(new srep::EllipticalSRep(grid));
-        this->MakeEllipticalSRepNode(std::move(partiallyTransformedSRep), this->ModelName + "-backflow-srep-" + std::to_string(iteration));
+        // deep copy the srep
+        this->MakeEllipticalSRepNode(backflowedSRep->SmartClone(), this->ModelName + "-backflow-srep-" + std::to_string(iteration));
       }
 
       std::swap(sourceSurfaceReader, targetSurfaceReader);
     }
 
-    // can move the grid now since we aren't transforming it anymore
-    std::unique_ptr<srep::EllipticalSRep> transformedSRep(new srep::EllipticalSRep(std::move(grid)));
-    auto transformedSRepNode = this->MakeEllipticalSRepNode(std::move(transformedSRep), this->ModelName + "-srep");
+    auto transformedSRepNode = this->MakeEllipticalSRepNode(backflowedSRep, this->ModelName + "-srep");
     return transformedSRepNode;
   } catch (const std::exception& e) {
     vtkErrorMacro("Exception caught backflowing SRep: " << e.what());

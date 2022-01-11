@@ -33,7 +33,7 @@
 #include <Eigen/Eigenvalues>
 
 #include "vtkSlicerSRepCreatorModuleLogicExport.h"
-#include <srep/EllipticalSRep.h>
+#include <vtkEllipticalSRep.h>
 
 
 /// \ingroup Slicer_QtModules_ExtensionTemplate
@@ -178,7 +178,7 @@ private:
       this->numStepsToCrest = numStepsToCrest;
     }
   };
-  static std::unique_ptr<srep::EllipticalSRep> ConvertEigenSRepToEllipticalSRep(const EigenSRep& eigenSRep);
+  static vtkSmartPointer<vtkEllipticalSRep> ConvertEigenSRepToEllipticalSRep(const EigenSRep& eigenSRep);
 
   std::string TempFolder();
 
@@ -199,7 +199,7 @@ private:
 
   static EllipsoidParameters CalculateBestFitEllipsoid(vtkPolyData& alreadyFlowedMesh);
 
-  std::unique_ptr<srep::EllipticalSRep> GenerateSRep(
+  vtkSmartPointer<vtkEllipticalSRep> GenerateSRep(
     const EllipsoidParameters& ellipsoid,
     size_t numFoldPoints,
     size_t numStepsToCrest);
@@ -230,7 +230,7 @@ private:
     const double* color = nullptr);
 
   vtkMRMLEllipticalSRepNode* MakeEllipticalSRepNode(
-    std::unique_ptr<srep::EllipticalSRep> srep,
+    vtkEllipticalSRep* srep,
     const std::string& name,
     bool visible = true);
 

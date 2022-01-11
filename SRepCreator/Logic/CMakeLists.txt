@@ -16,7 +16,7 @@ set(${KIT}_SRCS
 set(${KIT}_TARGET_LIBRARIES
   ${ITK_LIBRARIES}
   Eigen3::Eigen
-  srep::srep
+  vtkSlicerSRepModuleMRML
   vtkSlicerSRepModuleLogic
   )
 
