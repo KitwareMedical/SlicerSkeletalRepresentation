@@ -49,34 +49,12 @@ public:
   vtkTypeMacro(vtkSlicerSRepLogic, vtkSlicerModuleLogic);
   void PrintSelf(ostream& os, vtkIndent indent);
 
-  /// Creates new Rectangular Grid SRep node
-  /// @returns id of new node.
-  std::string AddNewRectangularGridSRepNode(const std::string& name = "", vtkMRMLScene* scene = nullptr);
   /// Creates new Elliptical SRep node
   /// @returns id of new node.
   std::string AddNewEllipticalSRepNode(const std::string& name = "", vtkMRMLScene* scene = nullptr);
   /// Creates new SRep display node and add it to srep node
   /// @returns id of new display node.
   std::string AddFirstDisplayNodeForSRepNode(vtkMRMLSRepNode *srepNode);
-
-  /// Import SRep from files
-  /// @param filename The file to import the SRep from
-  /// @return The MRML id of the created node.
-  std::string ImportRectangularGridSRepFromXML(const std::string& filename);
-
-  /// Exports SRep to files.
-  ///
-  /// @param srepNode Node to write to file. If nullptr, this function returns false.
-  /// @param headerFilename File to write the header information to. If empty, this function returns false.
-  /// @param upFilename File to write the up spokes to. If empty, this function returns false.
-  /// @param downFilename File to write the down spokes to. If empty, this function returns false.
-  /// @param crestFilename File to write the crest spokes to. If empty, this function returns false.
-  /// @return True if files were written, false otherwise.
-  bool ExportRectangularGridSRepToXML(vtkMRMLSRepNode *srepNode,
-                  const std::string& headerFilename,
-                  const std::string& upFilename,
-                  const std::string& downFilename,
-                  const std::string& crestFilename);
 
   /// Load a srep from fileName, return nullptr on error, node ID string
   /// otherwise. Adds the appropriate storage and display nodes to the scene
@@ -92,7 +70,8 @@ public:
 
   bool InterpolateSRep(vtkMRMLEllipticalSRepNode* srepNode, size_t interpolationlevel, vtkMRMLEllipticalSRepNode* destination);
 
-  std::unique_ptr<srep::EllipticalSRep> InterpolateSRep(const srep::EllipticalSRep& srep, size_t interpolationlevel);
+  VTK_NEWINSTANCE vtkEllipticalSRep* InterpolateSRep(const vtkEllipticalSRep& srep, size_t interpolationlevel);
+  vtkSmartPointer<vtkEllipticalSRep> SmartInterpolateSRep(const vtkEllipticalSRep& srep, size_t interpolationlevel);
 
 protected:
   vtkSlicerSRepLogic();

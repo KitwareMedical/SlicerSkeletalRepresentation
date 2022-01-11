@@ -32,7 +32,6 @@
 #include <cassert>
 
 #include "vtkMRMLSRepNode.h"
-#include "vtkMRMLRectangularGridSRepNode.h"
 #include "SRepInterpolation.h"
 
 //----------------------------------------------------------------------------
@@ -72,7 +71,6 @@ void vtkSlicerSRepLogic::RegisterNodes()
   vtkMRMLScene *scene = this->GetMRMLScene();
 
   scene->RegisterNodeClass(vtkSmartPointer<vtkMRMLEllipticalSRepNode>::New());
-  scene->RegisterNodeClass(vtkSmartPointer<vtkMRMLRectangularGridSRepNode>::New());
   scene->RegisterNodeClass(vtkSmartPointer<vtkMRMLSRepDisplayNode>::New());
   scene->RegisterNodeClass(vtkSmartPointer<vtkMRMLSRepStorageNode>::New());
 }
@@ -93,56 +91,6 @@ void vtkSlicerSRepLogic
 void vtkSlicerSRepLogic
 ::OnMRMLSceneNodeRemoved(vtkMRMLNode* vtkNotUsed(node))
 {
-}
-
-//---------------------------------------------------------------------------
-std::string vtkSlicerSRepLogic::ImportRectangularGridSRepFromXML(const std::string& filename)
-{
-  const auto srepID = this->AddNewRectangularGridSRepNode();
-  if (srepID.empty()) {
-    vtkErrorMacro("LoadSRep: failed to instantiate vtkMRMLSRepNode");
-    return std::string{};
-  }
-
-  auto* srep = vtkMRMLSRepNode::SafeDownCast(this->GetMRMLScene()->GetNodeByID(srepID));
-  if (srep) {
-    //TODO: some magic differentiating between different srep types
-    auto rectSRep = vtkMRMLRectangularGridSRepNode::SafeDownCast(srep);
-    if (rectSRep) {
-      rectSRep->LoadRectangularGridSRepFromFile(filename);
-    } else {
-      std::cout << __FILE__ << ":" << __LINE__ << " Unknown srep type" << std::endl;
-    }
-  }
-  return srep->GetID();
-}
-
-//----------------------------------------------------------------------------
-std::string vtkSlicerSRepLogic::AddNewRectangularGridSRepNode(const std::string& name, vtkMRMLScene* scene) {
-  std::string id;
-  if (!scene && !this->GetMRMLScene()) {
-    vtkErrorMacro("AddNewRectangularGridSRepNode: no scene to add a srep node to!");
-    return id;
-  }
-
-  vtkMRMLScene *addToThisScene = scene ? scene : this->GetMRMLScene();
-
-  // create and add the node
-  auto mnode = vtkSmartPointer<vtkMRMLRectangularGridSRepNode>::New();
-  addToThisScene->AddNode(mnode);
-
-  // add a display node
-  std::string displayID = this->AddFirstDisplayNodeForSRepNode(mnode);
-
-  if (displayID.compare("") != 0) {
-    // get the node id to return
-    id = std::string(mnode->GetID());
-    if (!name.empty()) {
-      mnode->SetName(name.c_str());
-    }
-  }
-
-  return id;
 }
 
 //----------------------------------------------------------------------------
@@ -171,33 +119,6 @@ std::string vtkSlicerSRepLogic::AddNewEllipticalSRepNode(const std::string& name
   }
 
   return id;
-}
-
-//----------------------------------------------------------------------------
-bool vtkSlicerSRepLogic::ExportRectangularGridSRepToXML(vtkMRMLSRepNode *srepNode,
-                                    const std::string& headerFilename,
-                                    const std::string& upFilename,
-                                    const std::string& downFilename,
-                                    const std::string& crestFilename)
-{
-  if (!srepNode
-    || !srepNode->GetSRep()
-    || headerFilename.empty()
-    || upFilename.empty()
-    || downFilename.empty()
-    || crestFilename.empty()
-    )
-  {
-    return false;
-  }
-
-  const auto rectSRep = vtkMRMLRectangularGridSRepNode::SafeDownCast(srepNode);
-  if (rectSRep) {
-    return rectSRep->WriteRectangularGridSRepToFiles(headerFilename, upFilename, downFilename, crestFilename);
-  } else {
-    std::cout << __FILE__ << ":" << __LINE__ << " Unknown srep type" << std::endl;
-    return false;
-  }
 }
 
 //----------------------------------------------------------------------------
@@ -295,26 +216,31 @@ bool vtkSlicerSRepLogic::InterpolateSRep(vtkMRMLEllipticalSRepNode* srepNode, si
   }
 
   if (interpolationlevel == 0) {
-    destination->SetEllipticalSRep(std::unique_ptr<srep::EllipticalSRep>(srep->Clone()));
+    destination->SetEllipticalSRep(srep->SmartClone());
     return true;
   } else {
 
-    auto interpolatedSRep = sreplogic::InterpolateSRep(interpolationlevel, *srep);
+    auto interpolatedSRep = this->SmartInterpolateSRep(*srep, interpolationlevel);
     if (!interpolatedSRep) {
       vtkErrorMacro("InterpolateSRep: Unable to interpolate SRep");
       return false;
     }
 
-    destination->SetEllipticalSRep(std::move(interpolatedSRep));
+    destination->SetEllipticalSRep(interpolatedSRep);
     return true;
   }
 }
 
 //----------------------------------------------------------------------------
-std::unique_ptr<srep::EllipticalSRep> vtkSlicerSRepLogic::InterpolateSRep(const srep::EllipticalSRep& srep, size_t interpolationlevel) {
-  if (interpolationlevel == 0) {
-    // 2^0 == 1 so it is a just a clone as is
-    return std::unique_ptr<srep::EllipticalSRep>(srep.Clone());
+vtkEllipticalSRep* vtkSlicerSRepLogic::InterpolateSRep(const vtkEllipticalSRep& srep, size_t interpolationlevel) {
+  auto ret = SmartInterpolateSRep(srep, interpolationlevel);
+  if (ret) {
+    ret->Register(nullptr);
   }
-  return sreplogic::InterpolateSRep(interpolationlevel, srep);
+  return ret;
+}
+
+//----------------------------------------------------------------------------
+vtkSmartPointer<vtkEllipticalSRep> vtkSlicerSRepLogic::SmartInterpolateSRep(const vtkEllipticalSRep& srep, size_t interpolationlevel) {
+  return sreplogic::SmartInterpolateSRep(interpolationlevel, srep);
 }

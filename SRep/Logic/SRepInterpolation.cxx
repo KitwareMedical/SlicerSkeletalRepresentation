@@ -19,10 +19,7 @@
 #include <algorithm>
 #include <cmath>
 #include <functional>
-#include <sstream> //REMOVE
-
-namespace sreplogic {
-namespace detail {
+#include <sstream>
 
 namespace {
 //----------------------------------------------------------------------------
@@ -51,6 +48,7 @@ bool IsPowerOfTwo(size_t val) {
   return true;
 }
 
+//----------------------------------------------------------------------------
 template <typename T, size_t N>
 T MinValue(const std::array<T,N>& arr) {
   static_assert(N > 0, "Can't be zero");
@@ -65,23 +63,96 @@ T MinValue(const std::array<T,N>& arr) {
 
 } // namespace {}
 
+namespace sreplogic {
 //----------------------------------------------------------------------------
-const srep::Spoke& SRepInterpolateHelper::GetSpoke(const Grid& grid, const LineStep& loc, SpokeType spokeType) {
-  return grid[loc.line][loc.step].GetSpoke(spokeType);
+vtkEllipticalSRep* InterpolateSRep(size_t interpolationLevel, const vtkEllipticalSRep& srep) {
+  auto ret = SmartInterpolateSRep(interpolationLevel, srep);
+  if (ret) {
+    ret->Register(nullptr);
+  }
+  return ret;
 }
 
 //----------------------------------------------------------------------------
-const srep::Spoke& SRepInterpolateHelper::GetInterpolatedSpoke(const LineStep& loc, SpokeType spokeType) {
+vtkSmartPointer<vtkEllipticalSRep> SmartInterpolateSRep(size_t interpolationLevel, const vtkEllipticalSRep& srep) {
+  return detail::SRepInterpolateHelper(interpolationLevel, srep).interpolate();
+}
+
+namespace detail {
+
+//----------------------------------------------------------------------------
+LineStep::LineStep()
+  : line(0)
+  , step(0)
+{}
+
+//----------------------------------------------------------------------------
+LineStep::LineStep(size_t line_, size_t step_)
+  : line(line_)
+  , step(step_)
+{}
+
+//----------------------------------------------------------------------------
+bool operator<(const LineStep& a, const LineStep& b) {
+  return a.line != b.line ? a.line < b.line : a.step < b.step;
+}
+
+//----------------------------------------------------------------------------
+bool operator>(const LineStep& a, const LineStep& b) {
+  return b > a;
+}
+
+//----------------------------------------------------------------------------
+bool operator<=(const LineStep& a, const LineStep& b) {
+  return !(b > a);
+}
+
+//----------------------------------------------------------------------------
+bool operator>=(const LineStep& a, const LineStep& b) {
+  return !(a < b);
+}
+
+//----------------------------------------------------------------------------
+bool operator==(const LineStep& a, const LineStep& b) {
+  return !(a < b) && !(b < a);
+}
+
+//----------------------------------------------------------------------------
+bool operator!=(const LineStep& a, const LineStep& b) {
+  return !(a == b);
+}
+
+//----------------------------------------------------------------------------
+std::ostream& operator<<(std::ostream& os, const LineStep& ls) {
+  os << "(" << ls.line << ", " << ls.step << ")";
+  return os;
+}
+
+//----------------------------------------------------------------------------
+vtkSRepSpoke& SRepInterpolateHelper::GetSpoke(const Grid& grid, const LineStep& loc, SpokeType spokeType) {
+  if (grid[loc.line][loc.step]->GetSpoke(spokeType)) {
+    return *(grid[loc.line][loc.step]->GetSpoke(spokeType));
+  }
+  throw std::runtime_error("Nullptr found for grid at ("
+    + std::to_string(loc.line) + ", " + std::to_string(loc.step) + ")");
+}
+
+//----------------------------------------------------------------------------
+vtkSRepSpoke& SRepInterpolateHelper::GetInterpolatedSpoke(const LineStep& loc, SpokeType spokeType) {
   return this->GetSpoke(this->InterpolatedGrid, loc, spokeType);
 }
 
 //----------------------------------------------------------------------------
-const srep::SkeletalPoint& SRepInterpolateHelper::GetInterpolatedSkeletalPoint(const LineStep& loc) {
-  return this->InterpolatedGrid[loc.line][loc.step];
+vtkSRepSkeletalPoint& SRepInterpolateHelper::GetInterpolatedSkeletalPoint(const LineStep& loc) {
+  if (this->InterpolatedGrid[loc.line][loc.step]) {
+    return *(this->InterpolatedGrid[loc.line][loc.step]);
+  }
+  throw std::runtime_error("Nullptr found for interpolated grid at ("
+    + std::to_string(loc.line) + ", " + std::to_string(loc.step) + ")");
 }
 
 //----------------------------------------------------------------------------
-srep::Vector3d SRepInterpolateHelper::ComputeLinewiseDerivative(const Grid& grid, const srep::LineStep& loc, SpokeType spokeType) {
+srep::Vector3d SRepInterpolateHelper::ComputeLinewiseDerivative(const Grid& grid, const LineStep& loc, SpokeType spokeType) {
   const auto prevLine = (loc.line + grid.size() - 1) % grid.size();
   const auto nextLine = (loc.line + grid.size() + 1) % grid.size();
 
@@ -94,7 +165,7 @@ srep::Vector3d SRepInterpolateHelper::ComputeLinewiseDerivative(const Grid& grid
 }
 
 //----------------------------------------------------------------------------
-srep::Vector3d SRepInterpolateHelper::ComputeStepwiseDerivative(const Grid& grid, const srep::LineStep& loc, SpokeType spokeType) {
+srep::Vector3d SRepInterpolateHelper::ComputeStepwiseDerivative(const Grid& grid, const LineStep& loc, SpokeType spokeType) {
   const auto prevOptLineStep = [&](){
     if (loc.step == 0) {
       return std::make_pair(LineStep(), false);
@@ -150,10 +221,10 @@ srep::Vector3d SRepInterpolateHelper::ComputeDerivative(
 SRepInterpolateHelper::SkeletalPointDerivative
 SRepInterpolateHelper::ComputeDerivative(const Grid& grid, const LineStep& loc) {
   SkeletalPointDerivative d;
-  d.up.u = SRepInterpolateHelper::ComputeLinewiseDerivative(grid, loc, SpokeType::Up);
-  d.down.u = SRepInterpolateHelper::ComputeLinewiseDerivative(grid, loc, SpokeType::Down);
-  d.up.v = SRepInterpolateHelper::ComputeStepwiseDerivative(grid, loc, SpokeType::Up);
-  d.down.v = SRepInterpolateHelper::ComputeStepwiseDerivative(grid, loc, SpokeType::Down);
+  d.up.u = SRepInterpolateHelper::ComputeLinewiseDerivative(grid, loc, SpokeType::UpOrientation);
+  d.down.u = SRepInterpolateHelper::ComputeLinewiseDerivative(grid, loc, SpokeType::DownOrientation);
+  d.up.v = SRepInterpolateHelper::ComputeStepwiseDerivative(grid, loc, SpokeType::UpOrientation);
+  d.down.v = SRepInterpolateHelper::ComputeStepwiseDerivative(grid, loc, SpokeType::DownOrientation);
 
   return d;
 }
@@ -206,8 +277,7 @@ srep::Vector3d SRepInterpolateHelper::Compute2ndDerivative(
 }
 
 //----------------------------------------------------------------------------
-SRepInterpolateHelper::LineStep
-SRepInterpolateHelper::OriginalLineStepToInterpolatedLineStep(const LineStep& ols) {
+LineStep SRepInterpolateHelper::OriginalLineStepToInterpolatedLineStep(const LineStep& ols) {
   return LineStep(ols.line * this->Density, ols.step * this->Density);
 }
 
@@ -318,9 +388,10 @@ void SRepInterpolateHelper::InterpolateQuad(const Quad& iQuad, const Quad& origi
 
   // for the very center interpolate off of two directions and average
   const auto mmLeftRight = InterpolateMiddleSkeletalPoint(lm, rm, originalEnclosingQuad, lambda);
-  const auto ptAtMMLeftRight = this->GetInterpolatedSkeletalPoint(mmLeftRight);
+  // need to clone because we are going to overwrite the spot during the next InterpolateMiddleSkeletalPoint
+  auto ptAtMMLeftRightClone = this->GetInterpolatedSkeletalPoint(mmLeftRight).SmartClone();
   const auto mmUpDown = InterpolateMiddleSkeletalPoint(tm, bm, originalEnclosingQuad, lambda);
-  const auto ptAtMMTopBottom = this->GetInterpolatedSkeletalPoint(mmUpDown);
+  auto& ptAtMMTopBottom = this->GetInterpolatedSkeletalPoint(mmUpDown);
 
   if (mmUpDown.line != mmLeftRight.line) {
     throw std::runtime_error("bug in getting middle spot linewise");
@@ -330,7 +401,7 @@ void SRepInterpolateHelper::InterpolateQuad(const Quad& iQuad, const Quad& origi
   }
 
   const auto& mm = mmLeftRight;
-  this->InterpolatedGrid[mm.line][mm.step] = Average(ptAtMMLeftRight, ptAtMMTopBottom);
+  this->InterpolatedGrid[mm.line][mm.step] = Average(*ptAtMMLeftRightClone, ptAtMMTopBottom);
 
   if (length == 2) {
     // all the recursors will have length == 1 which will quit. Early return for less verbose
@@ -346,7 +417,7 @@ void SRepInterpolateHelper::InterpolateQuad(const Quad& iQuad, const Quad& origi
 }
 
 //----------------------------------------------------------------------------
-SRepInterpolateHelper::LineStep SRepInterpolateHelper::MiddleLineStep(const LineStep& a, const LineStep& b, const Grid& grid) {
+LineStep SRepInterpolateHelper::MiddleLineStep(const LineStep& a, const LineStep& b, const Grid& grid) {
   auto lineDist = LinewiseDistance(a, b, grid);
   auto stepDist = StepwiseDistance(a, b, grid);
 
@@ -376,24 +447,24 @@ SRepInterpolateHelper::UVDerivative SRepInterpolateHelper::Average(const UVDeriv
 }
 
 //----------------------------------------------------------------------------
-SRepInterpolateHelper::SkeletalPoint
-SRepInterpolateHelper::Average(const SkeletalPoint& pt1, const SkeletalPoint& pt2) {
+vtkSmartPointer<vtkSRepSkeletalPoint>
+SRepInterpolateHelper::Average(const vtkSRepSkeletalPoint& pt1, const vtkSRepSkeletalPoint& pt2) {
   if (pt1.IsCrest() != pt2.IsCrest()) {
     throw std::invalid_argument("How does one average two skeletal points when only one is a crest point?");
   }
 
-  const auto avgUp = Average(pt1.GetUpSpoke(), pt2.GetUpSpoke());
-  const auto avgDown = Average(pt1.GetDownSpoke(), pt2.GetDownSpoke());
+  const auto avgUp = Average(*pt1.GetUpSpoke(), *pt2.GetUpSpoke());
+  const auto avgDown = Average(*pt1.GetDownSpoke(), *pt2.GetDownSpoke());
   if (pt1.IsCrest()) {
-    return SkeletalPoint(avgUp, avgDown, Average(pt1.GetCrestSpoke(), pt2.GetCrestSpoke()));
+    return vtkSRepSkeletalPoint::SmartCreate(avgUp, avgDown, Average(*pt1.GetCrestSpoke(), *pt2.GetCrestSpoke()));
   } else {
-    return SkeletalPoint(avgUp, avgDown);
+    return vtkSRepSkeletalPoint::SmartCreate(avgUp, avgDown);
   }
 }
 
 //----------------------------------------------------------------------------
-srep::Spoke SRepInterpolateHelper::Average(const srep::Spoke& s1, const srep::Spoke& s2) {
-  return srep::Spoke(
+vtkSmartPointer<vtkSRepSpoke> SRepInterpolateHelper::Average(const vtkSRepSpoke& s1, const vtkSRepSpoke& s2) {
+  return vtkSRepSpoke::SmartCreate(
     Average(s1.GetSkeletalPoint(), s2.GetSkeletalPoint()),
     Average(s1.GetDirection(), s2.GetDirection()));
 }
@@ -429,31 +500,31 @@ std::vector<SRepInterpolateHelper::Quad> SRepInterpolateHelper::GetOrientedQuads
 }
 
 //----------------------------------------------------------------------------
-SRepInterpolateHelper::LineStep
-SRepInterpolateHelper::InterpolateMiddleSkeletalPoint(
+LineStep SRepInterpolateHelper::InterpolateMiddleSkeletalPoint(
   const LineStep& start,
   const LineStep& end,
   const Quad& originalEnclosingQuad,
   double lambda)
 {
-  const auto midUpDirection = InterpolateMiddleSpokeDirection(start, end, lambda, SpokeType::Up);
-  const auto midUpSkeletonPoint = InterpolateMiddleSkeletalPointSkeletonPoint(start, end, originalEnclosingQuad, SpokeType::Up);
-  const srep::Spoke midUpSpoke(midUpSkeletonPoint, midUpDirection);
+  const auto midUpDirection = InterpolateMiddleSpokeDirection(start, end, lambda, SpokeType::UpOrientation);
+  const auto midUpSkeletonPoint = InterpolateMiddleSkeletalPointSkeletonPoint(start, end, originalEnclosingQuad, SpokeType::UpOrientation);
+  const auto midUpSpoke = vtkSRepSpoke::SmartCreate(midUpSkeletonPoint, midUpDirection);
 
-  const auto midDownDirection = InterpolateMiddleSpokeDirection(start, end, lambda, SpokeType::Down);
-  const auto midDownSkeletonPoint = InterpolateMiddleSkeletalPointSkeletonPoint(start, end, originalEnclosingQuad, SpokeType::Down);
-  const srep::Spoke midDownSpoke(midDownSkeletonPoint, midDownDirection);
+
+  const auto midDownDirection = InterpolateMiddleSpokeDirection(start, end, lambda, SpokeType::DownOrientation);
+  const auto midDownSkeletonPoint = InterpolateMiddleSkeletalPointSkeletonPoint(start, end, originalEnclosingQuad, SpokeType::DownOrientation);
+  const auto midDownSpoke = vtkSRepSpoke::SmartCreate(midDownSkeletonPoint, midDownDirection);
 
   const auto midLS = MiddleLineStep(start, end, this->InterpolatedGrid);
   if (this->GetInterpolatedSkeletalPoint(start).IsCrest()
     && this->GetInterpolatedSkeletalPoint(end).IsCrest())
   {
-    const auto midCrestDirection = InterpolateMiddleSpokeDirection(start, end, lambda, SpokeType::Crest);
-    const auto midCrestSkeletonPoint = InterpolateMiddleSkeletalPointSkeletonPoint(start, end, originalEnclosingQuad, SpokeType::Crest);
-    const srep::Spoke midCrestSpoke(midCrestSkeletonPoint, midCrestDirection);
-    this->InterpolatedGrid[midLS.line][midLS.step] = srep::SkeletalPoint(midUpSpoke, midDownSpoke, midCrestSpoke);
+    const auto midCrestDirection = InterpolateMiddleSpokeDirection(start, end, lambda, SpokeType::CrestOrientation);
+    const auto midCrestSkeletonPoint = InterpolateMiddleSkeletalPointSkeletonPoint(start, end, originalEnclosingQuad, SpokeType::CrestOrientation);
+    const auto midCrestSpoke = vtkSRepSpoke::SmartCreate(midCrestSkeletonPoint, midCrestDirection);
+    this->InterpolatedGrid[midLS.line][midLS.step] = vtkSRepSkeletalPoint::SmartCreate(midUpSpoke, midDownSpoke, midCrestSpoke);
   } else {
-    this->InterpolatedGrid[midLS.line][midLS.step] = srep::SkeletalPoint(midUpSpoke, midDownSpoke);
+    this->InterpolatedGrid[midLS.line][midLS.step] = vtkSRepSkeletalPoint::SmartCreate(midUpSpoke, midDownSpoke);
   }
   return midLS;
 }
@@ -473,8 +544,8 @@ srep::Vector3d SRepInterpolateHelper::InterpolateMiddleSpokeDirection(
 
 //----------------------------------------------------------------------------
 srep::Vector3d SRepInterpolateHelper::InterpolateMiddleSpokeDirection(
-  const srep::Spoke& startSpoke,
-  const srep::Spoke& endSpoke,
+  const vtkSRepSpoke& startSpoke,
+  const vtkSRepSpoke& endSpoke,
   const double lambda)
 {
   const auto startUnitDirection = startSpoke.GetDirection().Unit();
@@ -485,7 +556,7 @@ srep::Vector3d SRepInterpolateHelper::InterpolateMiddleSpokeDirection(
   const double halfDist = lambda / 2;
   //if startSpoke == endSpoke then interpolated spoke == both
   //I don't think this should ever really happen
-  if (startSpoke == endSpoke) {
+  if (startSpoke.GetSkeletalPoint() == endSpoke.GetSkeletalPoint() && startSpoke.GetDirection() == endSpoke.GetDirection()) {
     return startSpoke.GetDirection();
   }
   const auto middleUnitDirection = Slerp(startUnitDirection, endUnitDirection, halfDist);
@@ -503,11 +574,11 @@ srep::Vector3d SRepInterpolateHelper::InterpolateMiddleSpokeDirection(
 SRepInterpolateHelper::UVDerivative
 SRepInterpolateHelper::GetUVDerivativeFromOriginalLineStep(const LineStep& ols, SpokeType spokeType) {
   const auto& d = this->DerivativeOriginalGrid[ols.line][ols.step];
-  if (spokeType == SpokeType::Up) {
+  if (spokeType == SpokeType::UpOrientation) {
     return d.up;
-  } else if (spokeType == SpokeType::Down) {
+  } else if (spokeType == SpokeType::DownOrientation) {
     return d.down;
-  } else if (spokeType == SpokeType::Crest) {
+  } else if (spokeType == SpokeType::CrestOrientation) {
     //average of up and down
     return Average(d.up, d.down);
   }
@@ -528,14 +599,14 @@ srep::Point3d SRepInterpolateHelper::InterpolateMiddleSkeletalPointSkeletonPoint
   SpokeType spokeType)
 {
   const auto mid = MiddleLineStep(start, end, this->InterpolatedGrid);
-  if (spokeType == SpokeType::Up || spokeType == SpokeType::Down) {
+  if (spokeType == SpokeType::UpOrientation || spokeType == SpokeType::DownOrientation) {
     return this->InterpolateSkeletalPointSkeletonPoint(mid, originalEnclosingQuad, spokeType);
-  } else if (spokeType == SpokeType::Crest) {
+  } else if (spokeType == SpokeType::CrestOrientation) {
     // interpolation is a little weird for the crest. Create a fake quad that is really just a line and interpolate
     // with that
     std::vector<LineStep> crestLocs;
     for (const auto& loc : originalEnclosingQuad) {
-      if (this->OriginalGrid[loc.line][loc.step].IsCrest()) {
+      if (this->OriginalGrid[loc.line][loc.step]->IsCrest()) {
         crestLocs.push_back(loc);
       }
     }
@@ -654,14 +725,51 @@ srep::Point3d SRepInterpolateHelper::InterpolateSkeletalPointSkeletonPoint(
 }
 
 //----------------------------------------------------------------------------
+SRepInterpolateHelper::Grid SRepInterpolateHelper::ToGrid(const vtkEllipticalSRep& srep) {
+  using IndexType = vtkEllipticalSRep::IndexType;
+
+  Grid grid(srep.GetNumberOfLines(), std::vector<vtkSmartPointer<vtkSRepSkeletalPoint>>(srep.GetNumberOfSteps(), nullptr));
+  for (IndexType l = 0; l < srep.GetNumberOfLines(); ++l) {
+    for (IndexType s = 0; s < srep.GetNumberOfSteps(); ++s) {
+      // it would be better if we didn't deep copy the input, but that would require more refactoring
+      // this should be done sometime
+      grid[l][s] = srep.GetSkeletalPoint(l, s)->SmartClone();
+    }
+  }
+  return grid;
+}
+
+//----------------------------------------------------------------------------
+vtkSmartPointer<vtkEllipticalSRep> SRepInterpolateHelper::FromGrid(Grid grid) {
+  using IndexType = vtkEllipticalSRep::IndexType;
+
+  auto srep = vtkSmartPointer<vtkEllipticalSRep>::New();
+  if (grid.size() == 0) {
+    return srep;
+  }
+
+  srep->Resize(grid.size(), grid.front().size());
+  for (IndexType l = 0; l < srep->GetNumberOfLines(); ++l) {
+    for (IndexType s = 0; s < srep->GetNumberOfSteps(); ++s) {
+      // it would be better if we didn't deep copy the input, but that would require more refactoring
+      // which should be done sometime
+      srep->SetSkeletalPoint(l, s, grid[l][s]);
+    }
+  }
+
+  return srep;
+}
+
+
+//----------------------------------------------------------------------------
 // Public functions
 //----------------------------------------------------------------------------
 
 //----------------------------------------------------------------------------
-SRepInterpolateHelper::SRepInterpolateHelper(size_t interpolationLevel, const srep::EllipticalSRep& srep)
+SRepInterpolateHelper::SRepInterpolateHelper(size_t interpolationLevel, const vtkEllipticalSRep& srep)
   : InterpolationLevel(interpolationLevel)
   , Density(IntegerPower(2, InterpolationLevel))
-  , OriginalGrid(srep.GetSkeleton())
+  , OriginalGrid(ToGrid(srep))
   , InterpolatedGrid()
   , DerivativeOriginalGrid(this->ComputeDerivatives(this->OriginalGrid))
 {
@@ -675,7 +783,7 @@ SRepInterpolateHelper::SRepInterpolateHelper(size_t interpolationLevel, const sr
 }
 
 //----------------------------------------------------------------------------
-std::unique_ptr<srep::EllipticalSRep> SRepInterpolateHelper::interpolate() {
+vtkSmartPointer<vtkEllipticalSRep> SRepInterpolateHelper::interpolate() {
   this->InterpolatedGrid = Grid(); //reset the grid back to a known good state
   this->InterpolatedGrid.resize(OriginalGrid.size() * this->Density);
   for (size_t i = 0; i < InterpolatedGrid.size(); ++i) {
@@ -713,7 +821,7 @@ std::unique_ptr<srep::EllipticalSRep> SRepInterpolateHelper::interpolate() {
     this->InterpolateQuad(iQuad, oQuad);
   }
 
-  return std::unique_ptr<srep::EllipticalSRep>(new srep::EllipticalSRep(std::move(this->InterpolatedGrid)));
+  return FromGrid(std::move(this->InterpolatedGrid));
 }
 
 

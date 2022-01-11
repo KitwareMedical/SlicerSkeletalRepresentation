@@ -17,8 +17,6 @@ set(EXTENSION_DEPENDS "NA") # Specified as a list or "NA" if no dependencies
 find_package(Slicer REQUIRED)
 include(${Slicer_USE_FILE})
 
-add_subdirectory(CommonLibrary)
-
 #-----------------------------------------------------------------------------
 # Extension modules
 add_subdirectory(SRep)

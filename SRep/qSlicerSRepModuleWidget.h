@@ -50,10 +50,11 @@ public:
 
 public slots:
   // this UI related slots
-  void onExport();
-  void onExportDirectoryBrowse();
-  void onImport();
-  void onInputFileBrowse();
+  // temporarily not in use
+  // void onExport();
+  // void onExportDirectoryBrowse();
+  // void onImport();
+  // void onInputFileBrowse();
   void onInterpolate();
   void onOpacitySliderChanged();
   void onOpacitySpinboxChanged();

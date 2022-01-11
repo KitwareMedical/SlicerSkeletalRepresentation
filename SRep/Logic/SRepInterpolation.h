@@ -20,27 +20,47 @@
 
 #include <cstdlib>
 #include <memory>
-#include <srep/EllipticalSRep.h>
+#include <vtkEllipticalSRep.h>
 
 namespace sreplogic {
 
 namespace detail {
 
+struct LineStep {
+  size_t line;
+  size_t step;
+
+  LineStep();
+  LineStep(size_t line_, size_t step_);
+  LineStep(const LineStep&) = default;
+  LineStep& operator=(const LineStep&) = default;
+  LineStep(LineStep&&) = default;
+  LineStep& operator=(LineStep&&) = default;
+  ~LineStep() = default;
+};
+
+bool operator<(const LineStep& a, const LineStep& b);
+bool operator>(const LineStep& a, const LineStep& b);
+bool operator<=(const LineStep& a, const LineStep& b);
+bool operator>=(const LineStep& a, const LineStep& b);
+bool operator==(const LineStep& a, const LineStep& b);
+bool operator!=(const LineStep& a, const LineStep& b);
+
+std::ostream& operator<<(std::ostream& os, const LineStep& ls);
+
 /// Warning: this must not outlive the srep passed into the constructor.
 /// Recommend using InterpolateSRep function to ensure this
 class SRepInterpolateHelper {
 public:
-  SRepInterpolateHelper(size_t interpolationLevel, const srep::EllipticalSRep& srep);
+  SRepInterpolateHelper(size_t interpolationLevel, const vtkEllipticalSRep& srep);
 
-  std::unique_ptr<srep::EllipticalSRep> interpolate();
+  vtkSmartPointer<vtkEllipticalSRep> interpolate();
 
 private:
-  using Grid = srep::EllipticalSRep::UnrolledEllipticalGrid;
-  using LineStep = srep::LineStep;
+  using Grid = std::vector<std::vector<vtkSmartPointer<vtkSRepSkeletalPoint>>>;
   using Quad = std::array<LineStep, 4>;
   using OptionalLineStep = std::pair<LineStep, bool>;
-  using SkeletalPoint = srep::SkeletalPoint;
-  using SpokeType = SkeletalPoint::SpokeType;
+  using SpokeType = vtkSRepSkeletalPoint::SpokeOrientation;
 
   struct UVDerivative {
     srep::Vector3d u;
@@ -54,16 +74,19 @@ private:
 
   using DerivativeGridType = std::vector<std::vector<SkeletalPointDerivative>>;
 
+  static Grid ToGrid(const vtkEllipticalSRep& srep);
+  static vtkSmartPointer<vtkEllipticalSRep> FromGrid(Grid grid);
+
   static std::vector<Quad> GetOrientedQuads(const Grid& grid);
 
-  static const srep::Spoke& GetSpoke(const Grid& grid, const LineStep& loc, SpokeType spokeType);
-  const srep::Spoke& GetInterpolatedSpoke(const LineStep& loc, SpokeType spokeType);
-  const srep::SkeletalPoint& GetInterpolatedSkeletalPoint(const LineStep& loc);
+  static vtkSRepSpoke& GetSpoke(const Grid& grid, const LineStep& loc, SpokeType spokeType);
+  vtkSRepSpoke& GetInterpolatedSpoke(const LineStep& loc, SpokeType spokeType);
+  vtkSRepSkeletalPoint& GetInterpolatedSkeletalPoint(const LineStep& loc);
 
   //----------------------------------------------------------------------------
   // Computing grid derivatives
-  static srep::Vector3d ComputeLinewiseDerivative(const Grid& grid, const srep::LineStep& loc, SpokeType spokeType);
-  static srep::Vector3d ComputeStepwiseDerivative(const Grid& grid, const srep::LineStep& loc, SpokeType spokeType);
+  static srep::Vector3d ComputeLinewiseDerivative(const Grid& grid, const LineStep& loc, SpokeType spokeType);
+  static srep::Vector3d ComputeStepwiseDerivative(const Grid& grid, const LineStep& loc, SpokeType spokeType);
   static srep::Vector3d ComputeDerivative(
     const Grid& grid,
     const LineStep& loc,
@@ -119,15 +142,15 @@ private:
     double lambda,
     SpokeType spokeType);
   static srep::Vector3d InterpolateMiddleSpokeDirection(
-    const srep::Spoke& startSpoke,
-    const srep::Spoke& endSpoke,
+    const vtkSRepSpoke& startSpoke,
+    const vtkSRepSpoke& endSpoke,
     const double lambda);
 
   /// a and b cannot be across the spine
   static LineStep MiddleLineStep(const LineStep& a, const LineStep& b, const Grid& grid);
   static UVDerivative Average(const UVDerivative& uv1, const UVDerivative& uv2);
-  static SkeletalPoint Average(const SkeletalPoint& pt1, const SkeletalPoint& pt2);
-  static srep::Spoke Average(const srep::Spoke& s1, const srep::Spoke& s2);
+  static vtkSmartPointer<vtkSRepSkeletalPoint> Average(const vtkSRepSkeletalPoint& pt1, const vtkSRepSkeletalPoint& pt2);
+  static vtkSmartPointer<vtkSRepSpoke> Average(const vtkSRepSpoke& s1, const vtkSRepSpoke& s2);
   static srep::Point3d Average(const srep::Point3d& pt1, const srep::Point3d& pt2);
   static srep::Vector3d Average(const srep::Vector3d& v1, const srep::Vector3d& v2);
 
@@ -156,15 +179,14 @@ private:
   // Members
   const size_t InterpolationLevel;
   const size_t Density;
-  const Grid& OriginalGrid;
+  const Grid OriginalGrid;
   Grid InterpolatedGrid;
   DerivativeGridType DerivativeOriginalGrid;
 };
 }
 
-inline std::unique_ptr<srep::EllipticalSRep> InterpolateSRep(size_t interpolationLevel, const srep::EllipticalSRep& srep) {
-  return detail::SRepInterpolateHelper(interpolationLevel, srep).interpolate();
-}
+VTK_NEWINSTANCE vtkEllipticalSRep* InterpolateSRep(size_t interpolationLevel, const vtkEllipticalSRep& srep);
+vtkSmartPointer<vtkEllipticalSRep> SmartInterpolateSRep(size_t interpolationLevel, const vtkEllipticalSRep& srep);
 
 }
 
