@@ -25,6 +25,7 @@
 #include "vtkSlicerSRepRefinementLogic.h"
 
 #include "SRepProgressHelper.h"
+#include <srepUtil.h>
 
 //-----------------------------------------------------------------------------
 /// \ingroup Slicer_QtModules_ExtensionTemplate

@@ -314,7 +314,7 @@ SDFAndGradient CreateAntiAliasSignedDistanceMap(vtkPolyData* polyData, const Bou
 }
 
 //---------------------------------------------------------------------------
-Bounds ComputeMasterBounds(vtkPolyData* polyData, const srep::EllipticalSRep& srep) {
+Bounds ComputeMasterBounds(vtkPolyData* polyData, const vtkEllipticalSRep& srep) {
   if (!polyData) {
     throw std::invalid_argument("Expected existing polydata for computing bounds");
   }
@@ -340,7 +340,7 @@ class Refiner {
 public:
   //---------------------------------------------------------------------------
   Refiner(
-    const srep::EllipticalSRep& srep,
+    const vtkEllipticalSRep& srep,
     vtkPolyData* polyData,
     double initialRegionSize,
     double finalRegionSize,
@@ -351,7 +351,7 @@ public:
     double L2Weight)
     : m_voxelSpacing(0.005)
     , m_polyData(polyData)
-    , m_srep(srep.Clone())
+    , m_srep(srep.SmartClone())
     , m_masterBounds(ComputeMasterBounds(m_polyData, *m_srep))
     , m_sdfAndGradient(CreateAntiAliasSignedDistanceMap(m_polyData, m_masterBounds, m_voxelSpacing))
     , m_srepToImageCoordsTransform(CreateBoundsToImageCoordsTransform(m_masterBounds))
@@ -367,7 +367,7 @@ public:
     , m_L1Weight(L1Weight)
     , m_L2Weight(L2Weight)
     , m_iteration(0)
-    , m_totalProgressIterations(2 * m_maxIterations + 2 * m_srep->GetSkeleton().size()) // up and down iterations + 2 * # crest points
+    , m_totalProgressIterations(2 * m_maxIterations + 2 * m_srep->GetNumberOfLines()) // up and down iterations + 2 * # crest points
     , m_progressCallback()
   {
     this->GetInitialCoefficients();
@@ -379,24 +379,22 @@ public:
 
   //---------------------------------------------------------------------------
   /// WARNING: don't call this more than once
-  std::unique_ptr<srep::EllipticalSRep> Run() {
+  vtkSmartPointer<vtkEllipticalSRep> Run() {
     if (!m_srep->IsEmpty()) {
       m_iteration = 0; ReportProgress();
-      this->RefineSpokes(SpokeType::Up);
+      this->RefineSpokes(SpokeType::UpOrientation);
       m_iteration = 1 * m_maxIterations; ReportProgress();
-      this->RefineSpokes(SpokeType::Down);
+      this->RefineSpokes(SpokeType::DownOrientation);
       m_iteration = 2 * m_maxIterations; ReportProgress();
-      this->RefineSpokes(SpokeType::Crest);\
+      this->RefineSpokes(SpokeType::CrestOrientation);
       m_iteration = m_totalProgressIterations;
     }
-    return std::move(m_srep);
+    return m_srep;
   }
 
 private:
-  using SpokeType = srep::SkeletalPoint::SpokeType;
-  using GetSpokeFunctionType = const srep::Spoke& (srep::SkeletalPoint::*)() const;
-  using SetSpokeFunctionType = void (srep::SkeletalPoint::*)(const srep::Spoke&);
-
+  using SpokeType = vtkSRepSkeletalPoint::SpokeOrientation;
+  using IndexType = vtkEllipticalSRep::IndexType;
   class MinNewouaHelper {
   public:
     using SpokeType = Refiner::SpokeType;
@@ -417,7 +415,7 @@ private:
 
   double m_voxelSpacing;
   vtkSmartPointer<vtkPolyData> m_polyData;
-  std::unique_ptr<srep::EllipticalSRep> m_srep;
+  vtkSmartPointer<vtkEllipticalSRep> m_srep;
   Bounds m_masterBounds;
   SDFAndGradient m_sdfAndGradient;
   vtkSmartPointer<vtkMatrix4x4> m_srepToImageCoordsTransform;
@@ -452,7 +450,7 @@ private:
 
   //---------------------------------------------------------------------------
   void RefineSpokes(SpokeType spokeType) {
-    if (spokeType == SpokeType::Crest) {
+    if (spokeType == SpokeType::CrestOrientation) {
       RefineCrestSpokes();
     } else {
       RefineUpDownSpokes(spokeType);
@@ -465,12 +463,14 @@ private:
     vtkNew<vtkImplicitPolyDataDistance> implicitPolyDataDistance;
     implicitPolyDataDistance->SetInput(m_polyData);
 
-    auto grid = m_srep->GetSkeleton(); // deep copy
-    for (size_t l = 0; l < grid.size(); ++l) {
-      for (size_t s = 0; s < grid[l].size(); ++s) {
-        if (grid[l][s].IsCrest()) {
+    vtkEllipticalSRep::ModifiedBlocker blocker(m_srep);
+    for (IndexType l = 0; l < m_srep->GetNumberOfLines(); ++l) {
+      for (IndexType s = 0; s < m_srep->GetNumberOfSteps(); ++s) {
+        auto* skeletalPoint = m_srep->GetSkeletalPoint(l, s);
+        if (skeletalPoint->IsCrest()) {
           IncrementIteration();
-          auto spoke = grid[l][s].GetCrestSpoke();
+          // get spoke by reference so we can update
+          auto& spoke = *skeletalPoint->GetCrestSpoke();
           double dist = implicitPolyDataDistance->FunctionValue(spoke.GetBoundaryPoint().AsArray().data());
           double oldDist = dist;
           double thisStepSize = stepSize;
@@ -494,11 +494,9 @@ private:
             }
             oldDist = dist;
           }
-          grid[l][s].SetCrestSpoke(spoke);
         }
       }
     }
-    m_srep = std::unique_ptr<srep::EllipticalSRep>(new srep::EllipticalSRep(std::move(grid)));
   }
 
   //---------------------------------------------------------------------------
@@ -532,12 +530,12 @@ private:
     locator->SetDataSet(m_polyData);
     locator->BuildLocator();
 
-    auto grid = m_srep->GetSkeleton();
-    for (size_t l = 0; l < grid.size(); ++l) {
-      for (size_t s = 0; s < grid[l].size(); ++s) {
-        if (grid[l][s].IsCrest()) {
+    for (IndexType l = 0; l < m_srep->GetNumberOfLines(); ++l) {
+      for (IndexType s = 0; s < m_srep->GetNumberOfSteps(); ++s) {
+        auto* skeletalPoint = m_srep->GetSkeletalPoint(l, s);
+        if (skeletalPoint->IsCrest()) {
           IncrementIteration();
-          auto spoke = grid[l][s].GetCrestSpoke();
+          auto& spoke = *skeletalPoint->GetCrestSpoke();
           const vtkIdType idNearest = locator->FindClosestPoint(spoke.GetBoundaryPoint().AsArray().data());
           const double curMax = maxC->GetValue(idNearest);
           const double curMin = minC->GetValue(idNearest);
@@ -555,52 +553,49 @@ private:
             spoke.GetSkeletalPoint()[1] + unitDir[1] * rDiff,
             spoke.GetSkeletalPoint()[2] + unitDir[2] * rDiff));
           spoke.SetRadius(rCrest);
-
-          grid[l][s].SetCrestSpoke(spoke);
         }
       }
     }
-    m_srep = std::unique_ptr<srep::EllipticalSRep>(new srep::EllipticalSRep(std::move(grid)));
   }
 
   //---------------------------------------------------------------------------
   void RefineUpDownSpokes(SpokeType spokeType) {
-    m_currentCoeff = spokeType == SpokeType::Up ? &m_flattenedUpCoeff : &m_flattenedDownCoeff;
+    m_currentCoeff = spokeType == SpokeType::UpOrientation ? &m_flattenedUpCoeff : &m_flattenedDownCoeff;
     MinNewouaHelper helper(*this, spokeType);
     min_newuoa(static_cast<int>(m_currentCoeff->size()), m_currentCoeff->data(), helper, m_initialRegionSize, m_finalRegionSize, m_maxIterations);
 
-    auto tempSRep = this->Refine(*m_srep, m_currentCoeff->data(), spokeType);
+    // note: only the "spokeType" spokes are refined
+    auto refinedSRep = this->Refine(*m_srep, m_currentCoeff->data(), spokeType);
 
-    auto finalGrid = m_srep->GetSkeleton(); // deep copy
-    const auto& refinedGrid = tempSRep->GetSkeleton(); // shallow copy
+    if (m_srep->GetNumberOfLines() != refinedSRep->GetNumberOfLines()) {
+      throw std::runtime_error("Error: expected equal number of lines "
+        + std::to_string(m_srep->GetNumberOfLines()) + "!=" + std::to_string(refinedSRep->GetNumberOfLines()));
+    }
+    if (m_srep->GetNumberOfSteps() != refinedSRep->GetNumberOfSteps()) {
+      throw std::runtime_error("Error: expected equal number of steps "
+        + std::to_string(m_srep->GetNumberOfSteps()) + "!=" + std::to_string(refinedSRep->GetNumberOfSteps()));
+    }
 
-    if (finalGrid.size() != refinedGrid.size()) {
-      throw std::runtime_error("Error: expected equal grid sizes "
-        + std::to_string(finalGrid.size()) + "!=" + std::to_string(refinedGrid.size()));
-    }
-    for (size_t i = 0; i < finalGrid.size(); ++i) {
-      if (finalGrid[i].size() != refinedGrid[i].size()) {
-        throw std::runtime_error("Error: expected equal grid sizes i " + std::to_string(i) + " "
-          + std::to_string(finalGrid.size()) + "!=" + std::to_string(refinedGrid.size()));
-      }
-      for (size_t j = 0; j < finalGrid[i].size(); ++j) {
-        finalGrid[i][j].SetSpoke(spokeType, refinedGrid[i][j].GetSpoke(spokeType));
+    for (IndexType l = 0; l < m_srep->GetNumberOfLines(); ++l) {
+      for (IndexType s = 0; s < m_srep->GetNumberOfSteps(); ++s) {
+        // shallow copy the spoke, but that is ok because refinedSRep will go away and m_srep will be sole owner
+        m_srep->GetSkeletalPoint(l, s)->SetSpoke(spokeType, refinedSRep->GetSkeletalPoint(l, s)->GetSpoke(spokeType));
       }
     }
-    m_srep = std::unique_ptr<srep::EllipticalSRep>(new srep::EllipticalSRep(std::move(finalGrid)));
   }
 
   //---------------------------------------------------------------------------
   // this temporary srep is constructed to compute the cost function value
   // The original srep should not be changed by each iteration
-  std::unique_ptr<srep::EllipticalSRep> Refine(srep::EllipticalSRep& srep, double* coeff, SpokeType spokeType) {
+  vtkSmartPointer<vtkEllipticalSRep> Refine(vtkEllipticalSRep& srep, double* coeff, SpokeType spokeType) {
     constexpr double tolerance = 1e-13;
-    auto grid = srep.GetSkeleton(); //note this is a deep copy
-    if (spokeType == SpokeType::Up || spokeType == SpokeType::Down) {
+
+    auto clone = srep.SmartClone();
+    if (spokeType == SpokeType::UpOrientation || spokeType == SpokeType::DownOrientation) {
       size_t c = 0; //coeff index
-      for (size_t i = 0; i < grid.size(); ++i) {
-        for (size_t j = 0; j < grid[i].size(); ++j) {
-          const auto spoke = grid[i][j].GetSpoke(spokeType);
+      for (IndexType l = 0; l < clone->GetNumberOfLines(); ++l) {
+        for (IndexType s = 0; s < clone->GetNumberOfSteps(); ++s) {
+          auto& spoke = *(clone->GetSkeletalPoint(l, s)->GetSpoke(spokeType));
           const double oldRadius = spoke.GetRadius();
           const auto oldUnitDir = spoke.GetDirection().Unit();
 
@@ -613,26 +608,25 @@ private:
             || abs(oldUnitDir[1] - newUnitDir[1]) >= tolerance
             || abs(oldUnitDir[2] - newUnitDir[2]) >= tolerance)
           {
-            srep::Spoke newSpoke(spoke.GetSkeletalPoint(), newUnitDir * newRadius);
-            grid[i][j].SetSpoke(spokeType, newSpoke);
+            spoke.SetDirectionAndMagnitude(newUnitDir * newRadius);
           }
         }
       }
     } else {
       throw std::invalid_argument("Don't know how to refine spoke of type " + std::to_string(static_cast<int>(spokeType)));
     }
-    return std::unique_ptr<srep::EllipticalSRep>(new srep::EllipticalSRep(std::move(grid)));
+
+    return clone;
   }
 
   //---------------------------------------------------------------------------
-  std::pair<double, double> ComputeDistanceSquaredAndNormalToImage(const srep::EllipticalSRep& srep, SpokeType spokeType) {
+  std::pair<double, double> ComputeDistanceSquaredAndNormalToImage(const vtkEllipticalSRep& srep, SpokeType spokeType) {
     double totalDistSquared = 0.0;
     double totalNormalPenalty = 0.0;
 
-    const auto& grid = srep.GetSkeleton();
-    for (size_t line = 0; line < grid.size(); ++line) {
-      for (size_t step = 0; step < grid[line].size(); ++step) {
-        const auto spoke = grid[line][step].GetSpoke(spokeType);
+    for (IndexType l = 0; l < srep.GetNumberOfLines(); ++l) {
+      for (IndexType s = 0; s < srep.GetNumberOfSteps(); ++s) {
+        const auto& spoke = *(srep.GetSkeletalPoint(l, s)->GetSpoke(spokeType));
         const auto boundaryPoint = spoke.GetBoundaryPoint();
 
         // transform boundary to image coordinate system
@@ -678,10 +672,10 @@ private:
 
   //---------------------------------------------------------------------------
   void ComputeRSradDerivatives(
-    const srep::EllipticalSRep& interpolatedSRep,
+    const vtkEllipticalSRep& interpolatedSRep,
     SpokeType spokeType,
-    size_t line,
-    size_t step,
+    IndexType line,
+    IndexType step,
     srep::Vector3d& dxdu,
     srep::Vector3d& dSdu,
     double& drdu,
@@ -691,17 +685,16 @@ private:
   {
     const auto density = Pow(2, m_interpolationLevel);
     const auto stepSize = 1.0 / density;
-    const auto& grid = interpolatedSRep.GetSkeleton();
-    const auto numLines = grid.size();
-    const auto numSteps = grid[0].size();
+    const auto numLines = interpolatedSRep.GetNumberOfLines();
+    const auto numSteps = interpolatedSRep.GetNumberOfSteps();
 
     // U direction
     {
       const auto prevLine = (numLines + line - 1) % numLines;
       const auto nextLine = (numLines + line + 1) % numLines;
 
-      const auto u1 = grid[prevLine][step].GetSpoke(spokeType);
-      const auto u2 = grid[nextLine][step].GetSpoke(spokeType);
+      const auto& u1 = *interpolatedSRep.GetSkeletalPoint(prevLine, step)->GetSpoke(spokeType);
+      const auto& u2 = *interpolatedSRep.GetSkeletalPoint(nextLine, step)->GetSpoke(spokeType);
 
       drdu = (u2.GetRadius() - u1.GetRadius()) / stepSize / 2;
       dxdu = (u2.GetDirection().Unit() - u1.GetDirection().Unit()) / stepSize / 2;
@@ -714,8 +707,8 @@ private:
       const auto nextStep = step == numSteps - 1 ? numSteps - 1 : step + 1;
       const auto divisor = prevStep == step || nextStep == step ? 1 : 2;
 
-      const auto v1 = grid[line][prevStep].GetSpoke(spokeType);
-      const auto v2 = grid[line][nextStep].GetSpoke(spokeType);
+      const auto& v1 = *interpolatedSRep.GetSkeletalPoint(line, prevStep)->GetSpoke(spokeType);
+      const auto& v2 = *interpolatedSRep.GetSkeletalPoint(line, nextStep)->GetSpoke(spokeType);
 
       drdv = (v2.GetRadius() - v1.GetRadius()) / stepSize / divisor;
       dxdv = (v2.GetDirection().Unit() - v1.GetDirection().Unit()) / stepSize / divisor;
@@ -725,7 +718,7 @@ private:
 
   //---------------------------------------------------------------------------
   // Uses the interpolated SRep and m_interpolationLevel to know which spokes are primary
-  double ComputeRSradPenalty(const srep::EllipticalSRep& interpolatedSRep, SpokeType spokeType) {
+  double ComputeRSradPenalty(const vtkEllipticalSRep& interpolatedSRep, SpokeType spokeType) {
     if (interpolatedSRep.IsEmpty()) {
       return 0;
     }
@@ -733,9 +726,8 @@ private:
     double penalty = 0.0;
     const auto density = Pow(2, m_interpolationLevel);
 
-    const auto& grid = interpolatedSRep.GetSkeleton();
-    const auto numLines = grid.size() / density;
-    const auto numSteps = grid[0].size() / density;
+    const auto numLines = interpolatedSRep.GetNumberOfLines() / static_cast<IndexType>(density);
+    const auto numSteps = interpolatedSRep.GetNumberOfSteps() / static_cast<IndexType>(density);
 
     srep::Vector3d dxdu;
     srep::Vector3d dSdu;
@@ -744,16 +736,16 @@ private:
     srep::Vector3d dSdv;
     double drdv;
 
-    for (size_t i = 0; i < numLines; ++i) {
+    for (IndexType i = 0; i < numLines; ++i) {
       const auto ii = i * density;
-      for (size_t j = 0; j < numSteps; ++j) {
+      for (IndexType j = 0; j < numSteps; ++j) {
         const auto jj = j * density;
 
         // u is line-to-line direction
         // v is step-to-step direction
         ComputeRSradDerivatives(interpolatedSRep, spokeType, ii, jj, dxdu, dSdu, drdu, dxdv, dSdv, drdv);
 
-        const auto U = grid[ii][jj].GetSpoke(spokeType).GetDirection().Unit();
+        const auto U = interpolatedSRep.GetSkeletalPoint(ii, jj)->GetSpoke(spokeType)->GetDirection().Unit();
 
         // 2. construct rSrad Matrix
         double UTU[3][3]; // UT*U - I
@@ -825,7 +817,7 @@ private:
     // this function cannot throw because it will cause a memory leak in min_newuoa
     try {
       auto tempSRep = this->Refine(*m_srep, coeff, spokeType);
-      auto interpolatedTempSRep = m_srepLogic->InterpolateSRep(*tempSRep, m_interpolationLevel);
+      auto interpolatedTempSRep = m_srepLogic->SmartInterpolateSRep(*tempSRep, m_interpolationLevel);
 
       const auto L0AndL1 = ComputeDistanceSquaredAndNormalToImage(*interpolatedTempSRep, spokeType);
       const auto& distanceSquared = L0AndL1.first; // L0
@@ -849,21 +841,20 @@ private:
 
   //---------------------------------------------------------------------------
   void GetInitialCoefficients() {
-    const auto& grid = m_srep->GetSkeleton();
+    const auto numLines = m_srep->GetNumberOfLines();
+    const auto numSteps = m_srep->GetNumberOfSteps();
 
-    m_flattenedUpCoeff.reserve(grid.size() * grid[0].size() * 4);
-    m_flattenedDownCoeff.reserve(grid.size() * grid[0].size() * 4);
-    for (size_t i = 0; i < grid.size(); ++i) {
-      for (size_t j = 0; j < grid[i].size(); ++j) {
-        const auto pt = grid[i][j];
-
-        const auto upUnitDir = grid[i][j].GetUpSpoke().GetDirection().Unit();
+    m_flattenedUpCoeff.reserve(numLines * numSteps * 4);
+    m_flattenedDownCoeff.reserve(numLines * numSteps * 4);
+    for (IndexType l = 0; l < numLines; ++l) {
+      for (IndexType s = 0; s < numSteps; ++s) {
+        const auto upUnitDir = m_srep->GetSkeletalPoint(l, s)->GetUpSpoke()->GetDirection().Unit();
         m_flattenedUpCoeff.push_back(upUnitDir[0]);
         m_flattenedUpCoeff.push_back(upUnitDir[1]);
         m_flattenedUpCoeff.push_back(upUnitDir[2]);
         m_flattenedUpCoeff.push_back(0); // initial radius starts at 0
 
-        const auto downUnitDir = grid[i][j].GetDownSpoke().GetDirection().Unit();
+        const auto downUnitDir = m_srep->GetSkeletalPoint(l, s)->GetDownSpoke()->GetDirection().Unit();
         m_flattenedDownCoeff.push_back(downUnitDir[0]);
         m_flattenedDownCoeff.push_back(downUnitDir[1]);
         m_flattenedDownCoeff.push_back(downUnitDir[2]);
@@ -874,8 +865,8 @@ private:
 }; // class Refiner
 
 //---------------------------------------------------------------------------
-std::unique_ptr<srep::EllipticalSRep> RefineSRep(
-  const srep::EllipticalSRep& srep,
+vtkSmartPointer<vtkEllipticalSRep> RefineSRep(
+  const vtkEllipticalSRep& srep,
   vtkPolyData* polyData,
   double initialRegionSize,
   double finalRegionSize,
@@ -977,7 +968,7 @@ void vtkSlicerSRepRefinementLogic::Run(
       L1Weight,
       L2Weight,
       [this](double p){ this->ProgressCallback(p); });
-    destination->SetEllipticalSRep(std::move(refinedSRep));
+    destination->SetEllipticalSRep(refinedSRep);
   } catch (const std::exception& e) {
     vtkErrorMacro("Error running SRep refinement: " << e.what());
     throw;
