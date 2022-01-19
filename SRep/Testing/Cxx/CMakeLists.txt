@@ -1,17 +1,20 @@
-set(KIT qSlicer${MODULE_NAME}Module)
+include(GoogleTest)
+message("CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}")
+message("GTest_DIR ${GTest_DIR}")
 
-#-----------------------------------------------------------------------------
-set(KIT_TEST_SRCS
-  #qSlicer${MODULE_NAME}ModuleTest.cxx
-  )
+find_package(GTest REQUIRED CONFIG)
 
-#-----------------------------------------------------------------------------
-slicerMacroConfigureModuleCxxTestDriver(
-  NAME ${KIT}
-  SOURCES ${KIT_TEST_SRCS}
-  WITH_VTK_DEBUG_LEAKS_CHECK
-  WITH_VTK_ERROR_OUTPUT_CHECK
-  )
+add_executable(qSlicerSRepModuleUnitTests
+  Point3dTest.cxx
+  SkeletalPointTest.cxx
+  SpokeTest.cxx
+  Vector3dTest.cxx
+)
 
-#-----------------------------------------------------------------------------
-#simple_test(qSlicer${MODULE_NAME}ModuleTest)
+target_link_libraries(qSlicerSRepModuleUnitTests
+  vtkSlicerSRepModuleMRML
+  GTest::gtest_main
+)
+
+add_test(NAME qSlicerSRepModuleUnitTests COMMAND qSlicerSRepModuleUnitTests)
+set_property(TEST qSlicerSRepModuleUnitTests PROPERTY LABELS qSlicerSRepModule)
