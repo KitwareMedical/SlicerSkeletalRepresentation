@@ -10,6 +10,7 @@ namespace srep {
 
 class Vector3d {
 public:
+    /// Default construct a vector. All components are set to 0.
     Vector3d();
     /// Construct a vector
     /// @throws std::invalid_argument if x, y, or z is nan
@@ -18,14 +19,14 @@ public:
     /// Construct vector going from point to another, both direction and magnitude.
     Vector3d(const Point3d& from, const Point3d& to);
 
-    //I would rather not have this, but may be convienent for interfacing with VTK
-    /// Construct a vector
-    /// @throws std::invalid_argument if any nan
+    //I would rather not have this constructor for raw c array, but may be convienent for interfacing with VTK
+    /// @{
+    /// Constructors for creating Point3d from various other structures
+    /// @throws std::invalid_argument if any component is nan
     explicit Vector3d(const double p[3]);
-
     explicit Vector3d(const std::array<double, 3>& p);
-
     explicit Vector3d(const vtkVector3d& p);
+    /// @}
 
     //copy and move defined and valid
     Vector3d(const Vector3d&) = default;
@@ -34,6 +35,10 @@ public:
     Vector3d& operator=(Vector3d&&) = default;
     ~Vector3d() = default;
 
+    /// Another method for getting X, Y, and Z components
+    ///
+    /// \param i The component to get. 0 is X, 1 is Y, 2 is Z.
+    /// \throws std::out_of_range if i > 2
     const double& operator[](size_t i) const;
 
     /// Gets the X component of the vector.
@@ -112,6 +117,7 @@ Point3d operator-(const Point3d& a, const Vector3d& b);
 
 std::ostream& operator<<(std::ostream& os, const Vector3d& point);
 
+/// Copies the value of an srep::Vector3d into a vtkVector3d
 void PlaceInto(const Vector3d& v1, vtkVector3d& v2);
 
 }

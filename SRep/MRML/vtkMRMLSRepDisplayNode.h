@@ -32,6 +32,10 @@ public:
   /// Get name of the default interaction context (typically the mouse)
   static const std::string GetDefaultContextName() { return ""; };
 
+  //--------------------------------------------------------------------------
+  // display methods
+  //--------------------------------------------------------------------------
+
   // vtkMRMLDisplayNode has a bunch of protected members we don't want to use.
   // It also offers a bunch of functions that use these members.
   // We are are overriding all the functions that use the visibility members we don't like

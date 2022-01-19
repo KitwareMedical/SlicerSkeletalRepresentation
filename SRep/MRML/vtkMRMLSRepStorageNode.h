@@ -18,14 +18,21 @@ public:
 
   bool CanReadInReferenceNode(vtkMRMLNode *refNode) override;
 
+  /// Creates a new SRep node with the given name and the file set by SetFileName.
+  ///
+  /// SRep is created in the same scene as this storage node.
   vtkMRMLSRepNode* CreateSRepNode(const char* nodeName);
 
+  /// Gets the MRML node type of the SRep with the given file name
+  ///
+  /// The return value, if not empty, is suitable to be passed into
+  /// vtkMRMLScene::AddNewNodeByClass as the class name for the same
+  /// scene this node is in.
+  /// \returns MRML node type of srep, empty string if no file name is set.
   std::string GetSRepType();
 
   using SRepCoordinateSystemType = int;
 
-  void CoordinateSystemWriteRASOn();
-  void CoordinateSystemWriteLPSOn();
   /// @{
   /// Get set the coordinate system to write in.
   ///
@@ -33,6 +40,8 @@ public:
   /// Default is LPS.
   void SetCoordinateSystemWrite(SRepCoordinateSystemType system);
   SRepCoordinateSystemType GetCoordinateSystemWrite() const;
+  void CoordinateSystemWriteRASOn();
+  void CoordinateSystemWriteLPSOn();
   /// @}
 
 protected:

@@ -39,20 +39,25 @@ public:
   //--------------------------------------------------------------------------
   // SRep methods
   //--------------------------------------------------------------------------
+  /// @{
   /// Gets the SRep, if any, before any transforms are applied.
   /// \sa GetSRepWorld, HasSRep
   const vtkEllipticalSRep* GetEllipticalSRep() const;
   vtkEllipticalSRep* GetEllipticalSRep();
+  /// @}
 
   /// Gets the SRep, if any, after all transforms are applied.
-  /// If there are no transforms, this will be the same as GetSRep
+  /// If there are no transforms, this will be the same as GetEllipticalSRep
   /// \sa GetSRep, HasSRep
   const vtkEllipticalSRep* GetEllipticalSRepWorld() const;
 
   /// Sets the SRep. Takes sole ownership.
   void SetEllipticalSRep(vtkEllipticalSRep* srep);
 
+  /// Gets the SRep before any non-hardened transforms are applied.
   const vtkMeshSRepInterface* GetSRep() const override;
+
+  /// Gets the SRep after all non-hardened transforms are applied.
   const vtkMeshSRepInterface* GetSRepWorld() const override;
 
 protected:

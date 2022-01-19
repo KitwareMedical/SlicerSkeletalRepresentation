@@ -18,12 +18,30 @@ public:
 
   using IndexType = vtkSRepSpokeMesh::IndexType;
 
+  /// Makes a deep copy clone of object.
+  ///
+  /// \returns Owning pointer to deep copy clone of the object.
   virtual VTK_NEWINSTANCE vtkMeshSRepInterface* Clone() const = 0;
 
+  /// Returns true if there are no spokes in the SRep, false otherwise.
   virtual bool IsEmpty() const = 0;
 
+  /// Gets all spokes in the up orientation.
+  ///
+  /// Will never return nullptr. If there are no spokes in this orientation,
+  /// an empty vtkSRepSpokeMesh will be returned.
   virtual const vtkSRepSpokeMesh* GetUpSpokes() const = 0;
+
+  /// Gets all spokes in the down orientation.
+  ///
+  /// Will never return nullptr. If there are no spokes in this orientation,
+  /// an empty vtkSRepSpokeMesh will be returned.
   virtual const vtkSRepSpokeMesh* GetDownSpokes() const = 0;
+
+  /// Gets all spokes in the crest orientation.
+  ///
+  /// Will never return nullptr. If there are no spokes in this orientation,
+  /// an empty vtkSRepSpokeMesh will be returned.
   virtual const vtkSRepSpokeMesh* GetCrestSpokes() const = 0;
 
   /// Gets the connections from the crest to the skeleton.

@@ -31,10 +31,21 @@ public:
 
   void PrintSelf(ostream& os, vtkIndent indent) override;
 
+  /// Gets the world coordinate bounds of this SRep.
+  ///
+  /// This is the bounds of the SRep after all transforms have been applied.
   void GetRASBounds(double bounds[6]) override;
+
+  /// Gets the bounds of this SRep.
+  ///
+  /// This is the bounds of the SRep before any non-hardened transforms have been applied.
   void GetBounds(double bounds[6]) override;
+
+  /// @{
+  /// Gets the bounds of an SRep.
   static void GetSRepBounds(const vtkMeshSRepInterface* srep, double bounds[6]);
   static void GetSRepBounds(const vtkMeshSRepInterface& srep, double bounds[6]);
+  /// @}
 
   //--------------------------------------------------------------------------
   // MRMLNode methods
@@ -45,6 +56,9 @@ public:
   /// Create and observe default display node(s)
   void CreateDefaultDisplayNodes() override;
 
+  /// Creates the default storage node.
+  ///
+  /// \returns An owning pointer to a storage node capable of reading/writing SReps.
   vtkMRMLStorageNode* CreateDefaultStorageNode() override;
 
   /// Return a cast display node, returns nullptr if none
