@@ -11,7 +11,6 @@ class VTK_SLICER_SREP_MODULE_MRML_EXPORT vtkMRMLEllipticalSRepNode
   : public vtkMRMLSRepNode
 {
 public:
-  vtkMRMLEllipticalSRepNode();
   vtkMRMLEllipticalSRepNode(const vtkMRMLEllipticalSRepNode&) = delete;
   vtkMRMLEllipticalSRepNode& operator=(const vtkMRMLEllipticalSRepNode&) = delete;
   vtkMRMLEllipticalSRepNode(vtkMRMLEllipticalSRepNode&&) = delete;
@@ -61,6 +60,7 @@ public:
   const vtkMeshSRepInterface* GetSRepWorld() const override;
 
 protected:
+  vtkMRMLEllipticalSRepNode();
   void DoUpdateSRepWorld(vtkAbstractTransform* transform) override;
 
 private:

@@ -20,7 +20,6 @@ class vtkMRMLTransformNode;
 class VTK_SLICER_SREP_MODULE_MRML_EXPORT vtkMRMLSRepNode : public vtkMRMLDisplayableNode
 {
 public:
-  vtkMRMLSRepNode();
   vtkMRMLSRepNode(const vtkMRMLSRepNode&) = delete;
   vtkMRMLSRepNode& operator=(const vtkMRMLSRepNode&) = delete;
   vtkMRMLSRepNode(vtkMRMLSRepNode&&) = delete;
@@ -95,6 +94,8 @@ public:
   vtkMRMLCopyContentMacro(vtkMRMLSRepNode);
 
 protected:
+  vtkMRMLSRepNode();
+
   /// Call this to update the srep world with the stored transform.
   void UpdateSRepWorld();
 

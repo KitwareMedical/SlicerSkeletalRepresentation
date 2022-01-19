@@ -14,7 +14,6 @@ public:
   vtkTypeMacro(vtkMRMLSRepDisplayNode,vtkMRMLDisplayNode);
   void PrintSelf(ostream& os, vtkIndent indent) override;
 
-  vtkMRMLSRepDisplayNode();
   virtual ~vtkMRMLSRepDisplayNode();
 
   // wrapper around GetDisplayableNode that does the cast
@@ -94,6 +93,8 @@ public:
   void UseAbsoluteThicknessOn();
   void UseAbsoluteThicknessOff();
 
+protected:
+  vtkMRMLSRepDisplayNode();
 private:
   struct DisplayHelper {
     bool visible;
