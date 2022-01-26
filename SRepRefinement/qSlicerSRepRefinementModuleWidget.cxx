@@ -83,6 +83,7 @@ void qSlicerSRepRefinementModuleWidget::setMRMLScene(vtkMRMLScene* scene) {
   d->inputModelCbox->setMRMLScene(scene);
   d->inputSRepCbox->setMRMLScene(scene);
   d->outputSRepCbox->setMRMLScene(scene);
+  Superclass::setMRMLScene(scene);
 }
 
 //-----------------------------------------------------------------------------

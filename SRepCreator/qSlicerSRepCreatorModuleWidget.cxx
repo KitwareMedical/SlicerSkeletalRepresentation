@@ -76,6 +76,7 @@ qSlicerSRepCreatorModuleWidget::~qSlicerSRepCreatorModuleWidget()
 void qSlicerSRepCreatorModuleWidget::setMRMLScene(vtkMRMLScene* scene) {
   Q_D(qSlicerSRepCreatorModuleWidget);
   d->inputModelComboBox->setMRMLScene(scene);
+  Superclass::setMRMLScene(scene);
 }
 
 //-----------------------------------------------------------------------------
