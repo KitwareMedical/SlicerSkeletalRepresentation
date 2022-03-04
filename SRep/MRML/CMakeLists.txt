@@ -23,6 +23,8 @@ set(${KIT}_SRCS
   vtkEllipticalSRep.cxx
   vtkEllipticalSRep.h
   vtkMeshSRepInterface.h
+  vtkSRepExportPolyDataProperties.cxx
+  vtkSRepExportPolyDataProperties.h
   vtkSRepSkeletalPoint.cxx
   vtkSRepSkeletalPoint.h
   vtkSRepSpoke.cxx

@@ -1,5 +1,6 @@
 #include "vtkMRMLSRepDisplayNode.h"
 #include "vtkMRMLSRepNode.h"
+#include "vtkUnsignedCharArray.h"
 
 //--------------------------------------------------------------------------
 // vtkMRMLSRepDisplayNode::DisplayHelper
@@ -132,4 +133,43 @@ void vtkMRMLSRepDisplayNode::UseAbsoluteThicknessOn() {
 }
 void vtkMRMLSRepDisplayNode::UseAbsoluteThicknessOff() {
     this->SetUseAbsoluteThickness(false);
+}
+
+vtkSRepExportPolyDataProperties* vtkMRMLSRepDisplayNode::GetSRepExportPolyDataProperties() const {
+    auto ret = this->SmartGetSRepExportPolyDataProperties();
+    if (ret) {
+        ret->Register(nullptr);
+    }
+    return ret;
+}
+vtkSmartPointer<vtkSRepExportPolyDataProperties> vtkMRMLSRepDisplayNode::SmartGetSRepExportPolyDataProperties() const {
+    auto properties = vtkSmartPointer<vtkSRepExportPolyDataProperties>::New();
+    properties->SetIncludeUpSpokes(this->GetUpSpokeVisibility());
+    properties->SetIncludeDownSpokes(this->GetDownSpokeVisibility());
+    properties->SetIncludeCrestSpokes(this->GetCrestSpokeVisibility());
+    properties->SetIncludeCrestCurve(this->GetCrestCurveVisibility());
+    properties->SetIncludeSkeletalSheet(this->GetSkeletalSheetVisibility());
+    properties->SetIncludeSkeletonToCrestConnection(this->GetSkeletonToCrestConnectionVisibility());
+    properties->SetIncludeSpine(this->GetSpineVisibility());
+
+    auto colors = vtkSmartPointer<vtkUnsignedCharArray>::New();
+    colors->SetNumberOfComponents(3);
+    colors->SetNumberOfTuples(vtkSRepExportPolyDataProperties::NumberOfTypes);
+    colors->SetTypedTuple(vtkSRepExportPolyDataProperties::UpBoundaryPointType, this->GetUpSpokeColor().GetData());
+    colors->SetTypedTuple(vtkSRepExportPolyDataProperties::UpSkeletalPointType, this->GetSkeletalSheetColor().GetData());
+    colors->SetTypedTuple(vtkSRepExportPolyDataProperties::DownBoundaryPointType, this->GetDownSpokeColor().GetData());
+    colors->SetTypedTuple(vtkSRepExportPolyDataProperties::DownSkeletalPointType, this->GetSkeletalSheetColor().GetData());
+    colors->SetTypedTuple(vtkSRepExportPolyDataProperties::CrestBoundaryPointType, this->GetCrestSpokeColor().GetData());
+    colors->SetTypedTuple(vtkSRepExportPolyDataProperties::CrestSkeletalPointType, this->GetCrestSpokeColor().GetData());
+    colors->SetTypedTuple(vtkSRepExportPolyDataProperties::UpSpokeLineType, this->GetUpSpokeColor().GetData());
+    colors->SetTypedTuple(vtkSRepExportPolyDataProperties::DownSpokeLineType, this->GetDownSpokeColor().GetData());
+    colors->SetTypedTuple(vtkSRepExportPolyDataProperties::CrestSpokeLineType, this->GetCrestSpokeColor().GetData());
+    colors->SetTypedTuple(vtkSRepExportPolyDataProperties::CrestCurveLineType, this->GetCrestCurveColor().GetData());
+    colors->SetTypedTuple(vtkSRepExportPolyDataProperties::SkeletalSheetLineType, this->GetSkeletalSheetColor().GetData());
+    colors->SetTypedTuple(vtkSRepExportPolyDataProperties::SkeletonToCrestConnectionLineType, this->GetSkeletonToCrestConnectionColor().GetData());
+    colors->SetTypedTuple(vtkSRepExportPolyDataProperties::SpineLineType, this->GetSpineColor().GetData());
+
+    properties->SetSRepDataArray(colors);
+
+    return properties;
 }

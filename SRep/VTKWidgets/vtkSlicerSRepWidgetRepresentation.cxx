@@ -1,4 +1,5 @@
 #include "vtkSlicerSRepWidgetRepresentation.h"
+#include "vtkSlicerSRepLogic.h"
 
 #include <vtkActor.h>
 #include <vtkCellArray.h>
@@ -29,10 +30,6 @@ vtkStandardNewMacro(vtkSlicerSRepWidgetRepresentation);
 vtkSlicerSRepWidgetRepresentation::PointsRep::PointsRep()
   : GlyphSourceSphere(vtkSmartPointer<vtkSphereSource>::New())
   , Glypher(vtkSmartPointer<vtkGlyph3D>::New())
-  , Points(vtkSmartPointer<vtkPoints>::New())
-  , PointColors(vtkSmartPointer<vtkUnsignedCharArray>::New())
-  , Lines(vtkSmartPointer<vtkCellArray>::New())
-  , LineColors(vtkSmartPointer<vtkUnsignedCharArray>::New())
   , PointsPolyData(vtkSmartPointer<vtkPolyData>::New())
   , Property(vtkSmartPointer<vtkProperty>::New())
   , Mapper(vtkSmartPointer<vtkPolyDataMapper>::New())
@@ -42,14 +39,6 @@ vtkSlicerSRepWidgetRepresentation::PointsRep::PointsRep()
   , TubeActor(vtkSmartPointer<vtkActor>::New())
 {
   this->GlyphSourceSphere->SetRadius(0.5);
-
-  this->PointsPolyData->SetPoints(this->Points);
-  this->PointsPolyData->GetPointData()->SetScalars(this->PointColors);
-  this->PointsPolyData->SetLines(this->Lines);
-  this->PointsPolyData->GetCellData()->SetScalars(this->LineColors);
-
-  this->PointColors->SetNumberOfComponents(3);
-  this->LineColors->SetNumberOfComponents(3);
 
   this->Glypher->SetInputData(this->PointsPolyData);
   this->Glypher->ScalingOff();
@@ -94,6 +83,12 @@ vtkSlicerSRepWidgetRepresentation::PointsRep::PointsRep()
 }
 
 vtkSlicerSRepWidgetRepresentation::PointsRep::~PointsRep() = default;
+
+void vtkSlicerSRepWidgetRepresentation::PointsRep::SetPolyData(vtkSmartPointer<vtkPolyData> polyData) {
+  this->PointsPolyData = polyData;
+  this->Glypher->SetInputData(this->PointsPolyData);
+  this->TubeFilter->SetInputData(this->PointsPolyData);
+}
 
 vtkSlicerSRepWidgetRepresentation::vtkSlicerSRepWidgetRepresentation()
   : Skeleton()
@@ -160,172 +155,6 @@ vtkTypeBool vtkSlicerSRepWidgetRepresentation::HasTranslucentPolygonalGeometry()
   return false;
 }
 
-namespace {
-struct vtkSpokeIds {
-  vtkIdType boundaryId;
-  vtkIdType skeletonId;
-};
-}
-
-void vtkSlicerSRepWidgetRepresentation::ConvertSRepToVisualRepresentation(const vtkMeshSRepInterface& srep, const vtkMRMLSRepDisplayNode& displayNode) {
-  //-------------------------------
-  const auto insertNextPoint = [this](const srep::Point3d& point, const vtkColor3ub& color) {
-    const auto id = this->Skeleton.Points->InsertNextPoint(point.AsArray().data());
-    this->Skeleton.PointColors->InsertNextTypedTuple(color.GetData());
-    return id;
-  };
-
-  //-------------------------------
-  const auto insertNextLine = [this](const vtkIdType start, const vtkIdType end, const vtkColor3ub& color) {
-    this->Skeleton.Lines->InsertNextCell(2);
-    this->Skeleton.Lines->InsertCellPoint(start);
-    this->Skeleton.Lines->InsertCellPoint(end);
-    this->Skeleton.LineColors->InsertNextTypedTuple(color.GetData());
-  };
-
-  //-------------------------------
-  const auto addSpokeMesh = [this, insertNextPoint, insertNextLine]
-    (const vtkSRepSpokeMesh& mesh,
-     bool addSpokes,
-     const vtkColor3ub& spokeColor,
-     bool addConnections,
-     const vtkColor3ub& connectionColor,
-     const std::vector<vtkMeshSRepInterface::IndexType> spine,
-     const vtkColor3ub& spineColor,
-     std::function<bool(long i)> forceAddSkeletalPoint) -> std::vector<vtkSpokeIds>{
-    std::vector<vtkSpokeIds> spokesToVTKPointIds;
-
-    const auto isSpine = [&spine](long i) {
-      return std::find(spine.begin(), spine.end(), i) != spine.end();
-    };
-
-    // add all the points and the spoke lines
-    for (long i = 0; i < mesh.GetNumberOfSpokes(); ++i) {
-      vtkSpokeIds ids;
-      if (addSpokes || addConnections || isSpine(i) || forceAddSkeletalPoint(i)) {
-        ids.skeletonId = insertNextPoint(mesh[i]->GetSkeletalPoint(), spokeColor);
-      } else {
-        ids.skeletonId = -1;
-      }
-      if (addSpokes) {
-        ids.boundaryId = insertNextPoint(mesh[i]->GetBoundaryPoint(), spokeColor);
-        insertNextLine(ids.skeletonId, ids.boundaryId, spokeColor);
-      } else {
-        ids.boundaryId = -1;
-      }
-      spokesToVTKPointIds.push_back(ids);
-    }
-
-    // add the connection lines. It is essentially a bidirectional graph, so only add one line between two points, even if
-    // it shows up twice "once in each direction"
-    std::set<std::pair<vtkIdType, vtkIdType>> spineConnections;
-    for (size_t i = 1; i < spine.size(); ++i) {
-      //insert a sorted pair
-      vtkIdType point1 = spokesToVTKPointIds[spine[i-1]].skeletonId;
-      vtkIdType point2 = spokesToVTKPointIds[spine[i]].skeletonId;
-      //sort the points
-      if (point1 > point2) {
-        std::swap(point1, point2);
-      }
-      spineConnections.insert(std::make_pair(point1, point2));
-    }
-
-    for (const auto& spineConnection : spineConnections) {
-      insertNextLine(spineConnection.first, spineConnection.second, spineColor);
-    }
-
-    if (addConnections) {
-      std::set<std::pair<vtkIdType, vtkIdType>> connections;
-      for (long i = 0; i < mesh.GetNumberOfSpokes(); ++i) {
-        const auto neighbors = mesh.GetNeighbors(i);
-        for (size_t neighbor : neighbors) {
-          vtkIdType point1 = spokesToVTKPointIds[i].skeletonId;
-          vtkIdType point2 = spokesToVTKPointIds[neighbor].skeletonId;
-          //sort the points
-          if (point1 > point2) {
-            std::swap(point1, point2);
-          }
-          connections.insert(std::make_pair(point1, point2));
-        }
-      }
-
-      std::set<std::pair<vtkIdType, vtkIdType>> spinelessConnections;
-      std::set_difference(
-        connections.begin(), connections.end(),
-        spineConnections.begin(), spineConnections.end(),
-        std::inserter(spinelessConnections, spinelessConnections.begin()));
-
-      for (const auto& connection : spinelessConnections) {
-        insertNextLine(connection.first, connection.second, connectionColor);
-      }
-    }
-
-    return spokesToVTKPointIds;
-  };
-
-  ///////////////////////////////////////
-  // Start
-  ///////////////////////////////////////
-
-  const auto upSpokeColor = displayNode.GetUpSpokeColor();
-  const auto downSpokeColor = displayNode.GetDownSpokeColor();
-  const auto upSkeletonColor = displayNode.GetSkeletalSheetColor();
-  const auto downSkeletonColor = displayNode.GetSkeletalSheetColor();
-  const auto crestCurveColor = displayNode.GetCrestCurveColor();
-  const auto crestSpokeColor = displayNode.GetCrestSpokeColor();
-  const auto crestToSkeletonConnectionColor = displayNode.GetSkeletonToCrestConnectionColor();
-  const auto spineColor = displayNode.GetSpineColor();
-
-  this->Skeleton.Points->Reset();
-  this->Skeleton.PointColors->Reset();
-  this->Skeleton.Lines->Reset();
-  this->Skeleton.LineColors->Reset();
-
-  const auto visibleUpSpineIndexes = displayNode.GetSpineVisibility() ? srep.GetUpSpine() : vtkSRepSpokeMesh::NeighborList{};
-  const auto visibleDownSpineIndexes = displayNode.GetSpineVisibility() ? srep.GetDownSpine() : vtkSRepSpokeMesh::NeighborList{};
-
-  const auto upSpokeToPointIds = addSpokeMesh(
-    *srep.GetUpSpokes(),
-    displayNode.GetUpSpokeVisibility(), upSpokeColor,
-    displayNode.GetSkeletalSheetVisibility(), upSkeletonColor,
-    visibleUpSpineIndexes, spineColor,
-    [&](long i) {
-      const auto crestSkeletonConnections = srep.GetCrestToUpSpokeConnections();
-      return displayNode.GetSkeletonToCrestConnectionVisibility() && crestSkeletonConnections.end() != std::find(crestSkeletonConnections.begin(), crestSkeletonConnections.end(), i);
-      });
-
-  const auto downSpokeToPointIds = addSpokeMesh(
-    *srep.GetDownSpokes(),
-    displayNode.GetDownSpokeVisibility(), downSpokeColor,
-    displayNode.GetSkeletalSheetVisibility(), downSkeletonColor,
-    visibleDownSpineIndexes, spineColor,
-    [&](long i) {
-      const auto crestSkeletonConnections = srep.GetCrestToDownSpokeConnections();
-      return displayNode.GetSkeletonToCrestConnectionVisibility() && crestSkeletonConnections.end() != std::find(crestSkeletonConnections.begin(), crestSkeletonConnections.end(), i);
-      });
-
-  const auto crestSpokeToPointIds = addSpokeMesh(
-    *srep.GetCrestSpokes(),
-    displayNode.GetCrestSpokeVisibility(), crestSpokeColor,
-    displayNode.GetCrestCurveVisibility(), crestCurveColor,
-    {}, vtkColor3ub(), // no spine for crest
-    [&](long){ return displayNode.GetSkeletonToCrestConnectionVisibility(); });
-
-  // connect the crest to skeleton
-  if (displayNode.GetSkeletonToCrestConnectionVisibility()) {
-    for (size_t crestIndex = 0; crestIndex < srep.GetCrestToUpSpokeConnections().size(); ++crestIndex) {
-      const auto skeletonIndex = srep.GetCrestToUpSpokeConnections()[crestIndex];
-      insertNextLine(crestSpokeToPointIds[crestIndex].skeletonId, upSpokeToPointIds[skeletonIndex].skeletonId,
-        crestToSkeletonConnectionColor);
-    }
-    for (size_t crestIndex = 0; crestIndex < srep.GetCrestToDownSpokeConnections().size(); ++crestIndex) {
-      const auto skeletonIndex = srep.GetCrestToDownSpokeConnections()[crestIndex];
-      insertNextLine(crestSpokeToPointIds[crestIndex].skeletonId, downSpokeToPointIds[skeletonIndex].skeletonId,
-        crestToSkeletonConnectionColor);
-    }
-  }
-}
-
 void vtkSlicerSRepWidgetRepresentation::UpdateFromMRML(vtkMRMLNode* caller, unsigned long event, void *callData) {
   Superclass::UpdateFromMRML(caller, event, callData);
 
@@ -351,18 +180,17 @@ void vtkSlicerSRepWidgetRepresentation::UpdateFromMRML(vtkMRMLNode* caller, unsi
 
   this->VisibilityOn();
 
-  // TODO: if performance is an issue, save of a MTime or do something to only do the conversion
-  // when the content of srepNode->GetSRepWorld() changes
-  this->ConvertSRepToVisualRepresentation(*srep, *displayNode);
+  auto logic = vtkSmartPointer<vtkSlicerSRepLogic>::New();
+  this->Skeleton.SetPolyData(logic->SmartExportSRepToPolyData(*srep, *displayNode->SmartGetSRepExportPolyDataProperties()));
 
   // set point size
   double radius = 0;
   if (displayNode->GetUseAbsoluteThickness()) {
     radius = displayNode->GetAbsoluteThickness();
   } else {
-    this->Skeleton.Points->ComputeBounds();
+    this->Skeleton.PointsPolyData->ComputeBounds();
     double bounds[6];
-    this->Skeleton.Points->GetBounds(bounds);
+    this->Skeleton.PointsPolyData->GetBounds(bounds);
 
     const double minPoint[] = {bounds[0], bounds[2], bounds[4]};
     const double maxPoint[] = {bounds[1], bounds[3], bounds[5]};

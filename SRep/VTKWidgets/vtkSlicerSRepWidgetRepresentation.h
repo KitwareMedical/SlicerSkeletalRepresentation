@@ -52,15 +52,9 @@ protected:
   ~vtkSlicerSRepWidgetRepresentation();
 
 private:
-  void ConvertSRepToVisualRepresentation(const vtkMeshSRepInterface& srep, const vtkMRMLSRepDisplayNode& displayNode);
-
   struct PointsRep {
       vtkSmartPointer<vtkSphereSource>      GlyphSourceSphere;
       vtkSmartPointer<vtkGlyph3D>           Glypher;
-      vtkSmartPointer<vtkPoints>            Points;
-      vtkSmartPointer<vtkUnsignedCharArray> PointColors;
-      vtkSmartPointer<vtkCellArray>         Lines;
-      vtkSmartPointer<vtkUnsignedCharArray> LineColors;
       vtkSmartPointer<vtkPolyData>          PointsPolyData;
       vtkSmartPointer<vtkProperty>          Property;
       vtkSmartPointer<vtkPolyDataMapper>    Mapper;
@@ -72,6 +66,7 @@ private:
 
       PointsRep();
       ~PointsRep();
+      void SetPolyData(vtkSmartPointer<vtkPolyData> polyData);
   };
 
   PointsRep Skeleton;

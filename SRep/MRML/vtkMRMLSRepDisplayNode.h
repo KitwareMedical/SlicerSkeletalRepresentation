@@ -6,6 +6,8 @@
 #include "vtkMRMLDisplayNode.h"
 #include "vtkNamedColors.h"
 
+#include "vtkSRepExportPolyDataProperties.h"
+
 class vtkMRMLSRepNode;
 
 class VTK_SLICER_SREP_MODULE_MRML_EXPORT vtkMRMLSRepDisplayNode : public vtkMRMLDisplayNode {
@@ -92,6 +94,9 @@ public:
   void SetUseAbsoluteThickness(bool use);
   void UseAbsoluteThicknessOn();
   void UseAbsoluteThicknessOff();
+
+  VTK_NEWINSTANCE vtkSRepExportPolyDataProperties* GetSRepExportPolyDataProperties() const;
+  vtkSmartPointer<vtkSRepExportPolyDataProperties> SmartGetSRepExportPolyDataProperties() const;
 
 protected:
   vtkMRMLSRepDisplayNode();

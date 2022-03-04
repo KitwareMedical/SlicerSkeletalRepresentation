@@ -24,9 +24,13 @@
 #include <vtkMRMLSRepStorageNode.h>
 
 // VTK includes
+#include <vtkCellData.h>
 #include <vtkIntArray.h>
 #include <vtkNew.h>
 #include <vtkObjectFactory.h>
+#include <vtkPointData.h>
+#include <vtkPoints.h>
+#include <vtkPolyData.h>
 
 // STD includes
 #include <cassert>
@@ -243,4 +247,210 @@ vtkEllipticalSRep* vtkSlicerSRepLogic::InterpolateSRep(const vtkEllipticalSRep& 
 //----------------------------------------------------------------------------
 vtkSmartPointer<vtkEllipticalSRep> vtkSlicerSRepLogic::SmartInterpolateSRep(const vtkEllipticalSRep& srep, size_t interpolationlevel) {
   return sreplogic::SmartInterpolateSRep(interpolationlevel, srep);
+}
+
+namespace {
+struct vtkSpokeIds {
+  vtkIdType boundaryId;
+  vtkIdType skeletonId;
+};
+}
+
+//----------------------------------------------------------------------------
+vtkSmartPointer<vtkPolyData> vtkSlicerSRepLogic::SmartExportSRepToPolyData(const vtkMeshSRepInterface& srep, const vtkSRepExportPolyDataProperties& properties) {
+  auto polyData = vtkSmartPointer<vtkPolyData>::New();
+
+  vtkNew<vtkPoints> points;
+  polyData->SetPoints(points);
+
+  vtkNew<vtkCellArray> lines;
+  polyData->SetLines(lines);
+
+  auto srepArray = properties.GetSRepDataArray();
+  vtkSmartPointer<vtkDataArray> pointDataArray;
+  vtkSmartPointer<vtkDataArray> lineDataArray;
+  if (srepArray) {
+    pointDataArray = vtkSmartPointer<vtkDataArray>::Take(srepArray->NewInstance());
+    pointDataArray->SetNumberOfComponents(srepArray->GetNumberOfComponents());
+    pointDataArray->SetName(properties.GetPointTypeArrayName().c_str());
+    polyData->GetPointData()->SetScalars(pointDataArray);
+
+    lineDataArray = vtkSmartPointer<vtkDataArray>::Take(srepArray->NewInstance());
+    lineDataArray->SetNumberOfComponents(srepArray->GetNumberOfComponents());
+    lineDataArray->SetName(properties.GetLineTypeArrayName().c_str());
+    polyData->GetCellData()->SetScalars(lineDataArray);
+  }
+
+  //-------------------------------
+  const auto insertNextScalarData = [&srepArray](vtkDataArray* dest, int srepDataType) {
+    if (srepArray) {
+      dest->InsertNextTuple(srepDataType, srepArray);
+    }
+  };
+
+  //-------------------------------
+  const auto insertNextPoint = [&points, &pointDataArray, insertNextScalarData](const srep::Point3d& point, int pointType) {
+    const auto id = points->InsertNextPoint(point.AsArray().data());
+    insertNextScalarData(pointDataArray, pointType);
+    return id;
+  };
+
+  //-------------------------------
+  const auto insertNextLine = [&lines, &lineDataArray, insertNextScalarData](const vtkIdType start, const vtkIdType end, int lineType) {
+    lines->InsertNextCell(2);
+    lines->InsertCellPoint(start);
+    lines->InsertCellPoint(end);
+    insertNextScalarData(lineDataArray, lineType);
+  };
+
+  //-------------------------------
+  const auto addSpokeMesh = [insertNextPoint, insertNextLine]
+    (const vtkSRepSpokeMesh& mesh,
+     int skeletonPointType,
+     int boundaryPointType,
+     bool addSpokes,
+     int spokeType,
+     bool addConnections,
+     int connectionType,
+     const std::vector<vtkMeshSRepInterface::IndexType> spine,
+     std::function<bool(long i)> forceAddSkeletalPoint) -> std::vector<vtkSpokeIds>
+  {
+    std::vector<vtkSpokeIds> spokesToVTKPointIds;
+
+    const auto isSpine = [&spine](long i) {
+      return std::find(spine.begin(), spine.end(), i) != spine.end();
+    };
+
+    // add all the points and the spoke lines
+    for (long i = 0; i < mesh.GetNumberOfSpokes(); ++i) {
+      vtkSpokeIds ids;
+      if (addSpokes || addConnections || isSpine(i) || forceAddSkeletalPoint(i)) {
+        ids.skeletonId = insertNextPoint(mesh[i]->GetSkeletalPoint(), skeletonPointType);
+      } else {
+        ids.skeletonId = -1;
+      }
+      if (addSpokes) {
+        ids.boundaryId = insertNextPoint(mesh[i]->GetBoundaryPoint(), boundaryPointType);
+        insertNextLine(ids.skeletonId, ids.boundaryId, spokeType);
+      } else {
+        ids.boundaryId = -1;
+      }
+      spokesToVTKPointIds.push_back(ids);
+    }
+
+    // add the connection lines. It is essentially a bidirectional graph, so only add one line between two points, even if
+    // it shows up twice "once in each direction"
+    std::set<std::pair<vtkIdType, vtkIdType>> spineConnections;
+    for (size_t i = 1; i < spine.size(); ++i) {
+      //insert a sorted pair
+      vtkIdType point1 = spokesToVTKPointIds[spine[i-1]].skeletonId;
+      vtkIdType point2 = spokesToVTKPointIds[spine[i]].skeletonId;
+      //sort the points
+      if (point1 > point2) {
+        std::swap(point1, point2);
+      }
+      spineConnections.insert(std::make_pair(point1, point2));
+    }
+
+    for (const auto& spineConnection : spineConnections) {
+      insertNextLine(
+        spineConnection.first,
+        spineConnection.second,
+        vtkSRepExportPolyDataProperties::SpineLineType);
+    }
+
+    if (addConnections) {
+      std::set<std::pair<vtkIdType, vtkIdType>> connections;
+      for (long i = 0; i < mesh.GetNumberOfSpokes(); ++i) {
+        const auto neighbors = mesh.GetNeighbors(i);
+        for (size_t neighbor : neighbors) {
+          vtkIdType point1 = spokesToVTKPointIds[i].skeletonId;
+          vtkIdType point2 = spokesToVTKPointIds[neighbor].skeletonId;
+          //sort the points
+          if (point1 > point2) {
+            std::swap(point1, point2);
+          }
+          connections.insert(std::make_pair(point1, point2));
+        }
+      }
+
+      std::set<std::pair<vtkIdType, vtkIdType>> spinelessConnections;
+      std::set_difference(
+        connections.begin(), connections.end(),
+        spineConnections.begin(), spineConnections.end(),
+        std::inserter(spinelessConnections, spinelessConnections.begin()));
+
+      for (const auto& connection : spinelessConnections) {
+        insertNextLine(connection.first, connection.second, connectionType);
+      }
+    }
+
+    return spokesToVTKPointIds;
+  };
+
+  ///////////////////////////////////////
+  // Start
+  ///////////////////////////////////////
+  const auto visibleUpSpineIndexes = properties.GetIncludeSpine() ? srep.GetUpSpine() : vtkSRepSpokeMesh::NeighborList{};
+  const auto visibleDownSpineIndexes = properties.GetIncludeSpine() ? srep.GetDownSpine() : vtkSRepSpokeMesh::NeighborList{};
+
+  const auto upSpokeToPointIds = addSpokeMesh(
+    *srep.GetUpSpokes(),
+    vtkSRepExportPolyDataProperties::UpSkeletalPointType, vtkSRepExportPolyDataProperties::UpBoundaryPointType,
+    properties.GetIncludeUpSpokes(), vtkSRepExportPolyDataProperties::UpSpokeLineType,
+    properties.GetIncludeSkeletalSheet(), vtkSRepExportPolyDataProperties::SkeletalSheetLineType,
+    visibleUpSpineIndexes,
+    [&](long i) {
+      const auto crestSkeletonConnections = srep.GetCrestToUpSpokeConnections();
+      return properties.GetIncludeSkeletonToCrestConnection()
+        && crestSkeletonConnections.end() != std::find(crestSkeletonConnections.begin(), crestSkeletonConnections.end(), i);
+    }
+  );
+
+  const auto downSpokeToPointIds = addSpokeMesh(
+    *srep.GetDownSpokes(),
+    vtkSRepExportPolyDataProperties::DownSkeletalPointType, vtkSRepExportPolyDataProperties::DownBoundaryPointType,
+    properties.GetIncludeDownSpokes(), vtkSRepExportPolyDataProperties::DownSpokeLineType,
+    properties.GetIncludeSkeletalSheet(), vtkSRepExportPolyDataProperties::SkeletalSheetLineType,
+    visibleDownSpineIndexes,
+    [&](long i) {
+      const auto crestSkeletonConnections = srep.GetCrestToDownSpokeConnections();
+      return properties.GetIncludeSkeletonToCrestConnection()
+        && crestSkeletonConnections.end() != std::find(crestSkeletonConnections.begin(), crestSkeletonConnections.end(), i);
+    }
+  );
+
+  const auto crestSpokeToPointIds = addSpokeMesh(
+    *srep.GetCrestSpokes(),
+    vtkSRepExportPolyDataProperties::CrestSkeletalPointType, vtkSRepExportPolyDataProperties::CrestBoundaryPointType,
+    properties.GetIncludeCrestSpokes(), vtkSRepExportPolyDataProperties::CrestSpokeLineType,
+    properties.GetIncludeCrestCurve(), vtkSRepExportPolyDataProperties::CrestCurveLineType,
+    {},
+    [&](long){ return properties.GetIncludeSkeletonToCrestConnection(); }
+  );
+
+  // connect the crest to skeleton
+  if (properties.GetIncludeSkeletonToCrestConnection()) {
+    for (size_t crestIndex = 0; crestIndex < srep.GetCrestToUpSpokeConnections().size(); ++crestIndex) {
+      const auto skeletonIndex = srep.GetCrestToUpSpokeConnections()[crestIndex];
+      insertNextLine(crestSpokeToPointIds[crestIndex].skeletonId, upSpokeToPointIds[skeletonIndex].skeletonId,
+        vtkSRepExportPolyDataProperties::SkeletonToCrestConnectionLineType);
+    }
+    for (size_t crestIndex = 0; crestIndex < srep.GetCrestToDownSpokeConnections().size(); ++crestIndex) {
+      const auto skeletonIndex = srep.GetCrestToDownSpokeConnections()[crestIndex];
+      insertNextLine(crestSpokeToPointIds[crestIndex].skeletonId, downSpokeToPointIds[skeletonIndex].skeletonId,
+        vtkSRepExportPolyDataProperties::SkeletonToCrestConnectionLineType);
+    }
+  }
+
+  return polyData;
+}
+
+//----------------------------------------------------------------------------
+vtkPolyData* vtkSlicerSRepLogic::ExportSRepToPolyData(const vtkMeshSRepInterface& srep, const vtkSRepExportPolyDataProperties& properties) {
+  auto ret = SmartExportSRepToPolyData(srep, properties);
+  if (ret) {
+    ret->Register(nullptr);
+  }
+  return ret;
 }

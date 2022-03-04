@@ -31,6 +31,7 @@
 // MRML includes
 #include "vtkMRMLSRepNode.h"
 #include "vtkMRMLEllipticalSRepNode.h"
+#include "vtkSRepExportPolyDataProperties.h"
 
 
 // STD includes
@@ -72,6 +73,9 @@ public:
 
   VTK_NEWINSTANCE vtkEllipticalSRep* InterpolateSRep(const vtkEllipticalSRep& srep, size_t interpolationlevel);
   vtkSmartPointer<vtkEllipticalSRep> SmartInterpolateSRep(const vtkEllipticalSRep& srep, size_t interpolationlevel);
+
+  VTK_NEWINSTANCE vtkPolyData* ExportSRepToPolyData(const vtkMeshSRepInterface& srep, const vtkSRepExportPolyDataProperties& properties);
+  vtkSmartPointer<vtkPolyData> SmartExportSRepToPolyData(const vtkMeshSRepInterface& srep, const vtkSRepExportPolyDataProperties& properties);
 
 protected:
   vtkSlicerSRepLogic();

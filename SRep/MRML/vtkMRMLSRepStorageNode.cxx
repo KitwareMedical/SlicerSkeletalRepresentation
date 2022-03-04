@@ -126,7 +126,7 @@ int readInt(rapidjson::Value& json) {
 
 int readUint(rapidjson::Value& json) {
   if (!json.IsUint()) {
-    throw std::invalid_argument("Expected a JSON int.");
+    throw std::invalid_argument("Expected a JSON uint.");
   }
   return json.GetUint();
 }
