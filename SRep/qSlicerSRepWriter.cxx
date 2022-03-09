@@ -68,7 +68,7 @@ bool qSlicerSRepWriter::write(const qSlicerIO::IOProperties& properties)
     qDebug() << "SRep writer can only write vtkMRMLSRepNodes";
     return false;
   }
-  auto* storageNode = srepNode->CreateDefaultStorageNode();
+  auto storageNode = vtkSmartPointer<vtkMRMLStorageNode>::Take(srepNode->CreateDefaultStorageNode());
   if (!storageNode) {
     qDebug() << "Error creating srep storage node";
     return false;
