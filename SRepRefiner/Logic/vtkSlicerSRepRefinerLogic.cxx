@@ -167,7 +167,7 @@ void vtkSlicerSRepRefinerLogic::SetSrepFileName(const std::string &srepFilePath)
     vtkSmartPointer<vtkPoints> foldCurvePts = vtkSmartPointer<vtkPoints>::New();
     vtkSmartPointer<vtkCellArray> foldCurveCell = vtkSmartPointer<vtkCellArray>::New();
 
-    for (int i = 0; i < crestSpokes.size() - 1; ++i) {
+    for (unsigned int i = 0; i < crestSpokes.size() - 1; ++i) {
         double basePoint[3], bdryPoint[3];
         crestSpokes[i]->GetSkeletalPoint(basePoint);
         crestSpokes[i+1]->GetSkeletalPoint(bdryPoint);
@@ -2671,7 +2671,7 @@ void vtkSlicerSRepRefinerLogic::ReorderCrestSpokes(int nRows, int nCols,
     output.push_back(input[0]);
 
 
-    for(int i = 0; i < input.size()-1; ++i) {
+    for(unsigned int i = 0; i < input.size()-1; ++i) {
         double pt0[3], pt1[3];
         input[i]->GetSkeletalPoint(pt0);
         input[i+1]->GetSkeletalPoint(pt1);

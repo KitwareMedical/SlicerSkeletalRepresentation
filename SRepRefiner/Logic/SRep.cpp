@@ -93,7 +93,7 @@ std::vector<Spoke *> &SRep::GetAllSpokes()
 
 std::vector<Spoke *> &SRep::copyFrom(std::vector<Spoke *> &source)
 {
-    for (int i = 0; i < source.size(); ++i) {
+    for (unsigned int i = 0; i < source.size(); ++i) {
         spokes[i] = source[i];
     }
     return spokes;
@@ -124,7 +124,7 @@ void SRep::Refine(const double *coeff)
     int numSteps = static_cast<int>(floor(nRows/2)); // steps from crest point to the skeletal point
 
     double epsilon = 1e-13;
-    for(size_t i = 0; i < spokes.size(); ++i)
+    for(int i = 0; i < (int) spokes.size(); ++i)
     {
         size_t idx = i * 4;
         int currRowNum = i % (numSteps + 1);
