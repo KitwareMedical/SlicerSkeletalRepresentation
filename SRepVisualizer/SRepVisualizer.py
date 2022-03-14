@@ -227,7 +227,7 @@ class SRepVisualizerLogic(ScriptedLoadableModuleLogic):
 
         upPointData = upSpokes.GetPointData()
         numberOfArrays = upPointData.GetNumberOfArrays()
-        if numberOfArrays is 0:
+        if numberOfArrays == 0:
             logging.warning("File: " + upFileName + " does not contain data")
 
         # medial_polyData = upSpokes #  this is poly data for skeleton
@@ -565,7 +565,7 @@ class SRepVisualizerLogic(ScriptedLoadableModuleLogic):
         crestSpokeData = crestSpokes.GetPointData()
         numOfCrestSpokes = crestSpokes.GetNumberOfPoints()
 
-        if numberOfArrays is 0 or numOfDownSpokes is 0 or numOfCrestSpokes is 0:
+        if numberOfArrays == 0 or numOfDownSpokes == 0 or numOfCrestSpokes == 0:
             logging.warning("Up down and crest spoke can not be empty")
             return False
 
@@ -669,50 +669,3 @@ class SRepVisualizerLogic(ScriptedLoadableModuleLogic):
         logging.info('The input is legacy s-rep, now converting to new s-rep')
         transformer().transformLegacySrep(filename, outputFolder, dist)
         return os.path.join(outputFolder, 'header.xml')
-
-
-class SRepVisualizerTest(ScriptedLoadableModuleTest):
-    """
-    This is the test case for your scripted module.
-    Uses ScriptedLoadableModuleTest base class, available at:
-    https://github.com/Slicer/Slicer/blob/master/Base/Python/slicer/ScriptedLoadableModule.py
-    """
-
-    def setUp(self):
-        """ Do whatever is needed to reset the state - typically a scene clear will be enough.
-        """
-        slicer.mrmlScene.Clear(0)
-
-    def runTest(self):
-        """Run as few or as many tests as needed here.
-        """
-        self.setUp()
-        # TODO: create a test which exercises the logic
-        # self.test_SRepVisualizer1()
-
-    def test_SRepVisualizer1(self):
-        """ Ideally you should have several levels of tests.  At the lowest level
-        tests should exercise the functionality of the logic with different inputs
-        (both valid and invalid).  At higher levels your tests should emulate the
-        way the user would interact with your code and confirm that it still works
-        the way you intended.
-        One of the most important features of the tests is that it should alert other
-        developers when their changes will have an impact on the behavior of your
-        module.  For example, if a developer removes a feature that you depend on,
-        your test should break so they know that the feature is needed.
-        """
-
-        self.delayDisplay("Starting the test")
-        #
-        # first, get some data
-        #
-        import SampleData
-        SampleData.downloadFromURL(
-            nodeNames='FA',
-            fileNames='FA.nrrd',
-            uris='http://slicer.kitware.com/midas3/download?items=5767')
-        self.delayDisplay('Finished with download and loading')
-        volumeNode = slicer.util.getNode(pattern="FA")
-        logic = SRepVisualizerLogic()
-        self.assertIsNotNone(logic.hasImageData(volumeNode))
-        self.delayDisplay('Test passed!')
