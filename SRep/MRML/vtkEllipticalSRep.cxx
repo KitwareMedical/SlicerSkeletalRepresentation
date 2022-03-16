@@ -69,6 +69,21 @@ const vtkSRepSpokeMesh* vtkEllipticalSRep::GetCrestSpokes() const {
 }
 
 //----------------------------------------------------------------------
+vtkSRepSpokeMesh* vtkEllipticalSRep::GetUpSpokes() {
+  return this->SkeletonAsMesh.UpSpokes;
+}
+
+//----------------------------------------------------------------------
+vtkSRepSpokeMesh* vtkEllipticalSRep::GetDownSpokes() {
+  return this->SkeletonAsMesh.DownSpokes;
+}
+
+//----------------------------------------------------------------------
+vtkSRepSpokeMesh* vtkEllipticalSRep::GetCrestSpokes() {
+  return this->SkeletonAsMesh.CrestSpokes;
+}
+
+//----------------------------------------------------------------------
 const std::vector<vtkEllipticalSRep::IndexType>&
 vtkEllipticalSRep::GetCrestToUpSpokeConnections() const {
     return this->SkeletonAsMesh.CrestToUpSpokeConnections;

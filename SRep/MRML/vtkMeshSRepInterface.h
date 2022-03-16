@@ -44,6 +44,27 @@ public:
   /// an empty vtkSRepSpokeMesh will be returned.
   virtual const vtkSRepSpokeMesh* GetCrestSpokes() const = 0;
 
+  /// Gets an partially editable spoke mesh of up spokes. The spokes can edited, but adding
+  /// spokes or changing neighbors will result in undefined behavior. 
+  ///
+  /// Will never return nullptr. If there are no spokes in this orientation,
+  /// an empty vtkSRepSpokeMesh will be returned.
+  virtual vtkSRepSpokeMesh* GetUpSpokes() = 0;
+
+  /// Gets an partially editable spoke mesh of down spokes. The spokes can edited, but adding
+  /// spokes or changing neighbors will result in undefined behavior. 
+  ///
+  /// Will never return nullptr. If there are no spokes in this orientation,
+  /// an empty vtkSRepSpokeMesh will be returned.
+  virtual vtkSRepSpokeMesh* GetDownSpokes() = 0;
+
+  /// Gets an partially editable spoke mesh of crest spokes. The spokes can edited, but adding
+  /// spokes or changing neighbors will result in undefined behavior. 
+  ///
+  /// Will never return nullptr. If there are no spokes in this orientation,
+  /// an empty vtkSRepSpokeMesh will be returned.
+  virtual vtkSRepSpokeMesh* GetCrestSpokes() = 0;
+
   /// Gets the connections from the crest to the skeleton.
   ///
   /// \returns Connections from crest to skeleton. The index in the list corresponds to

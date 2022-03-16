@@ -28,9 +28,12 @@ public:
   /// pointers/references (but they could invalidate iterators into the vectors or
   /// any pointer returned from the spoke meshes)
   bool IsEmpty() const override;
-  const vtkSRepSpokeMesh* GetUpSpokes() const;
-  const vtkSRepSpokeMesh* GetDownSpokes() const;
-  const vtkSRepSpokeMesh* GetCrestSpokes() const;
+  const vtkSRepSpokeMesh* GetUpSpokes() const override;
+  const vtkSRepSpokeMesh* GetDownSpokes() const override;
+  const vtkSRepSpokeMesh* GetCrestSpokes() const override;
+  vtkSRepSpokeMesh* GetUpSpokes() override;
+  vtkSRepSpokeMesh* GetDownSpokes() override;
+  vtkSRepSpokeMesh* GetCrestSpokes() override;
   const std::vector<IndexType>& GetCrestToUpSpokeConnections() const override;
   const std::vector<IndexType>& GetCrestToDownSpokeConnections() const override;
   const std::vector<IndexType>& GetUpSpine() const override;
