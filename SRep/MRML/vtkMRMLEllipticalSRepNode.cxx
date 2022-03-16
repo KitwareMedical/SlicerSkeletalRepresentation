@@ -87,7 +87,9 @@ void vtkMRMLEllipticalSRepNode::SetEllipticalSRep(vtkEllipticalSRep* srep) {
     this->SRep->RemoveObserver(this->SRepObservationTag);
   }
   this->SRep = srep;
-  this->SRepObservationTag = this->SRep->AddObserver(vtkCommand::ModifiedEvent, this, &vtkMRMLEllipticalSRepNode::onSRepModified);
+  if (this->SRep) {
+    this->SRepObservationTag = this->SRep->AddObserver(vtkCommand::ModifiedEvent, this, &vtkMRMLEllipticalSRepNode::onSRepModified);
+  }
   this->UpdateSRepWorld();
   this->Modified();
 }
@@ -146,5 +148,6 @@ void vtkMRMLEllipticalSRepNode::CopyContent(vtkMRMLNode* anode, bool deepCopy/*=
 
 //----------------------------------------------------------------------------
 void vtkMRMLEllipticalSRepNode::onSRepModified(vtkObject */*caller*/, unsigned long /*event*/, void* /*callData*/) {
+  this->UpdateSRepWorld();
   this->Modified();
 }

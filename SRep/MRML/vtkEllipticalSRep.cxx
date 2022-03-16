@@ -375,11 +375,22 @@ std::vector<vtkSRepSpokeMesh::IndexType> vtkEllipticalSRep::GetNeighbors(IndexTy
     if (step < GetNumberOfSteps() - 1) {
       neighborLineSteps.push_back(std::make_pair(line, step+1));
     }
+    if (step == 0) {
+      //we are on the spine, if we aren't an end
+      if (line != 0 && line != NumberOfSpinePointsWithoutDuplicates()-1) {
+        //take opposite line, plus step
+        neighborLineSteps.push_back(std::make_pair(GetNumberOfLines() - line, 1));
+      }
+    }
   }
 
   std::vector<vtkSRepSpokeMesh::IndexType> neighbors;
   std::transform(neighborLineSteps.begin(), neighborLineSteps.end(), std::back_inserter(neighbors),
-    [this](const LineStep& ls) { return this->LineStepToUpDownMeshIndex(ls.first, ls.second); });
+    [this](const LineStep& ls) { 
+      return this->LineStepToUpDownMeshIndex(ls.first, ls.second); });
+  // need to unique for edge case on the poles, they only have two neighbors, but the above looks like three due to
+  // overlapping step 0 points on the lines on opposite sides of the spine
+  neighbors.erase(std::unique(neighbors.begin(), neighbors.end()), neighbors.end());
   return neighbors;
 }
 
