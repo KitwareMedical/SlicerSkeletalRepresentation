@@ -71,10 +71,10 @@ public:
 
   bool InterpolateSRep(vtkMRMLEllipticalSRepNode* srepNode, size_t interpolationlevel, vtkMRMLEllipticalSRepNode* destination);
 
-  VTK_NEWINSTANCE vtkEllipticalSRep* InterpolateSRep(const vtkEllipticalSRep& srep, size_t interpolationlevel);
+  VTK_NEWINSTANCE vtkEllipticalSRep* InterpolateSRep(const vtkEllipticalSRep* srep, size_t interpolationlevel);
   vtkSmartPointer<vtkEllipticalSRep> SmartInterpolateSRep(const vtkEllipticalSRep& srep, size_t interpolationlevel);
 
-  VTK_NEWINSTANCE vtkPolyData* ExportSRepToPolyData(const vtkMeshSRepInterface& srep, const vtkSRepExportPolyDataProperties& properties);
+  VTK_NEWINSTANCE vtkPolyData* ExportSRepToPolyData(const vtkMeshSRepInterface* srep, const vtkSRepExportPolyDataProperties* properties);
   vtkSmartPointer<vtkPolyData> SmartExportSRepToPolyData(const vtkMeshSRepInterface& srep, const vtkSRepExportPolyDataProperties& properties);
 
 protected:

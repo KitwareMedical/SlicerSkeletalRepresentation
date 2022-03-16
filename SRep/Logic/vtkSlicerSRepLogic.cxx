@@ -236,8 +236,11 @@ bool vtkSlicerSRepLogic::InterpolateSRep(vtkMRMLEllipticalSRepNode* srepNode, si
 }
 
 //----------------------------------------------------------------------------
-vtkEllipticalSRep* vtkSlicerSRepLogic::InterpolateSRep(const vtkEllipticalSRep& srep, size_t interpolationlevel) {
-  auto ret = SmartInterpolateSRep(srep, interpolationlevel);
+vtkEllipticalSRep* vtkSlicerSRepLogic::InterpolateSRep(const vtkEllipticalSRep* srep, size_t interpolationlevel) {
+  if (!srep) {
+    return nullptr;
+  }
+  auto ret = SmartInterpolateSRep(*srep, interpolationlevel);
   if (ret) {
     ret->Register(nullptr);
   }
@@ -447,10 +450,11 @@ vtkSmartPointer<vtkPolyData> vtkSlicerSRepLogic::SmartExportSRepToPolyData(const
 }
 
 //----------------------------------------------------------------------------
-vtkPolyData* vtkSlicerSRepLogic::ExportSRepToPolyData(const vtkMeshSRepInterface& srep, const vtkSRepExportPolyDataProperties& properties) {
-  auto ret = SmartExportSRepToPolyData(srep, properties);
-  if (ret) {
-    ret->Register(nullptr);
+vtkPolyData* vtkSlicerSRepLogic::ExportSRepToPolyData(const vtkMeshSRepInterface* srep, const vtkSRepExportPolyDataProperties* properties) {
+  if (srep && properties) {
+    auto poly = SmartExportSRepToPolyData(*srep, *properties);
+    poly->Register(nullptr);
+    return poly;
   }
-  return ret;
+  return nullptr;
 }
