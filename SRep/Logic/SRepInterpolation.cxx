@@ -99,12 +99,12 @@ bool operator<(const LineStep& a, const LineStep& b) {
 
 //----------------------------------------------------------------------------
 bool operator>(const LineStep& a, const LineStep& b) {
-  return b > a;
+  return b < a;
 }
 
 //----------------------------------------------------------------------------
 bool operator<=(const LineStep& a, const LineStep& b) {
-  return !(b > a);
+  return !(b < a);
 }
 
 //----------------------------------------------------------------------------
