@@ -43,6 +43,7 @@
 
 #include <vtksys/SystemTools.hxx>
 
+#include <itkKernelTransform.h>
 #include <itkThinPlateSplineExtended.h>
 #include <itkPointSet.h>
 

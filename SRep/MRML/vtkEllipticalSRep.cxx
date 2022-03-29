@@ -310,7 +310,7 @@ void vtkEllipticalSRep::Resize(IndexType lines, IndexType steps) {
 }
 
 //----------------------------------------------------------------------
-void vtkEllipticalSRep::onSkeletalPointModified(vtkObject */*caller*/, unsigned long /*event*/, void* /*callData*/) {
+void vtkEllipticalSRep::onSkeletalPointModified(vtkObject* /*caller*/, unsigned long /*event*/, void* /*callData*/) {
   this->Modified();
 }
 

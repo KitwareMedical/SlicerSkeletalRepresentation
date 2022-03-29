@@ -58,7 +58,9 @@ if(NOT DEFINED ${proj}_DIR AND NOT ${SUPERBUILD_TOPLEVEL_PROJECT}_USE_SYSTEM_${p
       -DGTest_INSTALL_LIBRARY_DIR:STRING=${Slicer_INSTALL_THIRDPARTY_LIB_DIR}
       -DCMAKE_INSTALL_PREFIX:PATH=${EP_BINARY_DIR}/install
       -DBUILD_TESTING:BOOL=OFF
-    INSTALL_COMMAND ${CMAKE_COMMAND} --build . --target install
+      # For Windows: Prevent overriding the parent project's compiler/linker settings
+      -Dgtest_force_shared_crt=ON
+    INSTALL_COMMAND ${CMAKE_COMMAND} --build . --config $<CONFIG> --target install
     DEPENDS
       ${${proj}_DEPENDS}
     )

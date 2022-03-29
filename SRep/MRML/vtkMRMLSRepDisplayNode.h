@@ -100,6 +100,10 @@ public:
 
 protected:
   vtkMRMLSRepDisplayNode();
+  vtkMRMLSRepDisplayNode(const vtkMRMLSRepDisplayNode&) = delete;
+  vtkMRMLSRepDisplayNode(vtkMRMLSRepDisplayNode&&) = delete;
+  vtkMRMLSRepDisplayNode& operator=(const vtkMRMLSRepDisplayNode&) = delete;
+  vtkMRMLSRepDisplayNode& operator=(vtkMRMLSRepDisplayNode&&) = delete;
 private:
   struct DisplayHelper {
     bool visible;

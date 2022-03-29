@@ -113,7 +113,7 @@ void vtkMRMLSRepDisplayableManager::UpdateFromMRML() {
 
   // remove any srep nodes that have been removed from the mrml scene
   for (auto it = this->SRepNodes.begin(); it != this->SRepNodes.end();) {
-    if (srepNodesInScene.end() == std::find(srepNodesInScene.begin(), srepNodesInScene.end(), *it)) {
+    if (srepNodesInScene.end() == std::find(srepNodesInScene.begin(), srepNodesInScene.end(), it->Get())) {
       it = this->RemoveSRepNode(it);
     } else {
       ++it;

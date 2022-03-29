@@ -46,7 +46,7 @@ int vtkMRMLSRepDisplayNode::GetVisibility3D() {
 }
 
 void vtkMRMLSRepDisplayNode::SetVisibility3D(const int visible) {
-    if (visible != this->OverallVisibility) {
+    if (static_cast<bool>(visible) != this->OverallVisibility) {
         this->OverallVisibility = visible;
         this->Modified();
     }

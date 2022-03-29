@@ -93,7 +93,7 @@ public:
 
   /// RAII class for blocking and unblocking modify for a vtkEllipticalSRep
   /// \sa BlockModify, UnblockModify
-  class ModifiedBlocker {
+  class VTK_SLICER_SREP_MODULE_MRML_EXPORT ModifiedBlocker {
   public:
     ModifiedBlocker(vtkEllipticalSRep* srep);
     ~ModifiedBlocker();

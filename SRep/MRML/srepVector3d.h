@@ -6,9 +6,11 @@
 
 #include "srepPoint3d.h"
 
+#include "vtkSlicerSRepModuleMRMLExport.h"
+
 namespace srep {
 
-class Vector3d {
+class VTK_SLICER_SREP_MODULE_MRML_EXPORT Vector3d {
 public:
     /// Default construct a vector. All components are set to 0.
     Vector3d();
@@ -90,35 +92,35 @@ private:
     double Z;
 };
 
-bool operator==(const Vector3d& a, const Vector3d& b);
-bool operator!=(const Vector3d& a, const Vector3d& b);
-bool operator< (const Vector3d& a, const Vector3d& b);
-bool operator> (const Vector3d& a, const Vector3d& b);
-bool operator<=(const Vector3d& a, const Vector3d& b);
-bool operator>=(const Vector3d& a, const Vector3d& b);
+VTK_SLICER_SREP_MODULE_MRML_EXPORT bool operator==(const Vector3d& a, const Vector3d& b);
+VTK_SLICER_SREP_MODULE_MRML_EXPORT bool operator!=(const Vector3d& a, const Vector3d& b);
+VTK_SLICER_SREP_MODULE_MRML_EXPORT bool operator< (const Vector3d& a, const Vector3d& b);
+VTK_SLICER_SREP_MODULE_MRML_EXPORT bool operator> (const Vector3d& a, const Vector3d& b);
+VTK_SLICER_SREP_MODULE_MRML_EXPORT bool operator<=(const Vector3d& a, const Vector3d& b);
+VTK_SLICER_SREP_MODULE_MRML_EXPORT bool operator>=(const Vector3d& a, const Vector3d& b);
 
 /// Adds two vectors by adding x, y, and z components.
-Vector3d operator+(const Vector3d& a, const Vector3d& b);
+VTK_SLICER_SREP_MODULE_MRML_EXPORT Vector3d operator+(const Vector3d& a, const Vector3d& b);
 
 /// Subtracts two vectors by subtracting x, y, and z components.
-Vector3d operator-(const Vector3d& a, const Vector3d& b);
+VTK_SLICER_SREP_MODULE_MRML_EXPORT Vector3d operator-(const Vector3d& a, const Vector3d& b);
 
 /// Multiplies vector magnitude by multiplier.
-Vector3d operator*(const Vector3d& v, double multiplier);
+VTK_SLICER_SREP_MODULE_MRML_EXPORT Vector3d operator*(const Vector3d& v, double multiplier);
 
 /// Divides vector magnitude by divisor.
-Vector3d operator/(const Vector3d& v, double divisor);
+VTK_SLICER_SREP_MODULE_MRML_EXPORT Vector3d operator/(const Vector3d& v, double divisor);
 
 /// Gets point at end of vector if vector, b, started at point, a.
-Point3d operator+(const Point3d& a, const Vector3d& b);
+VTK_SLICER_SREP_MODULE_MRML_EXPORT Point3d operator+(const Point3d& a, const Vector3d& b);
 
 /// Gets point at end of vector if vector, -b, started at point, a.
-Point3d operator-(const Point3d& a, const Vector3d& b);
+VTK_SLICER_SREP_MODULE_MRML_EXPORT Point3d operator-(const Point3d& a, const Vector3d& b);
 
-std::ostream& operator<<(std::ostream& os, const Vector3d& point);
+VTK_SLICER_SREP_MODULE_MRML_EXPORT std::ostream& operator<<(std::ostream& os, const Vector3d& point);
 
 /// Copies the value of an srep::Vector3d into a vtkVector3d
-void PlaceInto(const Vector3d& v1, vtkVector3d& v2);
+VTK_SLICER_SREP_MODULE_MRML_EXPORT void PlaceInto(const Vector3d& v1, vtkVector3d& v2);
 
 }
 

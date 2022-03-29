@@ -137,7 +137,7 @@ void vtkSRepSkeletalPoint::SetSpoke(SpokeOrientation spokeType, vtkSRepSpoke* sp
 }
 
 //----------------------------------------------------------------------
-void vtkSRepSkeletalPoint::onSpokeModified(vtkObject */*caller*/, unsigned long /*event*/, void* /*callData*/) {
+void vtkSRepSkeletalPoint::onSpokeModified(vtkObject* /*caller*/, unsigned long /*event*/, void* /*callData*/) {
   this->Modified();
 }
 

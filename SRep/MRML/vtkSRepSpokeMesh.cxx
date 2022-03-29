@@ -97,6 +97,6 @@ void vtkSRepSpokeMesh::SetSpoke(IndexType index, vtkSRepSpoke* spoke) {
 }
 
 //----------------------------------------------------------------------
-void vtkSRepSpokeMesh::onSpokeModified(vtkObject */*caller*/, unsigned long /*event*/, void* /*callData*/) {
+void vtkSRepSpokeMesh::onSpokeModified(vtkObject* /*caller*/, unsigned long /*event*/, void* /*callData*/) {
   this->Modified();
 }

@@ -147,7 +147,7 @@ void vtkMRMLEllipticalSRepNode::CopyContent(vtkMRMLNode* anode, bool deepCopy/*=
 }
 
 //----------------------------------------------------------------------------
-void vtkMRMLEllipticalSRepNode::onSRepModified(vtkObject */*caller*/, unsigned long /*event*/, void* /*callData*/) {
+void vtkMRMLEllipticalSRepNode::onSRepModified(vtkObject* /*caller*/, unsigned long /*event*/, void* /*callData*/) {
   this->UpdateSRepWorld();
   this->Modified();
 }

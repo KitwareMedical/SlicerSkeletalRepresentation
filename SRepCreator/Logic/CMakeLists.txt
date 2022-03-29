@@ -18,6 +18,7 @@ set(${KIT}_TARGET_LIBRARIES
   Eigen3::Eigen
   vtkSlicerSRepModuleMRML
   vtkSlicerSRepModuleLogic
+  vtkSlicerSRepInitializerModuleLogic
   )
 
 #-----------------------------------------------------------------------------

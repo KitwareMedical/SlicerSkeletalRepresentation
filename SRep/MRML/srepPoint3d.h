@@ -4,9 +4,12 @@
 #include <array>
 #include <iostream>
 #include <vtkVector.h>
+
+#include "vtkSlicerSRepModuleMRMLExport.h"
+
 namespace srep {
 
-class Point3d {
+class VTK_SLICER_SREP_MODULE_MRML_EXPORT Point3d {
 public:
     /// Construct new point at origin.
     Point3d();
@@ -68,17 +71,17 @@ private:
     double Y;
     double Z;
 };
-bool operator==(const Point3d& a, const Point3d& b);
-bool operator!=(const Point3d& a, const Point3d& b);
-bool operator< (const Point3d& a, const Point3d& b);
-bool operator> (const Point3d& a, const Point3d& b);
-bool operator<=(const Point3d& a, const Point3d& b);
-bool operator>=(const Point3d& a, const Point3d& b);
+VTK_SLICER_SREP_MODULE_MRML_EXPORT bool operator==(const Point3d& a, const Point3d& b);
+VTK_SLICER_SREP_MODULE_MRML_EXPORT bool operator!=(const Point3d& a, const Point3d& b);
+VTK_SLICER_SREP_MODULE_MRML_EXPORT bool operator< (const Point3d& a, const Point3d& b);
+VTK_SLICER_SREP_MODULE_MRML_EXPORT bool operator> (const Point3d& a, const Point3d& b);
+VTK_SLICER_SREP_MODULE_MRML_EXPORT bool operator<=(const Point3d& a, const Point3d& b);
+VTK_SLICER_SREP_MODULE_MRML_EXPORT bool operator>=(const Point3d& a, const Point3d& b);
 
-std::ostream& operator<<(std::ostream& os, const Point3d& point);
+VTK_SLICER_SREP_MODULE_MRML_EXPORT std::ostream& operator<<(std::ostream& os, const Point3d& point);
 
 /// Conversion function for converting from Point3d to vtkVector3d.
-void PlaceInto(const Point3d& p, vtkVector3d& v);
+VTK_SLICER_SREP_MODULE_MRML_EXPORT void PlaceInto(const Point3d& p, vtkVector3d& v);
 
 
 }

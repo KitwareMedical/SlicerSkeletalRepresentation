@@ -16,5 +16,5 @@ target_link_libraries(qSlicerSRepModuleUnitTests
   GTest::gtest_main
 )
 
-add_test(NAME qSlicerSRepModuleUnitTests COMMAND qSlicerSRepModuleUnitTests)
+add_test(NAME qSlicerSRepModuleUnitTests COMMAND ${Slicer_LAUNCH_COMMAND} $<TARGET_FILE:qSlicerSRepModuleUnitTests>)
 set_property(TEST qSlicerSRepModuleUnitTests PROPERTY LABELS qSlicerSRepModule)
