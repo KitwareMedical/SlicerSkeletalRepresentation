@@ -18,8 +18,9 @@
 #include <math.h>
 #include <vtkMath.h>
 // Eigen includes
-#include <Eigen/Dense>
-#include <Eigen/Eigenvalues>
+#include <vtk_eigen.h>
+#include VTK_EIGEN(Dense)
+#include VTK_EIGEN(Eigenvalues)
 Spoke::Spoke(){}
 
 Spoke::Spoke(double radius, double px, double py, double pz, double ux, double uy, double uz)
