@@ -57,6 +57,7 @@ if(NOT DEFINED ${proj}_DIR AND NOT ${SUPERBUILD_TOPLEVEL_PROJECT}_USE_SYSTEM_${p
       -DGTest_INSTALL_RUNTIME_DIR:STRING=${Slicer_INSTALL_THIRDPARTY_LIB_DIR}
       -DGTest_INSTALL_LIBRARY_DIR:STRING=${Slicer_INSTALL_THIRDPARTY_LIB_DIR}
       -DCMAKE_INSTALL_PREFIX:PATH=${EP_BINARY_DIR}/install
+      -DCMAKE_INSTALL_LIBDIR:PATH=lib # Skip default initialization by GNUInstallDirs CMake module
       -DBUILD_TESTING:BOOL=OFF
       # For Windows: Prevent overriding the parent project's compiler/linker settings
       -Dgtest_force_shared_crt=ON
