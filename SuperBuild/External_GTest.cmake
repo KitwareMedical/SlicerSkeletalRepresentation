@@ -60,7 +60,7 @@ if(NOT DEFINED ${proj}_DIR AND NOT ${SUPERBUILD_TOPLEVEL_PROJECT}_USE_SYSTEM_${p
       -DCMAKE_INSTALL_LIBDIR:PATH=lib # Skip default initialization by GNUInstallDirs CMake module
       -DBUILD_TESTING:BOOL=OFF
       # For Windows: Prevent overriding the parent project's compiler/linker settings
-      -Dgtest_force_shared_crt=ON
+      -Dgtest_force_shared_crt:BOOL=ON
     INSTALL_COMMAND ${CMAKE_COMMAND} --build . --config $<CONFIG> --target install
     DEPENDS
       ${${proj}_DEPENDS}
