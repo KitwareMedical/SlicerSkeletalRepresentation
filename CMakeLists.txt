@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.13.4)
 
-project(SRep2)
+project(SkeletalRepresentation)
 
 #-----------------------------------------------------------------------------
 # Extension meta-information
@@ -18,16 +18,13 @@ set(SUPERBUILD_TOPLEVEL_PROJECT inner)
 # # Update CMake module path
 set(EXTERNAL_PROJECT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/SuperBuild)
 set(EXTERNAL_PROJECT_FILE_PREFIX "External_")
-set(LOCAL_PROJECT_NAME SRep2)
+set(LOCAL_PROJECT_NAME SkeletalRepresentation)
 set(EXTENSION_NAME "${LOCAL_PROJECT_NAME}")
 
 
 #-----------------------------------------------------------------------------
 # Extension dependencies
-message("Slicer_DIR ${Slicer_DIR}")
 find_package(Slicer REQUIRED)
-message("Slicer_DIR post find ${Slicer_DIR}")
-message("Slicer_USE_FILE ${Slicer_USE_FILE}")
 include(${Slicer_USE_FILE})
 mark_as_superbuild(Slicer_DIR)
 
