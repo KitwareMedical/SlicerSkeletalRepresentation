@@ -98,7 +98,7 @@ QIcon qSlicerSRepModule::icon() const
 //-----------------------------------------------------------------------------
 QStringList qSlicerSRepModule::categories() const
 {
-  return QStringList() << "SRep2";
+  return QStringList() << "Skeleton, topology";
 }
 
 //-----------------------------------------------------------------------------

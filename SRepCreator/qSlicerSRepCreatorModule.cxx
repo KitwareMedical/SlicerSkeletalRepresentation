@@ -120,7 +120,7 @@ QIcon qSlicerSRepCreatorModule::icon() const
 //-----------------------------------------------------------------------------
 QStringList qSlicerSRepCreatorModule::categories() const
 {
-  return QStringList() << "SRep2";
+  return QStringList() << "Skeleton, topology";
 }
 
 //-----------------------------------------------------------------------------

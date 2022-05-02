@@ -112,7 +112,7 @@ QIcon qSlicerSRepRefinementModule::icon() const
 //-----------------------------------------------------------------------------
 QStringList qSlicerSRepRefinementModule::categories() const
 {
-  return QStringList() << "SRep2";
+  return QStringList() << "Skeleton, topology";
 }
 
 //-----------------------------------------------------------------------------
