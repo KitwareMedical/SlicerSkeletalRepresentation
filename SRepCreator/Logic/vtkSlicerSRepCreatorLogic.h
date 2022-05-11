@@ -29,8 +29,9 @@
 #include <cstdlib>
 
 // Eigen includes
-#include <Eigen/Dense>
-#include <Eigen/Eigenvalues>
+#include <vtk_eigen.h>
+#include VTK_EIGEN(Dense)
+#include VTK_EIGEN(Eigenvalues)
 
 #include "vtkSlicerSRepCreatorModuleLogicExport.h"
 #include <vtkEllipticalSRep.h>
