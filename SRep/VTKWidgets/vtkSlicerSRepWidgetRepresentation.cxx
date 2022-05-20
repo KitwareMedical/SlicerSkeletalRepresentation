@@ -155,6 +155,17 @@ vtkTypeBool vtkSlicerSRepWidgetRepresentation::HasTranslucentPolygonalGeometry()
   return false;
 }
 
+double *vtkSlicerSRepWidgetRepresentation::GetBounds() {
+  vtkMRMLSRepNode* srepNode = this->GetSRepNode();
+  if (!srepNode || !this->IsDisplayable()) {
+    this->VisibilityOff();
+    return nullptr;
+  }
+
+  srepNode->GetRASBounds(this->Bounds);
+  return this->Bounds;
+}
+
 void vtkSlicerSRepWidgetRepresentation::UpdateFromMRML(vtkMRMLNode* caller, unsigned long event, void *callData) {
   Superclass::UpdateFromMRML(caller, event, callData);
 
