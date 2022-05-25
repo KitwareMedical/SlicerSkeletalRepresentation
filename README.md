@@ -12,6 +12,8 @@ This extension introduces a new MRML data node interface, `vtkMRMLSRepNode`, and
 | [SRepCreator](SRepCreator) | Allows creating initial fit s-reps via flowing a model to an ellipse, generating an s-rep for that ellipse, and then backflowing the s-rep via thin plate spline to fit the original model. Essentially the SRepInitializer from the previous implementation. |
 | [SRepRefinement](SRepRefinement) | Allows optimizing an s-rep fit via min_newuoa optimization. Essentially the SRepRefiner from the previous implementation. |
 
+A tutorial for the modules can be found [here](https://bit.ly/3sTEG3H).
+
 ## Resources
 
 To learn more about Slicer, SlicerSALT, and Slicer extensions, check out the following resources.
