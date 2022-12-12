@@ -240,7 +240,10 @@ vtkSmartPointer<vtkPolyData> vtkSlicerSRepCreatorLogic::FlowSurfaceMesh(
   const size_t outputEveryNumIterations)
 {
   if (!model) {
-    return nullptr;
+    throw std::invalid_argument("Input model is nullptr");
+  }
+  if(!model->GetMesh()) {
+    throw std::invalid_argument("Input model does not have a mesh");
   }
 
   auto mesh = vtkSmartPointer<vtkPolyData>::New();
