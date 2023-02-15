@@ -163,6 +163,12 @@
          <string>vtkMRMLModelNode</string>
         </stringlist>
        </property>
+       <property name="addEnabled">
+        <bool>false</bool>
+       </property>
+       <property name="removeEnabled">
+        <bool>false</bool>
+       </property>
       </widget>
      </item>
     </layout>
