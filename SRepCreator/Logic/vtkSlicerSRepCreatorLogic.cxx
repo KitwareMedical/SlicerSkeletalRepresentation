@@ -15,6 +15,8 @@
 
 ==============================================================================*/
 
+#include "qSlicerCoreApplication.h"
+
 // Logic includes
 #include "vtkSlicerSRepCreatorLogic.h"
 #include "vtkSlicerSRepLogic.h"
@@ -175,7 +177,7 @@ void vtkSlicerSRepCreatorLogic::SetMRMLSceneInternal(vtkMRMLScene * newScene)
 std::string vtkSlicerSRepCreatorLogic::TempFolder() {
   std::stringstream ssTempFolder;
   // putting this pointer in the folder name so multiple logics can exist without interfering with each other
-  ssTempFolder << this->GetApplicationLogic()->GetTemporaryPath() << "/SRepCreator-" << this;
+  ssTempFolder << qSlicerCoreApplication::application()->applicationLogic()->GetTemporaryPath() << "/SRepCreator-" << this;
   const auto tempFolder = ssTempFolder.str();
   if (!vtksys::SystemTools::FileExists(tempFolder, false)) {
     if (!vtksys::SystemTools::MakeDirectory(tempFolder)) {
