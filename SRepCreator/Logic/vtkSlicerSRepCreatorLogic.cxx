@@ -279,6 +279,8 @@ vtkSmartPointer<vtkPolyData> vtkSlicerSRepCreatorLogic::FlowSurfaceMesh(
     std::sort(this->IdsToWrite.begin(), this->IdsToWrite.end());
   }
 
+  this->WriteIteration(mesh, 0);
+
   //create a temp folder to store stuff for backwards flow in
   const auto tempFolder = this->TempFolder();
   if (tempFolder.empty()) {
@@ -818,7 +820,7 @@ vtkMRMLEllipticalSRepNode* vtkSlicerSRepCreatorLogic::RunBackward(const size_t o
     sourceSurfaceReader->SetFileName(this->ForwardIterationFilename(this->ActualForwardIterations).c_str());
     sourceSurfaceReader->Update();
 
-    for (long iteration = this->ActualForwardIterations; iteration > 1; --iteration) {
+    for (long iteration = this->ActualForwardIterations; iteration > 0; --iteration) {
       this->ProgressTracker.SetBackwardProgress(static_cast<double>(this->ActualForwardIterations - iteration) / this->ActualForwardIterations);
 
       //swap source and target at bottom because target becomes source
