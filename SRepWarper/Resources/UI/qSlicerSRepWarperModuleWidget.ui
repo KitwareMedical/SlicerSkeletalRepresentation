@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>qSlicerSRepWarperModuleWidget</class>
+ <widget class="qSlicerWidget" name="qSlicerSRepWarperModuleWidget">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>512</width>
+    <height>596</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Form</string>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <item>
+    <layout class="QFormLayout" name="formLayout">
+     <item row="0" column="0">
+      <widget class="QLabel" name="label">
+       <property name="text">
+        <string>Source Model</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="1">
+      <widget class="qMRMLNodeComboBox" name="sourceModelCbox">
+       <property name="enabled">
+        <bool>true</bool>
+       </property>
+       <property name="nodeTypes">
+        <stringlist>
+         <string>vtkMRMLModelNode</string>
+        </stringlist>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="0">
+      <widget class="QLabel" name="label_2">
+       <property name="text">
+        <string>Source SRep</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="1">
+      <widget class="qMRMLNodeComboBox" name="sourceSRepCbox">
+       <property name="enabled">
+        <bool>true</bool>
+       </property>
+       <property name="nodeTypes">
+        <stringlist>
+         <string>vtkMRMLEllipticalSRepNode</string>
+        </stringlist>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="0">
+        <widget class="QLabel" name="label">
+         <property name="text">
+          <string>Target Model</string>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="1">
+        <widget class="qMRMLNodeComboBox" name="targetModelCbox">
+         <property name="enabled">
+          <bool>true</bool>
+         </property>
+         <property name="nodeTypes">
+          <stringlist>
+           <string>vtkMRMLModelNode</string>
+          </stringlist>
+         </property>
+        </widget>
+       </item>
+     <item row="3" column="0">
+      <widget class="QLabel" name="label_3">
+       <property name="text">
+        <string>Output SRep</string>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="1">
+      <widget class="qMRMLNodeComboBox" name="outputSRepCbox">
+       <property name="enabled">
+        <bool>true</bool>
+       </property>
+       <property name="nodeTypes">
+        <stringlist>
+         <string>vtkMRMLEllipticalSRepNode</string>
+        </stringlist>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <widget class="QPushButton" name="runButton">
+     <property name="text">
+      <string>Run</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QProgressBar" name="progressBar">
+     <property name="value">
+      <number>0</number>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <spacer name="verticalSpacer">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>0</width>
+       <height>0</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+  </layout>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>qMRMLNodeComboBox</class>
+   <extends>QWidget</extends>
+   <header>qMRMLNodeComboBox.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>qSlicerWidget</class>
+   <extends>QWidget</extends>
+   <header>qSlicerWidget.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>ctkSliderWidget</class>
+   <extends>QWidget</extends>
+   <header>ctkSliderWidget.h</header>
+  </customwidget>
+ </customwidgets>
+ <resources/>
+ <connections/>
+</ui>

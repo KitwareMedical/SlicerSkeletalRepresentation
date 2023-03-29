@@ -45,6 +45,7 @@ endif()
 add_subdirectory(SRep)
 add_subdirectory(SRepCreator)
 add_subdirectory(SRepRefinement)
+add_subdirectory(SRepWarper)
 ## NEXT_MODULE
 
 #-----------------------------------------------------------------------------
