@@ -271,7 +271,7 @@ class SRepCreateAndRefineLogic(ScriptedLoadableModuleLogic):
         ScriptedLoadableModuleLogic.__init__(self)
 
     @staticmethod
-    @slicerPipeline(name="SRepCreateAndRefine", dependencies=['SRepCreator', 'SRepRefinement'], categories=['SRep'])
+    @slicerPipeline(name="SRep.CreateAndRefine", dependencies=['SRepCreator', 'SRepRefinement'], categories=['SRep'])
     def run(createEllipticalInputModel: vtkMRMLModelNode, 
             createEllipticalNumFoldPoints: Annotated[int, Minimum(0), Default(24)], 
             createEllipticalNumStepsToCrest: Annotated[int, Minimum(0), Default(2)],

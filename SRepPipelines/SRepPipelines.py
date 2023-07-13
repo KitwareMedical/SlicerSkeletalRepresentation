@@ -90,7 +90,7 @@ class SRepPipelines(ScriptedLoadableModule):
         self.parent.title = "SRep Pipelines"
         self.parent.categories = ["SRep.Advanced"]
         self.parent.dependencies = ["SRep", "SRepCreator", "SRepRefinement"]
-        self.parent.contributors = ["Connor Bowley (Kitware, Inc)"]
+        self.parent.contributors = ["Connor Bowley (Kitware, Inc)", "Jared Vicory (Kitware, Inc)", "Harald Scheirich (Kitware, Inc)"]
         self.parent.helpText = "This module exists to create pipelines for SRep related actions"
         self.parent.acknowledgementText = "This file was originally developed by Connor Bowley for SlicerSALT."
         self.parent.hidden = True
