@@ -11,6 +11,7 @@ This extension introduces a new MRML data node interface, `vtkMRMLSRepNode`, and
 | [SRep](SRep) | The base module for s-reps. This module introduces the MRML nodes, and has generic facilities for display. |
 | [SRepCreator](SRepCreator) | Allows creating initial fit s-reps via flowing a model to an ellipse, generating an s-rep for that ellipse, and then backflowing the s-rep via thin plate spline to fit the original model. Essentially the SRepInitializer from the previous implementation. |
 | [SRepRefinement](SRepRefinement) | Allows optimizing an s-rep fit via min_newuoa optimization. Essentially the SRepRefiner from the previous implementation. |
+| [SRepCreateAndRefine](SRepCreateAndRefine) | Convenient pipeline module combining s-reps creation and refinement. |
 
 A tutorial for the modules can be found [here](https://bit.ly/3sTEG3H).
 

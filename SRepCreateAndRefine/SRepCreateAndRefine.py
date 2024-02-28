@@ -44,7 +44,7 @@ class SRepCreateAndRefine(ScriptedLoadableModule):
         self.parent.categories = ["PipelineModules"]
         self.parent.dependencies = ["SRepCreator", "SRepRefinement"]
         self.parent.contributors = ["Connor Bowley (Kitware, Inc)", "Jared Vicory (Kitware, Inc)", "Harald Scheirich (Kitware, Inc)", "PipelineCreator"]
-        self.parent.helpText = "This module was created by the PipelineCreator."
+        self.parent.helpText = "Pipeline module combining s-reps creation and refinement. This module was created by the PipelineCreator."
         self.parent.acknowledgementText = "This module was created by the PipelineCreator."
 
 
