@@ -46,6 +46,8 @@ add_subdirectory(SRep)
 add_subdirectory(SRepCreator)
 add_subdirectory(SRepRefinement)
 add_subdirectory(SRepWarper)
+add_subdirectory(SRepPipelines)
+add_subdirectory(SRepCreateAndRefine)
 ## NEXT_MODULE
 
 #-----------------------------------------------------------------------------
