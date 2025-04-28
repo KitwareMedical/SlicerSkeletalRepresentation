@@ -153,15 +153,22 @@ class EvolutionarySRepLogic(ScriptedLoadableModuleLogic):
         ScriptedLoadableModuleLogic.__init__(self)
         self.progressBar = progressBar
 
-  def lapy_to_vtk(self, mesh, translation = 0.0, scale = 1.0):
+  def lapy_to_vtk(self, mesh, translation = 0.0, scale = 1.0, normalize = False):
     npd = vtk.vtkPolyData()
-    
+    temp = lapy.TriaMesh(mesh.v,mesh.t)
+
+    if (normalize):
+      center = np.mean(temp.v,axis=0)
+      temp.v = temp.v - center
+
+      temp.v = temp.v / np.linalg.norm(temp.v)
+
     npts = vtk.vtkPoints()
-    npts.SetData(vtk.util.numpy_support.numpy_to_vtk( (scale*mesh.v)+translation ))
+    npts.SetData(vtk.util.numpy_support.numpy_to_vtk( (scale*temp.v)+translation ))
     npd.SetPoints(npts)
     
-    polys = 3*np.ones([mesh.t.shape[0],4],dtype=np.int64)
-    polys[:,1:] = mesh.t
+    polys = 3*np.ones([temp.t.shape[0],4],dtype=np.int64)
+    polys[:,1:] = temp.t
 
     npolys = vtk.vtkCellArray()
     npolys.SetCells(polys.shape[0],vtk.util.numpy_support.numpy_to_vtkIdTypeArray(polys,deep=True))
@@ -493,9 +500,9 @@ class EvolutionarySRepLogic(ScriptedLoadableModuleLogic):
             <deformable-object-type>SurfaceMesh</deformable-object-type>
             <attachment-type>Varifold</attachment-type>
             
-            <noise-std>0.001</noise-std>
+            <noise-std>0.01</noise-std>
             
-            <kernel-width>0.05</kernel-width>
+            <kernel-width>0.5</kernel-width>
             <kernel-type>torch</kernel-type>
             
             <filename>{os.path.abspath(start_file)}</filename>
@@ -577,6 +584,7 @@ class EvolutionarySRepLogic(ScriptedLoadableModuleLogic):
 
     srep.regularize_crest(0.1)
     srep.regularize_skeleton()
+    # srep.medialize_skeleton()
     srep.refine_spoke_lengths(surf)
 
     pv.wrap(srep.polydata).save("regularized_output_srep.vtk")
@@ -597,8 +605,17 @@ class EvolutionarySRepLogic(ScriptedLoadableModuleLogic):
     self.progressBar.setFormat('0%: Running curvature flow')
 
     # Run cMCF via lapy
-    
-    pd = input_mesh.GetPolyData()
+
+    w = vtk.vtkPolyDataWriter()
+    w.SetInputData(input_mesh.GetPolyData())
+    w.SetFileName(str(output_path / "input.vtk"))
+    w.Update()
+
+    r = vtk.vtkPolyDataReader()
+    r.SetFileName(str(output_path / "input.vtk"))
+    r.Update()
+
+    pd = r.GetOutput()
 
     # Convert to lapy format 
     mesh = self.vtk_to_lapy(pd)
@@ -612,17 +629,17 @@ class EvolutionarySRepLogic(ScriptedLoadableModuleLogic):
     scale = np.linalg.norm(mesh.v - translation) / np.linalg.norm(norm_mesh.v)
 
     # Run the flow
-    flow_mesh, meshes = self.tria_mean_curvature_flow_mod(mesh,max_iter=40,stop_eps=1e-12,step=0.001)
+    flow_mesh, meshes = self.tria_mean_curvature_flow_mod(norm_mesh,max_iter=40,stop_eps=1e-12,step=0.001)
 
     mesh_dir = output_path / "meshes"
     if not os.path.isdir(mesh_dir):
         os.mkdir(mesh_dir)
 
     for i,m in enumerate(meshes):
-      temp = self.lapy_to_vtk(m,translation,scale)
+      temp = self.lapy_to_vtk(m)
       pv.wrap(temp).save( mesh_dir / f"{i:02d}.vtk" )
       
-    new_pd = self.lapy_to_vtk(flow_mesh,translation,scale)
+    new_pd = self.lapy_to_vtk(flow_mesh)
 
     # Fit PE to smoothed mesh    
     self.progressBar.setFormat('10%: Fitting perfect ellipsoid')
@@ -679,7 +696,7 @@ class EvolutionarySRepLogic(ScriptedLoadableModuleLogic):
     reg_out_dir = reg_dir / f'PE_{start_num}'
     if not os.path.isdir(reg_out_dir):
       os.mkdir(reg_out_dir)
-      self.run_backward_stage(start_file, stop_file, reg_out_dir)
+    self.run_backward_stage(start_file, stop_file, reg_out_dir)
 
     used_nums = []
     used_nums.append('PE')
@@ -698,12 +715,13 @@ class EvolutionarySRepLogic(ScriptedLoadableModuleLogic):
       reg_out_dir = reg_dir / f'{last_num}_{next_num}'
       if not os.path.isdir(reg_out_dir):
         os.mkdir(reg_out_dir)
-        self.run_backward_stage(start_file, stop_file, reg_out_dir)
+      self.run_backward_stage(start_file, stop_file, reg_out_dir)
 
       last_dir = reg_out_dir / "output"
       last_num = next_num
       used_nums.append(last_num)
 
+      # We skip a lot of stages > 10 because the deformations are small
       if last_num > 10:
         next_num = last_num - 5
       elif last_num == 10:
@@ -714,6 +732,16 @@ class EvolutionarySRepLogic(ScriptedLoadableModuleLogic):
         next_num = 0
       elif last_num == 0:
         break
+
+    # Now we bridge from the last step to the input mesh
+    start_file = last_dir / "DeterministicAtlas__Reconstruction__mesh__subject_subj1.vtk"
+    stop_file = output_path / "input.vtk"
+    reg_out_dir = reg_dir / f"{last_num}_input"
+    if not os.path.isdir(reg_out_dir):
+      os.mkdir(reg_out_dir)
+    self.run_backward_stage(start_file, stop_file, reg_out_dir)
+
+    used_nums.append("input")
 
     self.progressBar.setFormat('66%: Fitting s-rep via shooting')
     self.progressBar.setValue(66)
@@ -755,6 +783,11 @@ class EvolutionarySRepLogic(ScriptedLoadableModuleLogic):
     r.Update()
     srep = r.GetOutput()
 
+    # Undo normalization from the beginning
+    srep_pts = vtk.util.numpy_support.vtk_to_numpy(srep.GetPoints().GetData())
+    srep_pts = (srep_pts*scale) + translation
+    srep.GetPoints().SetData(vtk.util.numpy_support.numpy_to_vtk(srep_pts))
+    
     outfile = output_path / "final_srep.srep.json"
     self.srep_to_json(srep,outfile)
 
