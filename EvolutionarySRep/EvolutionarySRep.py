@@ -464,6 +464,7 @@ class EvolutionarySRepLogic(ScriptedLoadableModuleLogic):
     # pre-normalize
     trianorm = lapy.TriaMesh(tria.v, tria.t)
     trianorm.normalize_()
+    meshes.append(lapy.TriaMesh(trianorm.v,trianorm.t))
     # compute fixed A
     lump = True  # for computation here and inside loop
     fem = lapy.Solver(trianorm, lump)
@@ -606,13 +607,12 @@ class EvolutionarySRepLogic(ScriptedLoadableModuleLogic):
 
     # Run cMCF via lapy
 
-    w = vtk.vtkPolyDataWriter()
-    w.SetInputData(input_mesh.GetPolyData())
-    w.SetFileName(str(output_path / "input.vtk"))
-    w.Update()
+    sn = input_mesh.CreateDefaultStorageNode()
+    sn.SetFileName(str(output_path / "input.vtp"))
+    sn.WriteData(input_mesh)
 
-    r = vtk.vtkPolyDataReader()
-    r.SetFileName(str(output_path / "input.vtk"))
+    r = vtk.vtkXMLPolyDataReader()
+    r.SetFileName(str(output_path / "input.vtp"))
     r.Update()
 
     pd = r.GetOutput()
@@ -728,20 +728,8 @@ class EvolutionarySRepLogic(ScriptedLoadableModuleLogic):
         next_num = 7
       elif last_num == 7:
         next_num = 4
-      elif last_num == 4:
-        next_num = 0
-      elif last_num == 0:
-        break
-
-    # Now we bridge from the last step to the input mesh
-    start_file = last_dir / "DeterministicAtlas__Reconstruction__mesh__subject_subj1.vtk"
-    stop_file = output_path / "input.vtk"
-    reg_out_dir = reg_dir / f"{last_num}_input"
-    if not os.path.isdir(reg_out_dir):
-      os.mkdir(reg_out_dir)
-    self.run_backward_stage(start_file, stop_file, reg_out_dir)
-
-    used_nums.append("input")
+      else:
+        next_num = last_num - 1
 
     self.progressBar.setFormat('66%: Fitting s-rep via shooting')
     self.progressBar.setValue(66)
