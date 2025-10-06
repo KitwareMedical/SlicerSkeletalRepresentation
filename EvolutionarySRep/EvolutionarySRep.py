@@ -118,7 +118,7 @@ class EvolutionarySRepWidget(ScriptedLoadableModuleWidget):
           checksum = "SHA256:a1a32a47fb2050cc7c568e55fcb7c3fb6f54eb967b90ea9a89338b3a087bb6aa"
 
           slicer.util.downloadFile(wheel_url,target_path,checksum)
-          slicer.util.pip_install(str(target_path))
+          slicer.util.pip_install([str(target_path)])
       else:
          slicer.util.errorDisplay("Unable to continue without Deformetrica")
          return
