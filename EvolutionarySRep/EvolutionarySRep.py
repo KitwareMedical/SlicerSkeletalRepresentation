@@ -125,7 +125,7 @@ class EvolutionarySRepWidget(ScriptedLoadableModuleWidget):
        
 
     try:
-      self.logic.run( self.ui.inputModel.currentNode(), Path(self.ui.outputPath.directory) )
+      self.logic.run( self.ui.inputModel.currentNode(), Path(self.ui.outputPath.directory).resolve() )
     except Exception as e:
       slicer.util.errorDisplay("Failed to compute results: {}".format(e))
       import traceback
@@ -545,7 +545,7 @@ class EvolutionarySRepLogic(ScriptedLoadableModuleLogic):
     subprocess.run(["deformetrica","estimate","model.xml","data_set.xml","-p","optimization_parameters.xml"])
     os.chdir(cwd)
 
-  def run_shooting(self, reg_path, shooting_path, srep_file):
+  def run_shooting(self, reg_path, shooting_path, mesh_path, srep_file):
     reg_out_dir = reg_path / 'output'
     model_xml = f"""<model>
 
@@ -581,9 +581,9 @@ class EvolutionarySRepLogic(ScriptedLoadableModuleLogic):
     srep = Srep()
     srep.load_polydata_file('./output/Shooting__GeodesicFlow__srep__tp_10__age_1.00.vtk')
 
-    surf = pv.read( reg_out_dir / "DeterministicAtlas__Reconstruction__mesh__subject_subj1.vtk" )
+    surf = pv.read( mesh_path )
 
-    srep.regularize_crest(0.1)
+    srep.regularize_crest(0.05)
     srep.regularize_skeleton()
     # srep.medialize_skeleton()
     srep.refine_spoke_lengths(surf)
@@ -747,7 +747,7 @@ class EvolutionarySRepLogic(ScriptedLoadableModuleLogic):
     if not os.path.isdir(shoot_dir_name):
       os.mkdir(shoot_dir_name)
 
-    self.run_shooting(reg_dir_name,shoot_dir_name, srep_dir / 'PE_srep_regular.vtk')
+    self.run_shooting(reg_dir_name,shoot_dir_name, mesh_dir / f'{used_nums[1]:02d}.vtk', srep_dir / 'PE_srep_regular.vtk')
 
     last_shoot_dir = shoot_dir_name
 
@@ -758,7 +758,7 @@ class EvolutionarySRepLogic(ScriptedLoadableModuleLogic):
       shoot_dir_name = shoot_dir / dir_name
       if not os.path.isdir(shoot_dir_name):
           os.mkdir(shoot_dir_name)
-      self.run_shooting(reg_dir_name,shoot_dir_name,last_shoot_dir / 'regularized_output_srep.vtk')
+      self.run_shooting(reg_dir_name,shoot_dir_name, mesh_dir / f'{used_nums[i+1]:02d}.vtk', last_shoot_dir / 'regularized_output_srep.vtk')
 
       last_shoot_dir = shoot_dir_name
 
